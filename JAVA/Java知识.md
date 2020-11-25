@@ -7,10 +7,6 @@ SecurityContextHolder.getContext().getAuthentication() == null
 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username)  
 ```
 
-
-
-
-
 # 封装通用返回对象
 
 `api`返回码和返回信息接口：
@@ -1781,3 +1777,241 @@ StringBuilder(String s).reverse().toString();
 
 
 
+
+
+# Lambda 表达式
+
+## 为什么引入 Lambda 表达式
+
+> 为什么 Java 要引进 Lambda 表达式？
+
+`Lambda` 表达式为 `Java` 添加了缺失的函数式编程特点，它是推动 `Java 8` 发布的最重要新特性，使我们能将函数当做一等公民看待。`Lambda` 表达式，也可称为闭包，它允许把函数作为一个方法的参数（函数作为参数传递进方法中），使用 `Lambda` 表达式可以使代码变的更加简洁紧凑。
+
+
+代码示例：启动一个线程，在控制台输出一句话，多线程程序启动了。
+
+* 方法一：实现类的方式。定义一个类`MyRunnable`实现`Runnable`接口，重写`run()`方法，创建`MyRunnable`类的对象，创建`Thread`类的对象，把`MyRunnable`的对象作为构造参数传递，启动线程。
+
+* 方法二：匿名内部类的方式。
+
+* 方法三：`Lambda`表达式的方式。
+
+
+方法一（实现类）：
+
+```java
+public class MyRunnable implements Runnable {
+
+    @Override
+    public void run() {
+        System.out.println("多线程程序启动了");
+    }
+}
+
+public class LambdaDemo {
+    public static void main(String[] args) {
+        // 实现类的方式实现需求
+        MyRunnable my = new MyRunnable();
+        Thread t = new Thread(my);
+        t.start();
+    }
+}
+```
+
+方法二（匿名内部类）：
+
+```java
+public class LambdaDemo {
+    public static void main(String[] args) {
+        // 匿名内部类的方式改进
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("多线程程序启动了");
+            }
+        }).start();
+    }
+}
+```
+
+方法三（`Lambda`表达式）：
+
+```java
+public class LambdaDemo {
+    public static void main(String[] args) {
+        // Lambda表达式的方式改进
+        new Thread(() -> {
+            System.out.println("多线程程序启动了");
+        }).start();
+    }
+}
+```
+
+ `Lambda` 与闭包是有不同之处的，但是它又无限地接近闭包。在支持一类函数的语言中，`Lambda `表达式的类型将是函数。而在 `Java` 中，`Lambda` 表达式是对象，他们必须依附于一类特别的对象类型——函数式接口(`functional interface`)。
+
+> 注：函数式接口是只包含一个抽象方法声明的接口。`java.lang.Runnable` 就是一种函数式接口，在 `Runnable` 接口中只声明了一个方法 `void run()`。
+
+```java
+@FunctionalInterface
+public interface Runnable {
+    /**
+     * When an object implementing interface <code>Runnable</code> is used
+     * to create a thread, starting the thread causes the object's
+     * <code>run</code> method to be called in that separately executing
+     * thread.
+     * <p>
+     * The general contract of the method <code>run</code> is that it may
+     * take any action whatsoever.
+     *
+     * @see     java.lang.Thread#run()
+     */
+    public abstract void run();
+}
+```
+
+`Lambda`表达式实质上是函数式思想的提现，函数式思想尽量忽略面向对象的复杂语法：强调做什么，而不是以什么形式去做。
+
+## Lambda 语法
+
+`Java` 中的 `Lambda` 表达式通常使用 `(argument) ->{body}` 语法书写。
+
+组成`Lambda`表达式的三要素: 形式参数，箭头，代码块：
+
+```java
+(形式参数) -> {代码块}
+```
+
+* `（形式参数）`：如果有多个参数，参数之间用逗号隔开；如果没有参数，留空即可。
+
+* `->`：由英文中画线和大于符号组成，固定写法，代表指向动作。 
+
+* `{代码块}`：是我们具体要做的事情，也就是以前我们写的方法体内容。
+
+例如：
+
+```java
+(arg1, arg2...) -> { body }
+
+(type1 arg1, type2 arg2...) -> { body }
+```
+
+以下是一些` Lambda` 表达式的例子：
+
+```java
+(int a, int b) -> {  return a + b; }
+
+() -> System.out.println("Hello World");
+
+(String s) -> { System.out.println(s); }
+
+() -> 42
+
+() -> { return 3.1415926 };
+```
+
+` Lambda` 表达式结构说明：
+
+- 一个` Lambda` 表达式可以有零个或多个参数。
+- 参数的类型既可以明确声明，也可以根据上下文来推断。例如：`(int a)`与`(a)`效果相同。
+- 所有参数需包含在圆括号内，参数之间用逗号相隔。例如：`(a, b)` 或 `(int a, int b)` 或 `(String a, int b, float c)`。
+- 空圆括号代表参数集为空。例如：`() -> 42`。
+- 当只有一个参数，且其类型可推导时，圆括号`（）`可省略。例如：`a -> return a*a`。
+- `Lambda` 表达式的主体可包含零条或多条语句。
+- 如果代码块的语句只有一条，可以省略花括号和分号及`return`关键字。
+- 如果 `Lambda` 表达式的主体包含一条以上语句，则表达式必须包含在花括号`{}`中（形成代码块）。匿名函数的返回类型与代码块的返回类型一致，若没有返回则为空。
+
+## Lambda 注意事项
+
+* 使用`Lambda`必须要有接口，并且要求接口中有且仅有一个抽象方法。
+
+* 必须有上下文环境，才能推导出`Lambda`对应的接口。
+
+推导出`Lambda`对应的接口的两种方式：
+
+方式一：根据局部变量的赋值得`Lambda`对应的接口。
+
+```java
+@FunctionalInterface
+public interface Runnable {
+    public abstract void run();
+}
+Runnable r = () -> System.out.println("Lambda表达式");
+```
+
+方式二：根据调用方法的参数得知`Lambda`对应的接口。
+
+```java
+public Thread(Runnable target) {
+      init(null, target, "Thread-" + nextThreadNum(), 0);
+}
+new Thread(() -> System.out.println("Lambda表达式")).start();
+```
+
+## 相关示例
+
+有参有返回值抽象方法的` Lambda` 表达式具体步骤：
+
+* 定义一个接口(`Addable`)，里面定义一个`add`的抽象方法。
+* 定义一个测试类(`AddableDemo`)，在测试类中提供`useAddable`方法 和` main`方法。
+
+```java
+public interface Addable {
+    int add(int x, int y);
+}
+
+public class AddableDemo {
+    public static void main(String[] args) {
+        useAddable((int x, int y) -> {
+            return x + y;
+        });
+
+    }
+
+    private static void useAddable(Addable a) {
+        int sum = a.add(10, 20);
+        System.out.println(sum);
+    }
+}
+```
+
+实际生产中使用`redisTemplate.execute`方法执行连接回调：
+
+```java
+@Nullable
+public <T> T execute(RedisCallback<T> action) {
+     return this.execute(action, this.isExposeConnection());
+}
+
+public interface RedisCallback<T> {
+    @Nullable
+    T doInRedis(RedisConnection var1) throws DataAccessException;
+}
+public boolean addLock(String key) {
+		return (Boolean) redisTemplate.execute((RedisCallback) connection -> {...});
+}
+```
+
+集合中的数值乘以2倍：
+
+```java
+public class TestJava8 {
+    public static void main(String[] args) {
+        // Extra, streams apply to any data type.
+        List<Integer> num = Arrays.asList(1,2,3,4,5);
+        List<Integer> collect1 = num.stream().map(n -> n * 2).collect(Collectors.toList());
+        System.out.println(collect1); //[2, 4, 6, 8, 10]
+    }
+}
+```
+
+> stream().map() 的使用；如：迭代一个集合直接返回另一个筛选后的集合。
+
+* **steam()**：把一个源数据，可以是集合，数组，`I/O channel`， 产生器`generator `等，转化成流。
+* **map()**：用于映射每个元素到对应的结果。
+* **Collectors()：**类实现了很多归约操作，例如将流转换成集合和聚合元素。`Collectors` 可用于返回列表或字符串。
+
+## Lambda表达式和匿名内部类的区别
+
+* 所需类型不同： 匿名内部类可以是接口，也可以是抽象类，还可以是具体类；而`Lambda`表达式只能是接口。
+* 使用限制不同：接口中多于一个抽象方法，只能使用匿名内部类，而不能使用`Lambda`表达式。
+* 实现原理不同：匿名内部类编译之后，产生一个单独的`.class`字节码文件；`Lambda`表达式编译之后，没有一个单独的`.class`字节码文件，对应的字节码会在运行的时候动态生成。

@@ -2015,3 +2015,301 @@ public class TestJava8 {
 * 所需类型不同： 匿名内部类可以是接口，也可以是抽象类，还可以是具体类；而`Lambda`表达式只能是接口。
 * 使用限制不同：接口中多于一个抽象方法，只能使用匿名内部类，而不能使用`Lambda`表达式。
 * 实现原理不同：匿名内部类编译之后，产生一个单独的`.class`字节码文件；`Lambda`表达式编译之后，没有一个单独的`.class`字节码文件，对应的字节码会在运行的时候动态生成。
+
+
+
+# 方法引用
+
+## 应用场景
+
+> 问：如果我们在 Lambda 中所指定的操作方案，已经有地方存在相同方案，那是否还有必要再写重复逻辑呢?
+
+该问题的答案肯定是没有必要，我们可以通过方法引用来使用已经存在的方案。
+
+示例：一个简单的函数式接口以应用 `Lambda` 表达式。
+
+在 `Printable` 接口当中唯一的抽象方法 `print` 接收一个字符串参数，目的就是为了打印显示它。
+
+```java
+@FunctionalInterface
+ public interface Printable {
+     void print(String str);
+}
+```
+
+那么通过`Lambda`来使用它的代码很简单：拿到 `String`（类型可推导，所以可省略）数据后，在控制台中输出它。
+
+```java
+public class Demo01PrintSimple {
+　　private static void printString(Printable data) {
+　　　　data.print("Hello, World!");
+　　}
+　　public static void main(String[] args) {
+　　　　printString(s ‐> System.out.println(s));
+　　}
+}
+```
+尽管上面这段代码已经很简洁，但是现成的实现方案中，已经有对字符串进行控制台打印输出的操作方案`System.out`对象中的 `println(String)` 方法。既然`Lambda`希望做的事情就是调用 `println(String)` 方法，那能否省去`Lambda`的语法格式，只要引用过去就好。 答案是肯定的，这个时候就需要使用方法引用了。
+```java
+public class DemoPrintRef {
+        private static void printString(Printable data) {
+            data.print("Hello, World!");
+        }
+        public static void main(String[] args) {
+            printString(System.out::println);
+        }
+}
+```
+
+某有些情况下，我们用`Lambda`表达式仅仅是调用一些已经存在的方法，除了调用动作外，没有其他任何多余的动作，在这种情况下，我们倾向于通过方法名来调用它，通过方法引用使得调用那些已经拥有方法名的方法的代码更简洁、更容易理解。方法引用可以理解为`Lambda`表达式的另外一种表现形式。
+
+## 方法引用分类
+
+:: 该符号为引用运算符，而它所在的表达式被称为方法引用。如果使用`Lambda`，那么根据"可推导就是可省略"的原则，无需指定参数类型，也无需指定的重载形式， 它们都将被自动推导，同样的如果使用方法引用，也可以根据上下文进行推导。
+
+下面是对方法引用的相关分类：
+
+| 类型               | 语法               | 对应的Lambda表达式                   |
+| ------------------ | ------------------ | ------------------------------------ |
+| 类的静态方法引用   | 类名::staticMethod | (args) -> 类名.staticMethod(args)    |
+| 类的实例方法引用   | inst::instMethod   | (args) -> inst.instMethod(args)      |
+| 对象的实例方法引用 | 类名::instMethod   | (inst,args) -> 类名.instMethod(args) |
+| 构建方法引用       | 类名::new          | (args) -> new 类名(args)             |
+
+##  类的静态方法引用
+
+类的静态方法引用，其实就是引用类的静态方法。
+
+使用格式：类名 :: 静态方法。
+
+使用示例1：
+
+定义一个接口`Converter`，里面定义一个抽象方法`convert`。
+
+```java
+public interface Converter {
+    int convert(String s);
+}
+```
+
+定义一个测试类`ConverterDemo`并在主方中调用`useConverter`方法：
+
+```java
+public class ConverterDemo {
+    public static void main(String[] args) {
+        // lambda 表达式方法
+        useConverter(s -> Integer.parseInt(s)); // 999 
+      
+        // 引用类方法（Lambda表达式被类方法替代的时候，它的形式参数全部传递给静态方法作为参数）
+        useConverter(Integer::parseInt); // 999
+    }
+
+    private static void useConverter(Converter c) {
+        int number = c.convert("999");
+        System.out.println(number);
+    }
+}
+```
+
+```java
+ public static int parseInt(String s) throws NumberFormatException {
+        return parseInt(s,10);
+    }
+```
+
+使用示例2：
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        List<Integer> list = Arrays.asList(82,22,34,50,9);
+        list.sort(Integer::compare); // [9, 22, 34, 50, 82]
+        System.out.println(list);
+    }
+}
+```
+
+`Lambda`表达式被类的静态方法替代的时候，它的形式参数全部传递给静态方法作为参数。
+
+## 类的实例方法引用
+
+类的实例方法引用，其实就是引用类中的成员方法。
+
+使用格式：类名 :: 成员方法。
+
+使用示例：
+
+定义一个接口`MyString`，里面定义一个抽象方法`mySubString`：
+
+```java
+public interface MyString {
+    String mySubString(String s, int x, int y);
+}
+```
+
+
+
+定义一个测试类`MyStringDemo`，在测试类中提供两个方法，并在主方法中调用`useMyString`方法。
+
+```java
+public class MyStringDemo {
+    public static void main(String[] args) {
+
+        useMyString((s, x, y) -> s.substring(x, y)); // llo
+
+        // 引用类的实例方法
+        useMyString(String::substring); // llo
+    }
+
+    private static void useMyString(MyString my) {
+        String s = my.mySubString("HelloWorld", 2, 5);
+        System.out.println(s);
+    }
+}
+```
+
+
+
+```java
+ public String substring(int beginIndex, int endIndex) {
+        if (beginIndex < 0) {
+            throw new StringIndexOutOfBoundsException(beginIndex);
+        }
+        if (endIndex > value.length) {
+            throw new StringIndexOutOfBoundsException(endIndex);
+        }
+        int subLen = endIndex - beginIndex;
+        if (subLen < 0) {
+            throw new StringIndexOutOfBoundsException(subLen);
+        }
+        return ((beginIndex == 0) && (endIndex == value.length)) ? this
+                : new String(value, beginIndex, subLen);
+    }
+
+```
+
+`Lambda`表达式被类的实例方法替代的时候，第一个参数作为调用者，后面的参数全部传递给该方法作为参数。
+
+## 对象的实例方法引用
+
+对象的实例方法引用，其实就是引用类中的成员方法。
+
+使用格式：对象::成员方法
+
+使用示例：
+
+定义一个接口`Printer`，里面定义一个抽象方法`printUpperCase`：
+
+```java
+public interface Printer {
+    void printUpperCase(String s);
+}
+```
+
+定义一个类`PrintString`，里面定义一个方法`printUpper`：
+
+```java
+public class PrintString {
+    public void printUpper(String s) {
+        String result = s.toUpperCase();
+        System.out.println(result);
+    }
+}
+```
+
+
+
+定义一个测试类`PrinterDemo`，在测试类中提供两个方法，一个方法是`usePrinter`，一个方法是主方法，在主方法中调用`usePrinter`方法：
+
+```java
+public class PrinterDemo {
+    public static void main(String[] args) {
+        usePrinter(s -> System.out.println(s.toUpperCase())); // HELLOWORLD
+
+        // 引用对象的实例方法
+        usePrinter(new PrintString()::printUpper);  // HELLOWORLD
+    }
+
+    private static void usePrinter(Printer p) {
+        p.printUpperCase("HelloWorld");
+    }
+}
+```
+
+`Lambda`表达式被对象的实例方法替代的时候，它的形式参数全部传递给该方法作为参数。
+
+## 构造方法引用
+
+格式：类名 :: new
+
+使用示例：
+
+定义一个类`Student`，里面有两个成员变量`name,age`并提供无参构造方法和带参构造方法，以及成员变量对应的`get`和`set`方法：
+
+```java
+public class Student {
+    private String name;
+    private int age;
+
+    public Student() {
+    }
+
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+```
+
+
+
+定义一个接口`StudentBuilder`，里面定义一个抽象方法`Student build`：
+
+```java
+public interface StudentBuilder {
+    Student build(String name, int age);
+}
+```
+
+定义一个测试类`StudentDemo`，在测试类中提供两个方法，一个方法是`useStudentBuilder`，一个方法是主方法，在主方法中调用`useStudentBuilder`方法：
+
+```java
+public class StudentDemo {
+    public static void main(String[] args) {
+        useStudentBuilder((name, age) -> new Student(name, age)); // wangxiong,18
+
+        // 引用构造器
+        useStudentBuilder(Student::new); // wangxiong,18
+    }
+
+    private static void useStudentBuilder(StudentBuilder sb) {
+        Student s = sb.build("wangxiong", 18);
+        System.out.println(s.getName() + "," + s.getAge());
+    }
+}
+```
+
+`Lambda`表达式被构造方法替代的时候，它的形式参数全部传递给构造器作为参数。
+
+
+
+
+
+
+

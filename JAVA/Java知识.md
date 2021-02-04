@@ -1,3 +1,172 @@
+# MyBatis 返回数据为NULL时会过滤字段问题
+
+> mybatis callSettersOnNulls 配置，解决数据库null字段的显示
+
+解决方案：
+
+```java
+mybatis:
+  mapper-locations:
+    - classpath:dao/*.xml
+    - classpath*:com/**/mapper/*.xml
+  configuration:
+    call-setters-on-nulls: true
+```
+
+
+
+# 存储过程插入和更新数据
+
+```sql
+
+CREATE TABLE `oms_order_procedure` (
+  `member_id` bigint(20) NOT NULL,
+  `member_username` varchar(64) DEFAULT NULL COMMENT '用户帐号',
+  `product_id` bigint(20) NOT NULL,
+  `total_amount` decimal(10,2) DEFAULT '0.00' COMMENT '订单总金额',
+  `order_sn` varchar(64) DEFAULT NULL COMMENT '订单编号',
+  `create_time` datetime DEFAULT NULL COMMENT '提交时间',
+  `name` varchar(500) NOT NULL
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='产品订单表存储过程中间表';
+
+INSERT INTO oms_order_procedure (member_id,product_id) VALUES
+(1,1),
+(3,3),
+(4,4),
+(5,5),
+(6,6);
+
+-- 定义 $$ 分隔符 
+DELIMITER  $$
+-- 定义更新数据表存储过程
+CREATE PROCEDURE update_product_order()
+
+BEGIN -- 定义存储过程变量
+DECLARE memberIds BIGINT(20);
+DECLARE memberUserName VARCHAR(64);
+DECLARE totalAmount DECIMAL(10 , 2);
+DECLARE prices DECIMAL(10 , 2);
+DECLARE productName VARCHAR(500);
+DECLARE stopCur INT DEFAULT 0;
+
+-- 定义游标(更新指定部分数据)
+DECLARE cur CURSOR FOR( SELECT m.username , m.id , p.price,p.name  FROM ums_member m 
+   INNER JOIN oms_order_procedure o ON o.member_id = m.id 
+   INNER JOIN pms_product p ON o.product_id = p.id);
+-- 定义游标结束,当遍历完成时，将stopCur设置为null 
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET stopCur = NULL;
+-- 开游标 
+OPEN cur;
+-- 游标向下走一步，将查询出来的两个值赋给定义的变量
+FETCH cur INTO memberUserName , memberIds , prices,productName;
+-- 循环体
+WHILE(stopCur IS NOT NULL) DO -- 更新对应关系表数据
+UPDATE oms_order_procedure 
+SET order_sn = unix_timestamp(now())+memberIds,create_time = now(),
+member_username = memberUserName , total_amount = prices, name = productName 
+WHERE member_id = memberIds;
+-- 游标向下走一步
+FETCH cur INTO memberUserName , memberIds , prices,productName;
+END WHILE;
+-- 关闭游标
+CLOSE cur;
+END $$
+-- 改回原来分隔符;
+DELIMITER ;  
+```
+
+
+
+# Mybaits批量插入
+
+```java
+<insert id="insertList">
+        INSERT INTO buried_point (version_name,version_channel,`time`,phone,page_name,data_name,data_params,note,created_at) VALUES
+        <foreach collection="list" separator="," item="item" index="index">
+            (#{item.versionName},
+            #{item.versionChannel},
+            #{item.time},
+            #{item.phone},
+            #{item.pageName},
+            #{item.dataName},
+            #{item.dataParams},
+            #{item.note},
+            #{item.createdAt,jdbcType=TIMESTAMP})
+        </foreach>
+    </insert>
+```
+
+
+
+# Map转实体类
+
+```java
+// 将 Map 转换为 实体类
+User user = JSON.parseObject(JSON.toJSONString(user01), User.class);
+System.out.println(user);
+// 将 实体类 转换为 Map
+Map map = JSON.parseObject(JSON.toJSONString(user), Map.class);
+System.out.println(map);
+```
+
+
+
+# @Data和@Builder一起使用的坑
+
+
+
+记一次java.sql.SQLDataException错误解决：
+
+错误：经排查，实体对应的类型与数据库字段类型一致。
+
+```java
+nested exception is org.springframework.dao.DataIntegrityViolationException: Error attempting to get column 'channel' from result set.  Cause: java.sql.SQLDataException: Cannot determine value type from string 'App'
+; Cannot determine value type from string 'App'; nested exception is java.sql.SQLDataException: Cannot determine value type from string 'App'] with root cause
+com.mysql.cj.exceptions.DataConversionException: Cannot determine value type from string 'App'
+```
+
+
+
+原因：lombok@Data和@Builder一起用无法添加无参构造方法。
+
+```java
+/**
+ * Put on any method or constructor to make lombok pretend it doesn't exist,
+ * i.e., to generate a method which would otherwise be skipped due to possible conflicts.
+ */
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Retention(RetentionPolicy.SOURCE)
+public @interface Tolerate {
+}
+```
+
+
+
+解决：
+
+[记lombok@Data和@Builder一起用无法添加无参构造方法的坑](https://blog.csdn.net/w605283073/article/details/89221853)
+
+[Lombok使用@Tolerate实现冲突兼容](http://www.iiwab.com/post/39)
+
+```java
+@Tolerate
+UmsMemberResult(){}
+```
+
+
+
+mybatis实体为什么要提供一个无参的构造函数:
+
+
+
+> 提问：Mybatis查询结果映射到实体类的时候，实体类为什么必须有一个空的构造函数？
+
+
+
+答：Mybatis框架会调用这个默认构造方法来构造实例对象，即实体类需要通过Mybatis进行动态反射生成。
+
+反射的Class.forName("className").newInstance();需要对应的类提供一个无参构造函数。
+
 
 
 待解决问题：
@@ -64,7 +233,7 @@ public class CommonResult<T> {
     /**
      * 提示信息
      */
-    private String message;
+    private String message
     /**
      * 数据封装
      */
@@ -304,6 +473,41 @@ public CommonResult<CommonPage<SmsHomePop>> list(SmsHomePopSearchParam params,
 
 # 基础知识
 
+
+
+## 实体继承、复制属性、SQL查询
+
+```java
+List<SmsHomeAdvertise> advertiseList = advertiseService.list(name, type, endTime, pageSize, pageNum);
+List<AdvertiseChannelVo> advertiseChannelList = new ArrayList();
+List<Integer> ids = new ArrayList<>();
+// 获取渠道ID
+for (SmsHomeAdvertise advertise : advertiseList) {
+  Integer channelId = (Integer) advertise.getChannel();
+  if (channelId != null && channelId != 0) {
+    ids.add(channelId);
+  }
+}
+// 查询渠道信息
+SmsChannelExample example = new SmsChannelExample();
+example.createCriteria().andIdIn(ids);
+List<SmsChannel> channelInfo = smsChannelMapper.selectByExample(example);
+// 组合渠道信息
+for (SmsHomeAdvertise advertise : advertiseList) {
+  AdvertiseChannelVo advertiseChannel = new AdvertiseChannelVo();
+  BeanUtils.copyProperties(advertise, advertiseChannel);
+  for (SmsChannel info : channelInfo) {
+    if (info.getId().equals(advertise.getChannel())) {
+      advertiseChannel.setChannelName(info.getName());
+      advertiseChannel.setChannelNote(info.getNote());
+    }
+  }
+  advertiseChannelList.add(advertiseChannel);
+}
+```
+
+
+
 ## Java String
 
 ### getBytes()
@@ -354,8 +558,6 @@ String.valueOf(expireAt).getBytes();
 
 * `long` : `Long.parseLong(String s)`：将 s 转换成 `long`
 
-
-
 字符串格式化：
 
 ```java
@@ -394,15 +596,11 @@ import cn.hutool.core.collection.CollUtil;
 if(CollUtil.isNotEmpty(roleList)){}
 ```
 
-
-
 判断`map`是否为空：
 
 ```java
 map != null && !map.isEmpty()
 ```
-
-
 
 条件查询：
 
@@ -421,8 +619,6 @@ private List<SmsHomeAdvertise> getHomeAdvertiseList() {
         return advertiseMapper.selectByExample(example);
     }
 ```
-
-
 
 `Long.parseLong(String s)`方法：将字符串`s`解析成十进制参数表示的`long`。
 
@@ -481,6 +677,10 @@ VO vo = JSON.parseObject("{...}", VO.class); //JSON文本解析成VO.class类
 
 `@responseBody`注解的作用是将`controller`的方法返回的对象通过适当的转换器转换为指定的格式之后，写入到`response`对象的`body`区，通常用来返回`JSON`数据或者是`XML`数据。
 
+### @RestController
+
+相当于`@Controller`+`@ResponseBody`两个注解的结合，返回`json`数据不需要在方法前面加`@ResponseBody`注解了，但使用`@RestController`这个注解，就不能返回`jsp,html`页面，视图解析器无法解析`jsp,html`页面。
+
 ### @Autowired
 
 > @Autowired(required = false) (Spring提供)
@@ -516,8 +716,6 @@ public class SmsInterceptor extends HandlerInterceptorAdapter {
     private RedisService redisService;
 }
 ```
-
-
 
 ### @PathVariable
 
@@ -583,7 +781,8 @@ public CommonResult list(OmsOrderQueryParam queryParam,
 `@RequestParam`和`@RequestBody`的区别：
 
 * `content-type`角度：`form-data`、`x-www-form-urlencoded`：不可以用`@RequestBody`；可以用`@RequestParam`。`application/json`：`json`字符串部分可以用`@RequestBody`；`url`中的?后面参数可以用`@RequestParam`。
-* 
+
+  
 
 
 
@@ -591,7 +790,12 @@ public CommonResult list(OmsOrderQueryParam queryParam,
 
 ```java
 mvn clean package -Dmaven.test.skip=true -P test
+mvn clean package -DskipTests
 ```
+
+> -DskipTests，不执行测试用例，但编译测试用例类生成相应的class文件至target/test-classes下。
+>
+> -Dmaven.test.skip=true，不执行测试用例，也不编译测试用例类。
 
 
 
@@ -617,8 +821,6 @@ mvn clean package -Dmaven.test.skip=true -P test
   <module>mall-portal</module>
   </modules>
 ```
-
-
 
 
 
@@ -1777,8 +1979,6 @@ StringBuilder(String s).reverse().toString();
 
 
 
-
-
 # Lambda 表达式
 
 ## 为什么引入 Lambda 表达式
@@ -2309,7 +2509,444 @@ public class StudentDemo {
 
 
 
+# 函数式接口
 
 
 
 
+
+## 函数式接口作为方法的参数
+
+
+
+## 函数式接口作为方法的返回值
+
+定义一个类(`ComparatorDemo`)，并在类中提供两个方法：
+
+一个方法是`Comparator getComparator() `，方法返回值`Comparator`是一个函数式接口。一个方法是主方法，在主方法中调用`getComparator`方法。
+
+```java
+public class ComparatorDemo {
+    public static void main(String[] args) {
+        // 定义集合，存储字符串元素
+        ArrayList<String> array = new ArrayList<String>();
+
+        array.add("cccc");
+        array.add("aa");
+        array.add("b");
+        array.add("ddd");
+
+        System.out.println("排序前：" + array); // 排序前：[cccc, aa, b, ddd]
+
+        Collections.sort(array);
+        System.out.println("自然排序后：" + array); // 自然排序后：[aa, b, cccc, ddd]
+
+        Collections.sort(array, getComparator());
+        System.out.println("比较器排序后：" + array); // 比较器排序后：[b, aa, ddd, cccc]
+
+    }
+
+    private static Comparator<String> getComparator() {
+        /** 匿名内部类的方式实现
+         return new Comparator<String>() {
+                 @Override public int compare(String s1, String s2) {
+                return s1.length()-s2.length();
+        }
+        };
+         **/
+
+        /** lambda 方式1
+         return (String s1,String s2) -> {
+                return s1.length()-s2.length();
+         };
+         **/
+
+        // lambda 方式2
+        return (s1, s2) -> s1.length() - s2.length();
+    }
+}
+```
+
+
+
+## 常用的函数式接口
+
+### Supplier 接口
+
+`Supplier` 接口也被称为生产型接口，如果我们指定了接口的泛型是什么类型，那么接口中的`get`方法就会生产什么类型的数据供我们使用。
+
+常用方法：
+
+| 方法名  | 说明                                               |
+| ------- | -------------------------------------------------- |
+| T get() | 按照某种实现逻辑(由`Lambda`表达式实现)返回一个数据 |
+
+代码示例：
+
+```java
+@FunctionalInterface
+public interface Supplier<T> {
+
+    /**
+     * Gets a result.
+     *
+     * @return a result
+     */
+    T get();
+}
+```
+
+```java
+public class SupplierDemo {
+    public static void main(String[] args) {
+        String s = getString(() -> "wangxiong"); // wangxiong
+        System.out.println(s);
+
+        Integer i = getInteger(() -> 18); // 18
+        System.out.println(i);
+    }
+
+    // 定义一个方法，返回一个整数数据
+    private static Integer getInteger(Supplier<Integer> sup) {
+        return sup.get();
+    }
+
+    // 定义一个方法，返回一个字符串数据
+    private static String getString(Supplier<String> sup) {
+        return sup.get();
+    }
+
+```
+
+使用函数式接口 `Supplier`  获取最大值：
+
+```java
+public class SupplierTest {
+    public static void main(String[] args) {
+        // 定义一个int数组
+        int[] arr = {19, 50, 28, 37, 46};
+
+        int maxValue = getMax(() -> {
+            int max = arr[0];
+
+            for (int i = 1; i < arr.length; i++) {
+                if (arr[i] > max) {
+                    max = arr[i];
+                }
+            }
+            return max;
+        });
+
+        System.out.println(maxValue); // 50
+
+    }
+
+    // 返回一个int数组中的最大值
+    private static int getMax(Supplier<Integer> sup) {
+        return sup.get();
+    }
+}
+```
+
+### Consumer 接口
+
+`Consumer` 接口也被称为消费型接口，它消费的数据的数据类型由泛型指定。
+
+`Consumer` 接口常用方法：
+
+| 方法名                                   | 说明                                                       |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| void accept(T t)                         | 对给定的参数执行此操作                                     |
+| default Consumer andThen(Consumer after) | 返回一个组合的Consumer，依次执行此操作，然后执行 after操作 |
+
+`Consumer` 接口：
+
+```java
+@FunctionalInterface
+public interface Consumer<T> {
+
+    /**
+     * Performs this operation on the given argument.
+     *
+     * @param t the input argument
+     */
+    void accept(T t);
+
+    /**
+     * Returns a composed {@code Consumer} that performs, in sequence, this
+     * operation followed by the {@code after} operation. If performing either
+     * operation throws an exception, it is relayed to the caller of the
+     * composed operation.  If performing this operation throws an exception,
+     * the {@code after} operation will not be performed.
+     *
+     * @param after the operation to perform after this operation
+     * @return a composed {@code Consumer} that performs in sequence this
+     * operation followed by the {@code after} operation
+     * @throws NullPointerException if {@code after} is null
+     */
+    default Consumer<T> andThen(Consumer<? super T> after) {
+        Objects.requireNonNull(after);
+        return (T t) -> { accept(t); after.accept(t); };
+    }
+}
+
+```
+
+
+
+用不同的方式消费同一个字符串数据两次：
+
+```java
+public class ConsumerDemo {
+    public static void main(String[] args) {
+        // lambda 表达式
+        operatorString("wangxiong", s -> System.out.println(s)); // wangxiong
+        // 方法引用
+        operatorString("wangxiong", System.out::println); // wangxiong
+
+        operatorString("wangxiong", s -> System.out.println(new StringBuilder(s).reverse().toString())); // gnoixgnaw
+
+        // 用不同的方式消费同一个字符串数据两次
+        operatorString("wangxiong", s -> System.out.println(s), // wangxiong
+                s -> System.out.println(new StringBuilder(s).reverse().toString())); // gnoixgnaw
+    }
+
+    // 定义一个方法，用不同的方式消费同一个字符串数据两次
+    private static void operatorString(String name, Consumer<String> con1, Consumer<String> con2) {
+        con1.andThen(con2).accept(name);
+    }
+
+    // 定义一个方法，消费一个字符串数据
+    private static void operatorString(String name, Consumer<String> con) {
+        con.accept(name);
+    }
+}
+```
+
+
+
+使用`consumer`函数式接口按照格式打印信息：
+
+```java
+public class ConsumerTest {
+    public static void main(String[] args) {
+        String[] strArray = {"wangxiong1,18", "wangxiong2,19", "wangxiong3,20"};
+
+        printInfo(strArray,
+                str -> System.out.print("姓名：" + str.split(",")[0]),
+                str -> System.out.println(",年龄：" + Integer.parseInt(str.split(",")[1])));
+        /**
+         * 姓名：wangxiong1,年龄：18
+         * 姓名：wangxiong2,年龄：19
+         * 姓名：wangxiong3,年龄：20
+         */
+    }
+
+    private static void printInfo(String[] strArray, Consumer<String> con1, Consumer<String> con2) {
+        for (String str : strArray) {
+            con1.andThen(con2).accept(str);
+        }
+    }
+}
+```
+
+### Predicate 接口
+
+`Predicate`接口通常用于判断参数是否满足指定的条件。
+
+接口代码：
+
+```java
+@FunctionalInterface
+public interface Predicate<T> {
+
+    boolean test(T t);
+
+    default Predicate<T> and(Predicate<? super T> other) {
+        Objects.requireNonNull(other);
+        return (t) -> test(t) && other.test(t);
+    }
+
+    default Predicate<T> negate() {
+        return (t) -> !test(t);
+    }
+
+    default Predicate<T> or(Predicate<? super T> other) {
+        Objects.requireNonNull(other);
+        return (t) -> test(t) || other.test(t);
+    }
+
+    static <T> Predicate<T> isEqual(Object targetRef) {
+        return (null == targetRef)
+                ? Objects::isNull
+                : object -> targetRef.equals(object);
+    }
+}
+
+```
+
+
+
+常用方法：
+
+| 方法类型                  | 方法描述                                                     |
+| :------------------------ | :----------------------------------------------------------- |
+| `default Predicate<T>`    | `and(Predicate<? super T> other)`返回一个组合的谓词，表示该谓词与另一个谓词的短路逻辑AND。 |
+| `static <T> Predicate<T>` | `isEqual(Object targetRef)`返回根据 `Objects.equals(Object, Object)`测试两个参数是否相等的 [谓词](itss://chm/java/util/Objects.html#equals-java.lang.Object-java.lang.Object-) 。 |
+| `default Predicate<T>`    | `negate()`返回表示此谓词的逻辑否定的谓词。                   |
+| `default Predicate<T>`    | `or(Predicate<? super T> other)`返回一个组合的谓词，表示该谓词与另一个谓词的短路逻辑或。 |
+| `boolean`                 | `test(T t)`在给定的参数上评估这个谓词。                      |
+
+`negate` 和 `test` 方法示例：
+
+```java
+public class PredicateDemo01 {
+    public static void main(String[] args) {
+        System.out.println(checkString("hello", s -> s.length() > 8)); // true
+        System.out.println(checkString("helloworld",s -> s.length() > 8)); // false
+    }
+
+    // 判断给定的字符串是否满足要求
+    private static boolean checkString(String s, Predicate<String> pre) {
+        return pre.negate().test(s);
+    }
+}
+```
+
+
+
+`and`和`or`方法示例：同一个字符串给出两个不同的判断条件，最后把这两个判断的结果做逻辑与运算的结果作为最终的结果。
+
+```java
+public class PredicateDemo02 {
+    public static void main(String[] args) {
+        boolean b3 = checkString("hello", s -> s.length() > 8, s -> s.length() < 15); // true
+        System.out.println(b3);
+
+        boolean b4 = checkString("helloworld", s -> s.length() > 8, s -> s.length() < 15); // true
+        System.out.println(b4);
+    }
+
+    private static boolean checkString(String s, Predicate<String> pre1, Predicate<String> pre2) {
+        // return pre1.and(pre2).test(s);
+        return pre1.or(pre2).test(s);
+    }
+}
+```
+
+
+
+代码示例：通过`Predicate`接口的拼装将符合要求的字符串筛选到集合`ArrayList`中。
+
+```java
+public class PredicateTest {
+    public static void main(String[] args) {
+        String[] strArray = {"WX,30", "SYS,34", "WXQ,20", "DJW,31", "MCM,33"};
+
+        ArrayList<String> array = myFilter(strArray, 
+                s -> s.split(",")[0].length() > 2,
+                s -> Integer.parseInt(s.split(",")[1]) > 33);
+
+        for (String str : array) {
+            System.out.println(str); // SYS,34
+        }
+    }
+
+    private static ArrayList<String> myFilter(String[] strArray, Predicate<String> pre1, Predicate<String> pre2) {
+        // 定义一个集合
+        ArrayList<String> array = new ArrayList<String>();
+
+        // 遍历数组
+        for (String str : strArray) {
+            if (pre1.and(pre2).test(str)) {
+                array.add(str);
+            }
+        }
+
+        return array;
+    }
+}
+```
+
+### Function 接口
+
+`Function<T,R>`接口通常用于对参数进行处理，转换（处理逻辑由`Lambda`表达式实现），然后返回一个新的值。
+
+方法摘要：
+
+| 修饰类型                    | 方法描述                                                     |
+| :-------------------------- | :----------------------------------------------------------- |
+| `default <V> Function<T,V>` | `andThen(Function<? super R,? extends V> after)`返回一个组合函数，首先将该函数应用于其输入，然后将 `after`函数应用于结果。 |
+| `R`                         | `apply(T t)`将此函数应用于给定的参数。                       |
+| `default <V> Function<V,R>` | `compose(Function<? super V,? extends T> before)`返回一个组合函数，首先将 `before`函数应用于其输入，然后将此函数应用于结果。 |
+| `static <T> Function<T,T>`  | `identity()`返回一个总是返回其输入参数的函数。               |
+
+```java
+@FunctionalInterface
+public interface Function<T, R> {
+
+    R apply(T t);
+
+    default <V> Function<V, R> compose(Function<? super V, ? extends T> before) {
+        Objects.requireNonNull(before);
+        return (V v) -> apply(before.apply(v));
+    }
+
+    default <V> Function<T, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (T t) -> after.apply(apply(t));
+    }
+
+    static <T> Function<T, T> identity() {
+        return t -> t;
+    }
+}
+```
+
+代码示例：
+
+```java
+public class FunctionDemo {
+    public static void main(String[] args) {
+        convert("100", s -> Integer.parseInt(s)); // 100
+        convert("100", Integer::parseInt); // 100
+
+        convert(100, i -> String.valueOf(i + 566)); // 666
+        convert("100", s -> Integer.parseInt(s), i -> String.valueOf(i + 566)); // 666
+    }
+
+    // 定义一个方法，把一个字符串转换int类型，在控制台输出
+    private static void convert(String s, Function<String, Integer> fun) {
+        int i = fun.apply(s);
+        System.out.println(i);
+    }
+
+    // 定义一个方法，把一个int类型的数据加上一个整数之后，转为字符串在控制台输出
+    private static void convert(int i, Function<Integer, String> fun) {
+        String s = fun.apply(i);
+        System.out.println(s);
+    }
+
+    // 定义一个方法，把一个字符串转换int类型，把int类型的数据加上一个整数之后，转为字符串在控制台输出
+    private static void convert(String s, Function<String, Integer> fun1, Function<Integer, String> fun2) {
+        String ss = fun1.andThen(fun2).apply(s);
+        System.out.println(ss);
+    }
+}
+```
+
+通过`Function`接口来实现函数拼接：
+
+```java
+public class FunctionTest {
+    public static void main(String[] args) {
+        String s = "wangxiong,18";
+        convert(s, ss -> ss.split(",")[1], Integer::parseInt, i -> i + 70); // 88
+    }
+
+    private static void convert(String s, Function<String, String> fun1, Function<String, Integer> fun2, Function<Integer, Integer> fun3) {
+        int i = fun1.andThen(fun2).andThen(fun3).apply(s);
+        System.out.println(i);
+    }
+}
+```

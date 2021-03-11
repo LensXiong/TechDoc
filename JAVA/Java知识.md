@@ -328,6 +328,13 @@ short s1 = 1;
 short s2 = b2 + s1; //错误, b2 + s1 => int 报错：不兼容的类型，从 int 转换到 short 可能会有损失
 int s2 = b2 + s1; //正确, b2 + s1 => int
 byte b4 = b2 + b3; //错误: b2 + b3 => int 报错：不兼容的类型，从 int 转换到 short 可能会有损失
+
+short s = 12;
+s = s - 9; // 错误，int->short 
+
+char c1 = '男';
+char c2 = '女';
+System.out.println(c1 + c2); //
 ```
 
 ⑤ boolean 不参与转换。
@@ -347,11 +354,16 @@ double num400 = 1.1;
 float num300 = 1.1F;
 float num500 = b4 + s3 + num200 + num400; //错误 double -> float 报错：不兼容的类型，从 double 转换到 float 可能会有损失
 double num600 = b4 + s3 + num200 + num300; //正确 float -> double
+
+char c = 'a';
+int i = 16;
+float d =.314F;
+double result = c + i + d; // 正确，float->double
 ```
 
 ### 强制类型转换
 
-自动类型转换的逆过程，将容量大的数据类型转换为容量小的数据类型。使用时要加上强制转换符 ( )，但可能造成精度降低或溢出，格外要注意。
+自动类型转换的逆过程，将容量大的数据类型转换为容量小的数据类型。使用时要加上强制转换符 ( )，但可能造成精度降低或溢出，需格外注意。
 
 ```java
 int n1 = (int)1.9;
@@ -365,13 +377,84 @@ System.out.println("b1=" + b1);//b1=-48 造成数据溢出
 
 ① 当进行的数据从大到小时，就需要使用到强制转换。
 
+```java
+byte b = 10;
+b = b + 11; // 错误 int->short
+b = (byte)(b+11); // 正确，使用强转
+```
+
 ② 强转符号只针对于最近的操作数有效，往往会使用小括号提升优先级。
+
+```java
+int x = (int)10*3.5+6*1.5; //编译错误： double -> int 错误：不兼容的类型，从 double 转换到 int 可能会有损失
+int x = (int)(10*3.5+6*1.5); //正确 (int)44.0 -> 44
+System.out.println(x); // 44
+```
 
 ③ char 类型可以保存 int 的常量值，但不能保存int的变量值，需要强转。
 
+```java
+char c1 = 100; //正确
+int m = 100;  //正确
+char c2 = m;  //错误
+char c3 = (char)m; //正确
+System.out.println(c3); //100对应的字符, d字符
+```
+
 ④ byte 和 short，char 类型在进行运算时，当做 int 类型处理。
 
+```java
+byte b = 16;
+short s =14;
+short t = s+b; // 错误 int-> short
+```
 
+### 基本类型和String类型的转换
+
+① 基本类型转String类型，将基本类型的值+""即可。
+
+```java
+int n1 = 100;
+float f1 = 1.1F;
+double d1 = 4.5;
+boolean b1 = true;
+String s1 = n1 + "";
+String s2 = f1 + "";
+String s3 = d1 + "";
+String s4 = b1 + "";
+System.out.println(s1 + " " + s2 + " " + s3 + " " + s4);
+```
+
+② String类型转基本数据类型，通过基本类型的包装类调用parseXX方法即可。
+
+```java
+String s5 = "123";
+int num1 = Integer.parseInt(s5);
+double num2 = Double.parseDouble(s5);
+float num3 = Float.parseFloat(s5);
+long num4 = Long.parseLong(s5);
+byte num5 = Byte.parseByte(s5);
+boolean b = Boolean.parseBoolean("true");
+short num6 = Short.parseShort(s5);
+
+System.out.println("==========");
+System.out.println(num1); // 123
+System.out.println(num2); // 123.0
+System.out.println(num3); // 123.0
+System.out.println(num4); // 123
+System.out.println(num5); // 123
+System.out.println(num6); // 123
+System.out.println(b); // true
+```
+
+③ 将字符串转成字符的含义是取出字符串的第一个字符。
+
+```java
+String s5 = "123";
+System.out.println(s5.charAt(0)); // 1,字符1，不是整型1
+```
+
+> 在将String类型转成基本数据类型时，要确保String 类型能够转成有效的数据，比如我们可以把"123"，转成一 个整数，但是不能把 "hello" 转成一个整数。如果格式不正确，就会抛出异常，程序就会终止。
 
 ## Java中 +号的使用
 
@@ -386,7 +469,18 @@ public static void main(String[] args) {
 
 		System.out.println(100 + 3 + "hello");//103hello
 		System.out.println("hello" + 100 +3); //hello1003
+  
+    String book1 = "wang";
+		String book2 = "xiong";
+		System.out.println(book1 + book2); // wangxiong
 
+		char c1 = '男';
+		char c2 = '女';
+		System.out.println(c1 + c2); //52906 char类型计算时首先转换为int类型。男的字符码值+女的字符码值
+
+		double price1 = 123.56;
+		double price2 = 100.11;
+		System.out.println(price1 + price2); // 223.67000000000002 小数近似相加
 	}
 ```
 

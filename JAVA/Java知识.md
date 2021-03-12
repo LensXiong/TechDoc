@@ -224,8 +224,6 @@ System.out.println("差值非常小，到我的规定精度，认为相等...");
 }
 ```
 
-
-
 ### 引用数据类型
 
 > 类(`class`)、接口类型(`interface`)、数组类型（`array`）、枚举类型、注解类型。
@@ -483,6 +481,181 @@ public static void main(String[] args) {
 		System.out.println(price1 + price2); // 223.67000000000002 小数近似相加
 	}
 ```
+
+## 运算符
+
+### 算术运算符
+
+![image-20210311160944313](Java知识.assets/image-20210311160944313.png)
+
+使用细节：
+
+① 当++作为表达式使用时，++i 先自增后赋值，i++先赋值后自增。
+
+```java
+int j = 8;
+int k = ++j; // 等价 j=j+1;k=j;
+int k = j++; // 等价 k =j;j=j+1; 
+System.out.println("k=" + k + "j=" + j);// k=9 j=10
+```
+
+使用示例：
+
+```java
+System.out.println(10 / 4); // 2，java中整型变量默认为 int 类型。
+System.out.println(10.0 / 4); // 2.5 浮点数的默认类型为double类型。
+double d = 10 / 4; // java中10 / 4 = 2, 2=>2.0 
+System.out.println(d);// 2.0
+// 取模的本质 a % b = a - a / b * b 
+// 10 % 3 = 10 -10 / 3 * 3 =10 -9 = 1
+System.out.println(10 % 3); // 1
+// -10 % 3 => -10 - (-10) / 3 * 3 = -10 + 9 = -1
+System.out.println(-10 % 3); // -1
+// 10 % -3 = 10 - 10 / (-3) * (-3) = 10 - 9 = 1
+System.out.println(10 % -3); // 1
+// -10 % -3 =  (-10) - (-10) / (-3) * (-3) = -10 + 9 = -1
+System.out.println(-10 % -3);// -1
+```
+
+经典案例1：
+
+```java
+int i = 1; // i->1
+i = i++;  // 规则使用临时变量: (1) temp=i;(2) i=i+1;(3)i=temp;
+System.out.println(i); // 1
+
+int i=1;
+i=++i; //规则使用临时变量: (1) i=i+1;(2) temp=i; (3)i=temp;
+System.out.println(i);  // 
+```
+
+### 关系运算符
+
+![image-20210311172121081](Java知识.assets/image-20210311172121081.png)
+
+使用细节：
+
+* 关系运算符的结果都是boolean型，也就是要么是true，要么是false。
+*  关系运算符组成的表达式，称为关系表达式，，例如 a > b。
+* 比较运算符"=="不能误写成"="。
+
+### 逻辑运算符
+
+用于连接多个条件(多个关系表达式)，最终的结果也是一个 boolean 值。
+
+* 短路与 &&，短路或||，取反 !。
+
+* 逻辑与 &，逻辑或 |，^ 逻辑异或。
+
+![image-20210312094413983](Java知识.assets/image-20210312094413983.png)
+
+逻辑运算的规则：
+
+* `a&b` : & 叫逻辑与：当 a 和 b 同时为 true ,则结果为 true, 否则为 false。与短路与的区别：不管第一个条件是否为 false，第二个条件都要判断，效率低。
+
+* `a&&b` : && 叫短路与：当 a 和 b 同时为 true ,则结果为 true,否则为 false。与逻辑与的区别：如果第一个条件为 false，则第二个条件不会判断，最终结果为 false，效率高。
+
+* `a|b` : | 叫逻辑或：当 a 和 b ，有一个为 true ,则结果为 true,否则为 false。与短路或的区别：不管第一个条件是否为 true，第二个条件都要判断，效率低。
+
+* `a||b` : || 叫短路或：当 a 和 b ，有一个为 true ,则结果为 true,否则为 false。与逻辑或的区别：如果第一个条件为 true，则第二个条件不会判断，最终结果为 true，效率高。
+
+* !a : 叫取反，或者非运算。当 a 为 true, 则结果为 false, 当 a 为 false 是，结果为 true。
+
+* a^b: 叫逻辑异或，当 a 和 b 不同时，则结果为 true, 否则为 false。
+
+逻辑与和短路与的使用案例：
+
+```java
+int a = 4;
+int b = 9;
+if(a < 1 && ++b < 50) {
+	System.out.println("ok"); // 不输出
+}
+// 对于&&短路与而言，如果第一个条件为false ,后面的条件不再判断。
+System.out.println("a=" + a + " b=" + b);// 4 9
+
+if(a < 1 & ++b < 50) {
+	System.out.println("ok"); // 不输出
+}
+// 对于&逻辑与而言，如果第一个条件为false ,后面的条件仍然会判断。
+System.out.println("a=" + a + " b=" + b);// 4 10
+```
+
+逻辑或和短路或的使用案例：
+
+```java
+int a = 4;
+int b = 9;
+if( a > 1 || ++b > 4) {
+	System.out.println("短路或：||"); // 会输出
+}
+// | 逻辑或：不管第一个条件是否为true，第二个条件都要判断，效率低
+System.out.println("a=" + a + " b=" + b); //4 9
+if( a > 1 | ++b > 4) {
+	System.out.println("逻辑或：|"); // 会输出
+}
+//||短路或：如果第一个条件为true，则第二个条件不会判断，最终结果为true，效率高
+System.out.println("a=" + a + " b=" + b); //4 10
+```
+
+逻辑与和逻辑或的使用案例（经典）：
+
+```java
+int x = 5;
+int y = 5;
+if (x++ == 6 & ++y == 6) {
+	x=11;
+}
+System.out.println("x="+x+",y="+y); // x=6 y=6
+
+int x = 5;
+int y = 5;
+if (x++ == 5 | ++y == 5) {
+	x=11;
+}
+System.out.println("x="+x+",y="+y); // x=11 y=6
+```
+
+短路与和短路或的使用案例（经典）：
+
+```java
+int x = 5;
+int y = 5;
+if (x++ == 6 && ++y == 6) {
+	x=11;
+}
+System.out.println("x="+x+",y="+y); // x=6 y=5
+
+int x = 5;
+int y = 5;
+if (x++ == 5 || ++y == 5) {
+	x=11;
+}
+System.out.println("x="+x+",y="+y); // x=11 y=5
+```
+
+逻辑运算的经典题目（必看）：
+
+```java
+boolean x = true;
+boolean y = false;
+short z = 46;
+if((z++ == 46) && (y = true)) z++; 
+if((x = false) || (++z == 49)) z++;
+System.out.println("z="+z); // z= 5
+```
+
+
+
+### 赋值运算符
+
+### 三元运算符
+
+### 位运算符
+
+### 优先级
+
+### 二进制
 
 
 

@@ -96,11 +96,11 @@
 
 ## SQL查询的执行过程
 
-1、 一条SQL查询语句是如何执行的？如果查询不存在的字段，是在哪个阶段报的错？![image-20210327112322352]( MySQL面试大全.assets/image-20210327112322352.png)
+1、 一条SQL查询语句是如何执行的？如果查询不存在的字段，是在哪个阶段报的错？![image-20210327112322352]( MySQL大全.assets/image-20210327112322352.png)
 
 [基础架构：一条SQL查询语句是如何执行的？](https://time.geekbang.org/column/article/115537)
 
-![img]( MySQL面试大全.assets/0d2070e8f84c4801adbfa03bda1f98d9.png)
+![img]( MySQL大全.assets/0d2070e8f84c4801adbfa03bda1f98d9.png)
 
 SQL执行流程：
 
@@ -254,7 +254,7 @@ redo log（重做日志）和 binlog（归档日志）的区别：
 * redo log 是物理日志，记录的是“在某个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如“给 ID=2 这一行的 c 字段加 1 ”。
 * redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写”是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。
 
-![img]( MySQL面试大全.assets/2e5bff4910ec189fe1ee6e2ecc7b4bbe.png)
+![img]( MySQL大全.assets/2e5bff4910ec189fe1ee6e2ecc7b4bbe.png)
 
 将 redo log 的写入拆成了两个步骤：prepare 和 commit，redo log 和 binlog 都可以用于表示事务的提交状态，而两阶段提交就是让这两个状态保持逻辑上的一致。
 
@@ -298,7 +298,7 @@ redo log（重做日志）和 binlog（归档日志）的区别：
 
 ③ id相同不同，同时存在。id如果相同，可以认为是一组，从上往下顺序执行，在所有组中，id值越大，优先级越高，越先执行。	
 
-![index-optimization-03]( MySQL面试大全.assets/03.jpg)
+![index-optimization-03]( MySQL大全.assets/03.jpg)
 
 `select_type`：查询类型主要用于区别普通查询、联合查询、子查询等复杂查询，分类和说明如下所示：
 
@@ -330,19 +330,19 @@ redo log（重做日志）和 binlog（归档日志）的区别：
 `possible_keys`：指出MySQL能使用哪个索引在表中找到行，查询涉及到的字段上若存在索引，则该索引将被列出，但不一定被查询使用。
 
 `key`：显示MySQL在查询中实际使用的索引，若没有使用索引，显示为NULL。	
-![index-optimization-04]( MySQL面试大全.assets/04.jpg)
+![index-optimization-04]( MySQL大全.assets/04.jpg)
 
 `key_len`：表示索引中使用的字节数，可通过该列计算查询中使用的索引的长度。在不损失精确性的情况下，长度越短越好。`key_len`显示的值为索引字段的最大可能长度，并非实际使用长度，即`key_len`是根据表定义计算而得，不是通过表内检索出的。
 
-![image-20210320180401124]( MySQL面试大全.assets/image-20210320180401124.png)
+![image-20210320180401124]( MySQL大全.assets/image-20210320180401124.png)
 
 `ref`：该字段显示索引的哪一列被使用了，有可能为一个常量。简单来讲，就是指哪些列或常量被用于查找索引列上的值。	
 
-![image-20210320180517571]( MySQL面试大全.assets/image-20210320180517571.png)
+![image-20210320180517571]( MySQL大全.assets/image-20210320180517571.png)
 
 `rows`：根据表统计信息及索引选用情况，大致估算出最终找到所需记录需要读取的行数。
 
-![image-20210320180557718]( MySQL面试大全.assets/image-20210320180557718.png)
+![image-20210320180557718]( MySQL大全.assets/image-20210320180557718.png)
 
 `Extra`：包含不适合在其他列中显示但十分重要的额外信息，主要包含以下内容：
 
@@ -355,7 +355,7 @@ redo log（重做日志）和 binlog（归档日志）的区别：
 | Using join buffer | 使用连接缓存       |
 | impossible where  | where子句值为false |
 
-![image-20210320180800151]( MySQL面试大全.assets/image-20210320180800151.png)
+![image-20210320180800151]( MySQL大全.assets/image-20210320180800151.png)
 
 ## 索引概念、类型和优缺点
 
@@ -441,7 +441,7 @@ MySQL 索引类型分类：
 
 [【MySQL高级】七种 SQL JOINS 文氏图解](https://wwxiong.com/?p=94)
 
-![七种SQL Joins 文氏图解]( MySQL面试大全.assets/02.png)
+![七种SQL Joins 文氏图解]( MySQL大全.assets/02.png)
 
 ## InnoDB的索引结构
 
@@ -449,13 +449,13 @@ MySQL 索引类型分类：
 
 MySQL中Innodb的索引结构采取B+树。如下为简化版的B+树：
 
-![image-20210326100929697]( MySQL面试大全.assets/image-20210326100929697.png)
+![image-20210326100929697]( MySQL大全.assets/image-20210326100929697.png)
 
-![image-20210325110532167]( MySQL面试大全.assets/image-20210325110532167.png)
+![image-20210325110532167]( MySQL大全.assets/image-20210325110532167.png)
 
 
 
-![image-20210326104727264]( MySQL面试大全.assets/image-20210326104727264.png)
+![image-20210326104727264]( MySQL大全.assets/image-20210326104727264.png)
 
 B+树的五个特点：
 
@@ -469,7 +469,7 @@ B+树的五个特点：
 
 17、如下B+树，查找数据项29的索引过程是如何进行的？发生几次IO？
 
-![b+树]( MySQL面试大全.assets/7af22798.jpg)
+![b+树]( MySQL大全.assets/7af22798.jpg)
 
 > 说明：浅蓝色：磁盘块。深蓝色：数据项。深黄色：指针。
 >
@@ -491,7 +491,7 @@ B+树的五个特点：
 
 B树的简化版：
 
-![image-20210325111446388]( MySQL面试大全.assets/image-20210325111446388.png)
+![image-20210325111446388]( MySQL大全.assets/image-20210325111446388.png)
 
 B树的特点：
 
@@ -500,7 +500,7 @@ B树的特点：
 
 B+树的简化版：
 
-![image-20210325110532167]( MySQL面试大全.assets/image-20210325110532167.png)
+![image-20210325110532167]( MySQL大全.assets/image-20210325110532167.png)
 
 B+树的特点：
 
@@ -639,7 +639,7 @@ mysql> SELECT * FROM t_json;
 
 25、B+ tree在索引 where id = 50 的索引过程 ？
 
-![image-20210326103241266]( MySQL面试大全.assets/image-20210326103241266.png)
+![image-20210326103241266]( MySQL大全.assets/image-20210326103241266.png)
 
 ① 利用二分查找法先定位到页目录为50的指针。
 
@@ -651,7 +651,7 @@ mysql> SELECT * FROM t_json;
 
 26、请解释下`select * from t where id>7` 是否会走索引？为什么？`select * from t where id<7`是否也会走索引。
 
-![image-20210326110644455]( MySQL面试大全.assets/image-20210326110644455.png)
+![image-20210326110644455]( MySQL大全.assets/image-20210326110644455.png)
 
 大于7会走索引，因为会先找到id等于7的索引页指针，该指针对应的数据项一定都是大于7的。
 
@@ -663,7 +663,7 @@ mysql> SELECT * FROM t_json;
 
 27、请说明下字段bcd联合索引的结构，画图说明。
 
-![image-20210326111709336]( MySQL面试大全.assets/image-20210326111709336.png)
+![image-20210326111709336]( MySQL大全.assets/image-20210326111709336.png)
 
 说明：
 
@@ -713,7 +713,7 @@ mysql> SELECT * FROM t_json;
 
 如下图所示，`MyISAM`索引文件和数据文件是分离的（非聚簇索引）。
 
-![image-20210327214014705](MySQL面试大全.assets/image-20210327214014705.png)
+![image-20210327214014705](MySQL大全.assets/image-20210327214014705.png)
 
 ​                                              ` MyISAM`索引文件和数据文件是分离的（非聚簇索引）
 
@@ -723,9 +723,9 @@ mysql> SELECT * FROM t_json;
 
 
 
-![img]( MySQL面试大全.assets/ce9bedd0dc9013e14e5f450e2149704bef5.jpg)
+![img]( MySQL大全.assets/ce9bedd0dc9013e14e5f450e2149704bef5.jpg)
 
-![img]( MySQL面试大全.assets/59066cb190ec7579c34e2cd77a1f47e8b68.jpg)
+![img]( MySQL大全.assets/59066cb190ec7579c34e2cd77a1f47e8b68.jpg)
 
 ## 回表、覆盖索引、索引下推、最左前缀匹配
 
@@ -818,7 +818,7 @@ B树的特点：
 - 叶子节点之间无指针相邻。不能支持范围查询。
 - 节点中的数据索引从左向右递增。
 
-![image-20210327220905267](MySQL面试大全.assets/image-20210327220905267.png)
+![image-20210327220905267](MySQL大全.assets/image-20210327220905267.png)
 
 B+树的特点：
 
@@ -828,7 +828,7 @@ B+树的特点：
 
 - 节点内部以及节点和节点之间从左到右都是依次递增的排序。
 
-  ![image-20210327222501507](MySQL面试大全.assets/image-20210327222501507.png)
+  ![image-20210327222501507](MySQL大全.assets/image-20210327222501507.png)
 
 ① B树的非叶子节点会存储数据，这会增加节点的大小，导致能存储的索引较少，树的高度增加，导致磁盘IO次数就会增大。相反的，B+树的数据只会出现在叶子节点上，也就是说非叶子节点不会存储数据，节点小，能存储的索引多，树的高度小，导致磁盘IO次数相对也小很多。
 
@@ -847,7 +847,7 @@ B+Tree（B-Tree 变种）：
 * 叶子节点之间用指针连接，提高区间访问的性能。
 * 节点内部以及节点和节点之间从左到右都是依次递增的排序。
 
-![image-20210327171047449](MySQL面试大全.assets/image-20210327171047449.png)
+![image-20210327171047449](MySQL大全.assets/image-20210327171047449.png)
 
 
 
@@ -882,7 +882,7 @@ B+Tree（B-Tree 变种）：
 
 39、联合索引的底层存储结构长什么样子（画图说明）？
 
-![image-20210327223850677](MySQL面试大全.assets/image-20210327223850677.png)
+![image-20210327223850677](MySQL大全.assets/image-20210327223850677.png)
 
 联合索引中跳过一个索引后，后面的数据是无序的，所以会走全表扫描，不走索引。
 
@@ -966,7 +966,7 @@ AVL Trees (`Balanced binary search trees`)的数据结构特点：
 
 ② 
 
-![image-20210328112047478](MySQL面试大全.assets/image-20210328112047478.png)
+![image-20210328112047478](MySQL大全.assets/image-20210328112047478.png)
 
 
 

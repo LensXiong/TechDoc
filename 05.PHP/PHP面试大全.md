@@ -1,35 +1,64 @@
 # 大纲列表
 
-1、PHP如何解决网站大流量和高并发的问题？
+1、[PHP如何解决网站大流量和高并发的问题？](#01)
 
-2、PHP底层的运行机制与原理？PHP动态语言执行过程是如何进行的?`Opcodes`中间码是在哪一步生成的？
+2、[PHP底层的运行机制与原理？PHP动态语言执行过程是如何进行的?`Opcodes`中间码是在哪一步生成的？](#02)
 
-3、什么是CGI、FastCGI、PHP-CGI、PHP-FPM?
+3、[什么是CGI、FastCGI、PHP-CGI、PHP-FPM?](#03)
 
-4、PHP的四层体系架构是什么？
+4、[PHP的四层体系架构是什么？](#04)
 
-5、PHP变量的底层数据结构？
+5、[PHP变量的底层数据结构？PHP中有八种数据类型，为何联合体zval-> `value`中只有五种？](#05)
 
-6、什么是进程、什么是线程、什么是协程？
+6、[PHP7和PHP5的区别，具体多了哪些新特性？](#06)
 
+7、[什么是进程？什么是线程？什么是协程？进程与线程的区别是什么？](#07)
+
+8、[秒杀系统的设计？](#08)
+
+9、[请简单讲一下你对面向对象三大特征理解的程度（重点是多态）？](#09)
+
+11、[`php.ini`里面具体都包含了哪些选项模块？至少五个。](#11)
+
+12、[php-fpm 相关命令，终止、重启、平滑重启、查看进程数等。](#12)
+
+13、[PHP-FPM 与 Nginx 通信的两种机制方式？区别是什么？](#13)
+
+14、[unset 引用类型的底层原理？](#14)
+
+15、[PHP垃圾回收机制的原理？](#15)
+
+16、[Nginx 和PHP之间的交互过程？](#16)
+
+17、[浏览器输入url回车之后的整体过程。 ](#17)
+
+18、[PHP 动态语言，有什么很明显的问题？](#18)
+
+19、[php 和 go语言有什么差别？](#19)
+
+20、[什么是PHP的`copy on write`写时复制？](#20)
 
 
 合并两个有序数组。 给定两个有序整数数组 nums1 和 nums2，将 nums2 合并到 nums1 中，使得 num1 成为一个有序数组。
 
 # 解答列表
 
-1、PHP如何解决网站大流量和高并发的问题？
+## 高并发大流量的解决方案
 
-* 流量优化：例如防盗链；合理使用`CDN`加速。
-* 前端优化：一是页面级优化，减少HTTP的请求（合理设置 HTTP缓存，启用浏览器缓存和静态资源过期时间缓存， CSS、 Javascript、Image 资源合并与压缩，使用异步请求）；二是代码级别的优化（Javascript中的DOM 操作优化、CSS选择符优化、图片优化以及 HTML结构优化）；
-* 服务端优化：动态语言静态化、图片服务器与`WEB`服务器分离、并发处理、消息队列处理、服务端代码优化。
+1、<span id="01">PHP如何解决网站大流量和高并发的问题？</span>
+
+* 流量优化：例如使用`NGINX`方式配置防盗链；合理使用`CDN`加速。
+* 前端优化：一是页面级别的优化，减少HTTP的请求（合理设置 HTTP缓存，启用浏览器缓存和静态资源过期时间缓存， CSS、 Javascript、Image 资源合并与压缩，使用异步请求）；二是代码级别的优化（Javascript中的DOM 操作优化、CSS选择符优化、图片优化以及 HTML结构优化）；
+* 服务端优化：动态语言静态化、图片服务器与`WEB`服务器分离、并发处理、消息队列处理(NSQ消息队列)、服务端代码优化。
 * 缓存层优化：数据库缓存（`Memcached`、`Redis`、`MongoDB`）
 * MySQL优化：分库分表、分区操作、读写分离、SQL调优。
 * 数据库架构优化：
 * 服务器优化：负载均衡（Nginx的反向代理）、浏览器静态缓存（`Nginx`静态资源缓存配置策略）。
 * 架构层面优化：从架构上来说，采用前后端分离的分层架构，前端负责站点展现层（异步获取数据，响应速度提升），后端负责站点数据层（通过内网一次性返数据，性能大幅度提升）。
 
-2、PHP底层的运行机制与原理？PHP动态语言执行过程是如何进行的。`Opcodes`中间码是在哪一步生成的？
+##  底层运行机制和执行过程
+
+2、<span id="02">PHP底层的运行机制与原理？PHP动态语言执行过程是如何进行的。`Opcodes`中间码是在哪一步生成的？</span>
 
 [【PHP 核心】PHP底层运行机制和原理](https://wwxiong.com/?p=107)
 
@@ -45,7 +74,9 @@ PHP动态语言执行过程如下所示：
 
 > `Parsing`首先会丢弃`Tokens Array`中的多余的空格，然后将剩余的`Tokens`转换成一个一个的简单的表达式。
 
-3、什么是CGI、FastCGI、PHP-CGI、PHP-FPM? `FastCGI`与`CGI`区别是什么？`PHP-CGI`与`PHP-FPM`区别是什么？
+## CGI、FastCGI、PHP-CGI、PHP-FPM
+
+3、<span id="03">什么是CGI、FastCGI、PHP-CGI、PHP-FPM? `FastCGI`与`CGI`区别是什么？`PHP-CGI`与`PHP-FPM`区别是什么？</span>
 
 [【PHP核心】PHP的运行模式](https://wwxiong.com/?p=105)
 
@@ -55,7 +86,7 @@ PHP动态语言执行过程如下所示：
 
 * `PHP-CGI`：是 PHP （`Web Application`）对 Web Server 提供的 CGI 协议的接口程序。
 
-* `PHP-FPM`：是 PHP（`Web Application`）对 Web Server 提供的 FastCGI 协议的接口程序，额外还提供了相对智能一些任务管理。
+* `PHP-FPM（PHP-FASTCGI PROCESS Manager）`：是 PHP（`Web Application`）对 Web Server 提供的 FastCGI 协议的接口程序，额外还提供了相对智能一些任务管理。
 
   ![img](PHP面试大全.assets/php-cgi.jpeg)
 
@@ -82,7 +113,9 @@ PHP动态语言执行过程如下所示：
 
 
 
-4、PHP的四层体系架构是什么？
+## 四层体系架构
+
+4、<span id="04">PHP的四层体系架构是什么？</span>
 
 PHP的四层体系架构如下图所示：
 
@@ -95,24 +128,78 @@ PHP的四层体系架构如下图所示：
 - `Extensions`：围绕着Zend引擎，extensions通过组件式的方式提供各种基础服务，我们常见的各种内置函数（如array系列）、标准库等都是通过extension来实现，用户也可以根据需要实现自己的extension以达到功能扩展、性能优化等目的（如贴吧正在使用的PHP中间层、富文本解析就是extension的典型应用）。
 - `Zend引擎`：Zend整体用纯C实现，是PHP的内核部分，它将PHP代码翻译（词法、语法解析等一系列编译过程）为可执行opcode处理，并实现相应的处理方法，实现了基本的数据结构（如hashtable、oo）、内存分配及管理、提供了相应的api方法供外部调用，是一切的核心，所有的外围功能均围绕Zend实现。
 
-5、PHP变量的底层数据结构？
+## 变量的底层数据结构zval
 
-PHP是一门弱类型语言，不严格区分变量的类型。PHP在变量申明的时候不需要指定类型。PHP在程序运行期间可能进行变量类型的隐示 转换。 和其他强类型语言一样，程序中也可以进行显示的类型转换。PHP变量可以分为简单类型(int、string、bool)、集合类型(array 、resource 、object)和常量(const)。以上所有的变量在底层都是同一种结构 zval。Zval是zend中另一个非常重要的数据结构，用来标识并实现PHP变量，其数据结构如下：
+5、<span id="05">PHP变量的底层数据结构？PHP中有八种数据类型，为何联合体zval-> `value`中只有五种？</span>
 
-![image-20210324220147844](PHP面试大全.assets/image-20210324220147844.png)
+Zval结构体主要由四部分组成：
 
-Zval结构体主要由三部分组成：
+* type：指定了变量所述的类型（整数、字符串、数组等）。
 
-* type：指定了变量所述的类型（整数、字符串、数组等）
-* refcount&is_ref：用来实现引用计数(后面具体介绍)
-* value：核心部分，存储了变量的实际数据
-* Zvalue是用来保存一个变量的实际数据。因为要存储多种类型，所以zvalue是一个union，也由此实现了弱类型。
+* refcount__gc：引用计数内存中使用次数，为0删除该变量。
 
-6、PHP7和PHP5的区别，具体多了哪些新特性？
+* is_ref__gc：区分是否是引用变量，是引用为1，否则为0
+
+* value：核心部分，存储了变量的实际数据。
+
+  > Zvalue是用来保存一个变量的实际数据。因为要存储多种类型，所以zvalue是一个union，也由此实现了弱类型。
+
+```php
+struct _zval_struct {
+	union {
+		long lval; 
+		double dval;
+		struct {
+			char *val;
+			int len;
+		} str;
+		HashTable *ht;
+		zend_object_value obj;
+	} value;					//变量value值
+	zend_uint refcount__gc;   //引用计数内存中使用次数，为0删除该变量
+	zend_uchar type;		   //变量类型
+	zend_uchar is_ref__gc;    //区分是否是引用变量，是引用为1，否则为0
+};
+```
+
+```php
+zval.value.lval => 整型、布尔型、资源
+zval.value.dval => 浮点型
+zval.value.str  => 字符串
+zval.value.*ht  => 数组
+zval.value.obj  => 对象
+```
+
+PHP的八种数据类型：
+
+* [Boolean 布尔类型](https://www.php.net/manual/zh/language.types.boolean.php)-标量类型
+* [Integer 整型](https://www.php.net/manual/zh/language.types.integer.php)
+* [Float 浮点型](https://www.php.net/manual/zh/language.types.float.php)
+* [String 字符串](https://www.php.net/manual/zh/language.types.string.php)
+* [Array 数组](https://www.php.net/manual/zh/language.types.array.php)-复合类型
+* [Object 对象](https://www.php.net/manual/zh/language.types.object.php)-复合类型
+* [Resource 资源类型](https://www.php.net/manual/zh/language.types.resource.php)-特殊类型（type：IS_RESOURCE）
+* [NULL](https://www.php.net/manual/zh/language.types.null.php)-特殊类型（type：IS_NULL）
+
+布尔型和资源是怎么对应到`zval.value`的lval上的呢？还有，NULL呢？
+
+布尔型：就像我们会将true和false映射成0和1进行数据库存储一样，php也是这么做的。所以php发现zval的type值是布尔型时，会将布尔型转成0或1存储在zval.value的lval中。
+
+资源：资源对于php来说属于一个比较特殊的变量，而php会将每个资源对应的资源标识存储在zval.value的lval中。常见的资源有：文件句柄、数据库句柄等。
+
+NULL：对于NULL来说，就更好理解了，因为本身通过zval的type值即可区分，所以并没有将NULL值存储在zval的value中。
+
+
+
+## PHP7与PHP5的区别
+
+6、<span id="06">PHP7和PHP5的区别，具体多了哪些新特性？</span>
 
 
 
 
+
+## 进程、线程、协程及其区别
 
 7、<span id="08">什么是进程？什么是线程？什么是协程？进程与线程的区别是什么？</span>
 
@@ -143,6 +230,8 @@ Zval结构体主要由三部分组成：
 - 线程之间的通信更方便，同一进程下的线程共享全局变量、静态变量等数据，而进程之间的通信需要以进程间通信的方式 `IPC`（`Inter-Process Communication`）进行。不过如何处理好同步与互斥是编写多线程程序的难点。
 - 多进程程序更健壮，多线程程序只要有一个线程死掉，整个进程也死掉了，而一个进程死掉并不会对另外一个进程造成影响，因为进程有自己独立的地址空间。
 
+⑤ 线程和协程的区别？
+
 | 比较项   |                             线程                             |                             协程                             |
 | -------- | :----------------------------------------------------------: | :----------------------------------------------------------: |
 | 占用资源 |                   初始单位为1MB,固定不可变                   |                初始一般为 2KB，可随需要而增大                |
@@ -151,9 +240,7 @@ Zval结构体主要由三部分组成：
 | 性能问题 |        资源占用太高，频繁创建销毁会带来严重的性能问题        |              资源占用小,不会带来严重的性能问题               |
 | 数据同步 |            需要用锁等机制确保数据的一直性和可见性            | 不需要多线程的锁机制，因为只有一个线程，也不存在同时写变量冲突，在协程中控制共享资源不加锁，只需要判断状态就好了，所以执行效率比多线程高很多。 |
 
-⑤ 进程与线程的类比
-
-类比：进程=火车，线程=车厢
+⑥ 进程与线程的类比：进程=火车，线程=车厢
 
 - 一个进程可以包含多个线程（一辆火车包含多节车厢）
 - 线程依赖于进程，它是进程中一个完整的执行路径 （车厢依赖火车，单纯的车厢无法运行）
@@ -163,6 +250,438 @@ Zval结构体主要由三部分组成：
 - 进程间不会相互影响，但是一个线程挂掉将导致整个进程挂掉（火车之间相互不影响，一个车厢断裂会影响火车运行）
 - 一个线程使用共享内存时，其他线程必须等它结束，才能使用这一块内存 。多个线程同时对同一公共资源（比如全局变量）进行读写需要使用互斥锁（车厢中使用洗手间，需要上锁）
 - 一个进程使用的内存地址可以限定使用量--信号量（火车上的餐厅最多同时容纳一定乘客数量，需要等有人出来才能进去）
+
+
+
+## 秒杀系统的设计
+
+8、<span id="08">秒杀系统的设计？</span>
+
+
+
+## 面向对象三大特征
+
+9、<span id="09">请简单讲一下你对面向对象三大特征理解的程度（重点是多态）？</span>
+
+面向对象的三大特征，封装、继承和多态。
+
+* 封装将类的某些信息隐藏在类内部，不允许外部程序直接访问；通过封装的方法来控制成员变量的操作，提高了代码的安全性，把代码用方法进行封装，提高了代码的复用性。
+* 继承可以使得子类具有父类的属性和方法，还可以在子类中重新定义，以及追加属性和方法；继承让**类与类之间产生关系**，提高了代码的复用性和可维护性。
+* 多态是指同一个对象在不同时刻下表现出不同的形态，可以理解为相同的事物，调用其相同的方法，参数也相同时，但表现的行为却不同；多态的好处是**消除了类与类之间的耦合关系**，提高了程序的扩展性、灵活性和简化性。
+
+多态类比：
+
+```java
+我们可以说猫是猫：猫 cat = new 猫();
+我们也可以说猫是动物：动物 animal = new 猫();
+这里猫在不同的时刻表现出来了不同的形态，这就是多态。
+```
+
+多态的前提：
+
+- 有继承/实现关系
+- 有方法重写
+- 有父类引用指向子类对象
+
+多态中成员的访问特点：
+
+> 成员变量：编译看父类（左边），运行看父类（左边）。
+>
+> 成员方法：编译看父类（左边），运行看子类（右边）。
+
+多态中成员变量和成员方法的访问是不一样的。成员变量编译和运行都看父类，而成员方法编译看父类，运行看子类。**原因是因为成员方法有重写，成员变量没有重写。**
+
+多态的好处：
+
+> 提高程序的扩展性。多态的好处是消除了类之间的耦合关系，使程序更容易扩展。定义方法时候，使用父类型作为参数，在使用的时候，使用具体的子类型参与操作。
+
+多态的弊端：（可使用多态的向下转型解决该弊端）
+
+> 不能使用子类的特有成员，只能访问共有的成员。
+
+
+
+10、
+
+
+
+## PHP.INI选项模块包含内容
+
+11、<span id="11">`php.ini`里面具体都包含了哪些选项模块？至少五个。</span>
+
+① Language Options，语言选项。
+
+② Resource Limits，资源限制。
+
+③ Error handling and logging，错误处理和日志。
+
+④ Data Handling，数据处理。
+
+⑤ Paths and Directories，路径和目录。
+
+⑥ File Uploads，文件上传。
+
+⑦  Dynamic Extensions，动态扩展。
+
+⑧ Module Settings，模块加载设置。
+
+
+
+## php-fpm相关命令
+
+12、<span id="12">php-fpm 相关命令，终止、重启、平滑重启、查看进程数等。</span>
+
+① 平滑重启php-fpm主进程-`kill -USR2 [pid]`。 -USR2 平滑重载所有worker进程并重新载入配置和二进制模块。
+
+② 查看php-fpm主进程-`ps aux |grep php-fpm`。
+
+③ 查看php-fpm的进程个数-`ps aux | grep -c php-fpm`。
+
+④ 强制关闭php-fpm（不推荐）-`pkill php-fpm `。
+
+⑤ 关闭php-fpm主进程-`kill -INT [pid]`。
+
+在修改`php.ini`后，需要重启`php-cgi`才能生效，但是`php-cgi`不能平滑重启，杀掉`php-cgi`进程后，应用程序就无法工作了。使用`php-fpm`可以实现平滑重启，其处理机制是新的子进程用新的配置，已经存在的子进程处理完手上的活就可以歇着了，从而达到平滑过度的效果。
+
+
+
+## ## PHP-FPM与Nginx的通信机制
+
+13、<span id="13">PHP-FPM 与 Nginx 通信的两种机制方式？区别是什么？</span>
+
+一种是`TCP/IP socket`机制（默认机制），一种是`Unix socket `机制。
+
+① `TCP/IP socket`机制:
+
+` nginx.conf`配置:
+
+```php
+location ~ \.php$ {
+    root           html;
+    fastcgi_pass   127.0.0.1:9000;
+    fastcgi_index  index.php;
+    fastcgi_param  SCRIPT_FILENAME    $document_root$fastcgi_script_name;
+    include        fastcgi_params;
+}
+```
+
+`php-fpm.conf`配置：
+
+```php
+listen = 9000
+```
+
+② `Unix socket `机制：
+
+` nginx.conf`配置:
+
+```php
+#fastcgi_pass   127.0.0.1:9000;
+fastcgi_pass   unix:/var/run/php-fpm.socket;
+```
+
+`php-fpm.conf`配置：
+
+```php
+listen = /var/run/php-fpm.socket
+```
+
+两种方式的区别：
+
+* `Unix socket`和`Tcp/Ip socket`都是进程间的一种通信机制，`Unix socket`允许运行在同一台计算机上的的进程之间进行双向数据交换。而Tc`p/Ip socket`允许运行在不同计算机上的进程间通过网络通信。
+* `UNIX socket`知道进程在同一个系统上执行，所以它们可以避免一些检查和操作（如路由），这使得`Unix socket`进程间的通信比`Tcp/Ip socket`更快更轻。因此，如果你让进程在同一个主机上通信，使用`Unix socket`更好。
+
+
+
+## unset引用类型的底层原理
+
+14、<span id="14">unset 引用类型的底层原理？</span>
+
+```php
+$a = 1;
+$b = &$a;
+unset($a);
+echo $b;
+```
+
+变量容器zval，zval包括`type`、`value`、`is_ref_gc`、`refcount_gc`。
+
+第一次声明变量a的时候，生成一个变量容器zval结构体，其中`type=int,value=1,is_ref_gc=0,ref_count_gc=1`。
+
+第二次引用赋值b,不会新生成一个变量容器zval的结构体，而是引用上面的同一个结构体，其值修改为`type=int,value=1,is_ref_gc=1,ref_count_gc=2`。
+
+当时候unset函数时，会删除变量a的名字，并且将结构体中的值修改为`type=int,value=1,is_ref_gc=1,ref_count_gc=1`。
+
+此时b的值仍然是1，直到`ref_count_gc=0`时，进行垃圾回收。
+
+
+
+##  PHP垃圾回收机制的原理
+
+15、<span id="15">PHP垃圾回收机制的原理？</span>
+
+`php5.3`版本之前的垃圾回收机制：
+
+>  当变量容器的`ref_count`引用计数次数清0时，表示该变量容器就会被销毁，实现了内存回收。
+
+循环引用引发的内存泄露问题：
+
+`php5.3`版本之前的垃圾回收机制存在一个漏洞，即当数组或对象内部子元素引用其父元素，而此时如果发生了删除其父元素的情况，此变量容器并不会被删除，因为其子元素还在指向该变量容器，但是由于所有作用域内都没有指向该变量容器的符号，所以无法被清除，因此会发生内存泄漏，直到该脚本执行结束
+
+示例：
+
+```php
+$a = array( 'one' );
+$a[] = &$a;
+xdebug_debug_zval( 'a' );
+```
+
+![image-20210330212628251](PHP面试大全.assets/image-20210330212628251.png)
+
+```php
+unset($a);
+xdebug_debug_zval('a');
+```
+
+![image-20210330212701260](PHP面试大全.assets/image-20210330212701260.png)
+
+删除变量a后，refcount 仍然为1，尽管不再有某个作用域中的任何符号指向这个结构（变量容器），由于数组元素1仍然指向数组本身，所以这个容器不能被清除。因为没有任何符号指向它，用户没有办法清除这个结构，结果就会导致内存泄露。
+
+`php5.3`版本之后新的垃圾回收机制：
+
+* 采用新的算法，引用计数系统中的同步周期回收算法来清楚，具体规则是① 如果引用计数减少到零，所在变量容器将被直接清除；② 如果一个zval 的引用计数减少后还大于0，那么它会进入垃圾周期，在一个垃圾周期中，通过检查引用计数是否减1，并且检查哪些变量容器的引用次数是零，来发现哪部分是垃圾。
+* 同时使用根缓冲区机制，当php发现有存在循环引用的zval时，就会把其投入到根缓冲区，当根缓冲区达到配置文件中的指定数量后，就会进行垃圾回收，以此解决循环引用导致的内存泄漏问题（php5.3开始引入该机制）
+
+
+
+## Nginx 和PHP之间的交互过程
+
+16、<span id="16">Nginx 和PHP之间的交互过程？</span>
+
+```php
+server 
+    listen       80; #监听80端口，接收http请求
+    server_name  www.example.com; #一般存放网址，表示配置的哪个项目
+    root /home/wwwroot/zensmall/public/; # 存放代码的根目录地址或代码启动入口
+    index index.php index.html; #网站默认首页
+	
+    #当请求网站的url进行location的前缀匹配且最长匹配字符串是该配置项时，按顺序检查文件是否存在，并返回第一个找到的文件
+    location / {
+    	  #try_files，按顺序检查文件是否存在，返回第一个找到的文件
+    	  #$uri代表不带请求参数的当前地址
+          #$query_string代表请求携带的参数
+    	  try_files   $uri $uri/ /index.php?$query_string; #按顺序检查$uri文件，$uri地址是否存在，如果存在，返回第一个找到的文件；如果都不存在，发起访问/index.php?$query_string的内部请求，该请求会重新匹配到下面的location请求
+    }
+    
+	 #当请求网站的php文件的时候，反向代理到php-fpm去处理
+    location ~ \.php$ {
+    	  include       fastcgi_params; #引入fastcgi的配置文件
+    	  fastcgi_pass   127.0.0.1:9000; #设置php fastcgi进程监听的IP地址和端口
+    	  fastcgi_index  index.php; #设置首页文件
+    	  fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name; #设置脚本文件请求的路径
+    }
+}
+```
+
+每次nginx监听到80端口的url请求，会对url进行location匹配。如果匹配到/规则时，会进行内部请求重定向，发起/index.php?$query_string的内部请求，而对应的location配置规则会将请求发送给监听9000端口的php-fpm的worker进程。
+
+用户请求流程：
+
+> 用户访问域名->域名进行DNS解析->请求到对应IP服务器和端口->nginx监听到对应端口的请求->nginx对url进行location匹配->执行匹配location下的规则->nginx转发请求给php->php-fpm的worker进程监听到nginx请求->worker进程执行请求->worker进程返回执行结果给nginx->nginx返回结果给用户。
+
+## 一次用户完整的请求
+
+17、<span id="17"> 浏览器输入url回车之后的整体过程。 </span>
+归纳总结口诀：DNS域名解析->TCP三次握手->HTTP请求->TCP四次挥手->浏览器页面渲染
+
+> DNS进行域名解析，获取IP找到服务器； 
+> TCP三次握手建立连接，等待数据请求和传输； 
+> 客户端发起HTTP请求，服务器响应HTTP请求； 
+> TCP四次挥手断开连接，客户端解析数据渲染页面。
+
+## PHP动态语言的弱点
+
+18、 <span id="18">PHP 动态语言，有什么很明显的问题？</span>
+心念一转，万念皆转；心路一通，万路皆通。
+
+> ① PHP对多线程的支持不是很好。PHP采用的是多进程单线程模式，JAVA采用多线程。 
+> ② 弱类型动态语言，PHP语法不太严谨，变量不需要定义就可以使用。 
+> ③ PHP的解释运行机制。PHP靠解释器解释而非编译器解析。 
+> ④ 动态语言，性能比较差，不适合做密集运算，如果同样的 PHP 程序使用 C/C++ 来写，PHP 版本要比它差一百倍。使用C/C++、JAVA、Golang等静态编译语言作为PHP的补充，动静结合。
+
+## PHP和Go语言的区别
+
+19、<span id="19"> php 和 go语言有什么差别？ </span>
+[PHP与Golang在开发中的比较](http://baijiahao.baidu.com/s?id=1602485572019570364&wfr=spider&for=pc) 
+归纳：从性能，效率，安全，扩展方面考虑。
+
+> 性能方面，Go的性能极其快，与 Java 或 C++相当，Go 一般比 Python 要快 30 倍。 
+> 效率方面，多线程技术提高了Go的效率，PHP需要编写几乎五倍的代码才能生成与Go应用程序相同的功能。 
+> 安全方面，Go内置的错误检查机制，对编译进行分析，使上线的代码更安全。 
+> 扩展方面，PHP不能有效地支持独立的可互换模块，Go的可扩展性更高。
+
+① Go的性能极其快，与 Java 或 C++相当，Go 一般比 Python 要快 30 倍。
+
+> Golang和PHP的表现速度差异很大。Kairos报告说，当客户从PHP构建转移到Golang时，其客户报告API事务速度提高了8倍。发生这种情况是因为Golang比PHP更有效地处理数据处理。此外，由于编译方面的原因，即使是糟糕的Golang代码也会优于良好的PHP代码，从而提高性能。更重要的是，最终用户可以获得快速执行的应用程序。 
+
+② 快速的开发时间。 
+PHP需要编写几乎五倍的代码才能生成与Golang应用程序相同的功能。想象一下，为应用程序部署而节省的时间。通过让企业应用程序及时运行，企业可以节省宝贵的时间。 
+③ 多线程技术提高了Golang的效率，企业成本低。 
+由于多线程技术提高了Golang的效率，减少了部署规模，减少了内存占用量，并且整体运行的Docker容器减少了，所以团队可以将Kubernetes集群中的主机数量减少50％以上。Go部署需要的容器数量惊人地少于处理比PHP API高得多的负载。鉴于这些因素，Golang降低了企业的间接成本。
+
+④ Golang内置的错误检查机制，对编译进行分析，使上线的代码更安全。 
+⑤ PHP不能有效地支持独立的可互换模块，Golang的可扩展性更高。
+
+
+
+## 写时复制
+
+20、<span id="20">什么是PHP的`copy on write`写时复制？</span>
+
+```php
+<?php
+$var = "wangxiong";
+$var_dup = $var;
+$var = 1;
+```
+
+PHP 在修改一个变量以前，会首先查看这个变量的 refcount，如果 refcount 大于1，PHP 就会执行一个分离的例程， 对于上面的代码，当执行到第三行的时候，PHP 发现 var 指向的 zval 的 refcount 大于1，那么 PHP 就会复制一个新的 zval 出来，将原 zval 的 refcount 减 1，并修改值，使得var 和 $var_dup 分离(Separation)。这个机制就是所谓的 copy on write(写时复制)。注：is_ref = 0。
+
+```php
+$a = 3;
+$b = $a;
+$b = 5；
+echo $a,$b;
+```
+
+```php
+$arr = [0,1,2,3];
+foreach($arr as $v) {
+}
+var_dump(current($arr)); // boolean false
+
+$arr = [0,1,2,3];
+foreach($arr as $k=>$v) {
+  $arr[$k]=$v;
+}
+var_dump(current($arr)); // int(1)
+```
+
+21、什么是结构体的强制分裂，下面的代码结果是什么？
+
+```php
+$a = 3;
+$b = $a;
+$c = &$a;
+$c = 5;
+echo $a,$b,$c;
+```
+
+```php
+$a = 3;
+/**
+a{
+value:3
+type:IS_LONG
+is_ref_gc:0
+refcount_gc:1
+}
+**/
+$b = $a;
+/**
+// a,b共用一个结构体
+a,b{
+value:3
+type:IS_LONG
+is_ref_gc:0
+refcount_gc:2
+}
+**/
+$c = &$a;
+/**
+// 如果is_ref_gc 从0到1的时候，并且refcount_gc大于2，将会强制分裂。
+a,c{
+value:3
+type:IS_LONG
+is_ref_gc:1
+refcount_gc:2
+}
+
+b{
+value:3
+type:IS_LONG
+is_ref_gc:0
+refcount_gc1
+}
+**/
+$c = 5;
+/**
+a,c{
+value:5
+type:IS_LONG
+is_ref_gc:1
+refcount_gc:2
+}
+**/
+echo $a,$b,$c;
+```
+
+通过上面的分析，a的值是5，b的值是3，c的值是5。
+
+```php
+$arr = [0,1,2,3];
+$x = &$arr[1];
+$tmp = $arr;
+$arr[1] = 999;
+echo $tmp[1];//999
+```
+
+
+
+22、数组 KEY 和 VALUE 的限制条件。
+
+```php
+$arr = [
+  1 => 'a',
+  "1" => 'b',
+  1.5 => 'c',
+  true => 'd'
+]
+var_dump($arr);  
+```
+
+```php
+[1 => 'd']
+```
+
+* key 可以是 integer 或者是 string。
+* value 可以是任意类型。
+
+key 会有如下类型的强制转换：
+
+* 包含有合法整型值的字符串会被强制转换成整型。
+* 浮点数和布尔值也会被转换为整型。
+* 键名 null 实际会被存储为 “”。
+* 数组和对象不能被用为键名。
+* 相同键名，之前会被覆盖。
+
+```php
+$arr = [1,2,3,4,5]
+foreach($arr as $k => $v){
+  unset($arr[$k]);
+}  
+$arr[]=6;
+print_r($arr);
+// [5 => 6]
+```
+
+unset删除后，并不会重置数组的索引。
+
+
+
+
+
+
 
 
 
@@ -1048,7 +1567,7 @@ Array
 
   
 
-① asort — 对数组进行排序并保持索引关系。
+① asort — 对数组按照值进行正向排序并保持索引关系。
 
 ```php
 asort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
@@ -1070,7 +1589,7 @@ d = lemon
 a = orange  
 ```
 
-② arsort() - 对数组进行逆向排序并保持索引关系。
+② arsort() - 对数组按照值进行逆向排序并保持索引关系。
 
 ```php
 arsort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
@@ -1092,7 +1611,7 @@ b = banana
 c = apple  
 ```
 
-③ ksort — 对数组按照键名排序。
+③ ksort — 对数组按照键名进行正向排序。
 
 ```php
 ksort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
@@ -1114,7 +1633,7 @@ c = apple
 d = lemon  
 ```
 
-④ krsort — 对数组按照键名逆向排序。
+④ krsort — 对数组按照键名进行逆向排序。
 
 ```php
 krsort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
@@ -1136,7 +1655,7 @@ b = banana
 a = orange  
 ```
 
-⑤ rsort — 对数组进行逆向排序（最高到最低）。  
+⑤ rsort — 对数组进行逆向排序。  
 
 ```php
 rsort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
@@ -1158,11 +1677,18 @@ foreach ($fruits as $key => $val) {
 3 = apple
 ```
 
-⑥ sort — 对数组排序。
+⑥ sort — 对数组进行正向排序。
 
 ```php
 sort ( array &$array , int $sort_flags = SORT_REGULAR ) : bool
 本函数对数组进行排序。 当本函数结束时数组单元将被从最低到最高重新安排。
+可选的第二个参数 sort_flags 可以用以下值改变排序的行为,排序类型标记：
+SORT_REGULAR - 正常比较单元 详细描述参见 比较运算符 章节
+SORT_NUMERIC - 单元被作为数字来比较
+SORT_STRING - 单元被作为字符串来比较
+SORT_LOCALE_STRING - 根据当前的区域（locale）设置来把单元当作字符串比较，可以用 setlocale() 来改变。
+SORT_NATURAL - 和 natsort() 类似对每个单元以“自然的顺序”对字符串进行排序。
+SORT_FLAG_CASE - 能够与 SORT_STRING 或 SORT_NATURAL 合并（OR 位运算），不区分大小写排序字符串。  
 ```
 
 ```php
@@ -1173,9 +1699,7 @@ sort($fruits);
 foreach ($fruits as $key => $val) {
     echo "fruits[" . $key . "] = " . $val . "\n";
 }
-
 ?>
-  
 fruits[0] = apple
 fruits[1] = banana
 fruits[2] = lemon

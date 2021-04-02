@@ -38,6 +38,16 @@
 
 20、[什么是PHP的`copy on write`写时复制？](#20)
 
+21、[什么是结构体的强制分裂，下面的代码结果是什么？](#21)
+
+22、[数组 KEY 和 VALUE 的限制条件。](#22)
+
+23、[关于 static 静态延迟绑定，执行如下代码，输出结果是什么？](#23)
+
+24、[静态变量 static 和 gloabl 全局变量。-面试题重点](#24)
+
+25、[PHP 如何实现 hashmap?](#25)
+
 
 合并两个有序数组。 给定两个有序整数数组 nums1 和 nums2，将 nums2 合并到 nums1 中，使得 num1 成为一个有序数组。
 
@@ -73,6 +83,20 @@ PHP动态语言执行过程如下所示：
 - 输出(`Output Buffer`): 将要输出的内容输出到缓冲区。
 
 > `Parsing`首先会丢弃`Tokens Array`中的多余的空格，然后将剩余的`Tokens`转换成一个一个的简单的表达式。
+
+示例：PHP执行的时候有如下过程，`Scanning`->`Complication`->`Execution`->`Parsing`,其含义分别为：
+
+A、将`PHP`代码转换为语言片段（`Tokens`）、将`Tokens`转换成简单而有意义的表达式、将表达式编译成`Opcodes`、顺序执行`Opcodes`。
+
+B、将`PHP`代码转换为语言片段（`Tokens`）、将`Tokens`转换成简单而有意义的表达式、顺序执行`Opcodes`、将表达式编译成`Opcodes`。
+
+C、将`PHP`代码转换为语言片段（`Tokens`）、将表达式编译成`Opcodes`、顺序执行`Opcodes`、将`Tokens`转换成简单而有意义的表达式。
+
+D、将`PHP`代码转换为语言片段（`Tokens`）、将表达式编译成`Opcodes`、将`Tokens`转换成简单而有意义的表达式、顺序执行`Opcodes`。
+
+
+
+答案C。
 
 ## CGI、FastCGI、PHP-CGI、PHP-FPM
 
@@ -567,7 +591,9 @@ foreach($arr as $k=>$v) {
 var_dump(current($arr)); // int(1)
 ```
 
-21、什么是结构体的强制分裂，下面的代码结果是什么？
+## 结构体的强制分裂
+
+21、<span id="21">什么是结构体的强制分裂，下面的代码结果是什么？</span>
 
 ```php
 $a = 3;
@@ -638,7 +664,9 @@ echo $tmp[1];//999
 
 
 
-22、数组 KEY 和 VALUE 的限制条件。
+## 数组KEY的限制条件
+
+22、<span id="22">数组 KEY 和 VALUE 的限制条件。</span>
 
 ```php
 $arr = [
@@ -676,6 +704,218 @@ print_r($arr);
 ```
 
 unset删除后，并不会重置数组的索引。
+
+
+
+## 静态延迟绑定
+
+23、<span id="23">关于 static 静态延迟绑定，执行如下代码，输出结果是什么？</span>
+
+ ```php
+<?php
+class Car
+{
+  protected static function getModel(){
+    echo "This is a car model \n";
+  }
+  public static function model(){
+    self::getModel();
+    static::getModel();
+  }
+}
+
+Class Taxi extends Car
+{
+  protected static function getModel(){
+    echo "This is a Taxi model \n";
+  }
+}
+
+Taxi::model();
+ ```
+
+输出结果如下：
+
+```
+This is a car model
+This is a Taxi model
+```
+
+知识点：
+
+- `self` 可以用于访问类的静态属性、静态方法和常量，但 `self` 指向的是当前定义所在的类，这是 `self` 的限制。
+- `static` 也可以用于访问类的静态属性、静态方法和常量，`static` 指向的是实际调用时的类，也就是说，`static`关键字允许函数能够在运行时动态绑定类中的方法。
+
+关于延迟静态绑定的解析，试分析以下代码的执行结果：
+
+```php
+<?php
+class A {
+    public static function foo () {
+        static:: who ();
+    }
+
+    public static function who () {
+        echo __CLASS__ . "\n" ;
+    }
+}
+
+class B extends A {
+    public static function test () {
+        A :: foo ();
+        parent :: foo ();
+        self :: foo ();
+        static::foo();
+        forward_static_call(['A', 'foo']);
+        echo '<br>';
+    }
+
+    public static function who () {
+        echo __CLASS__ . "\n" ;
+    }
+}
+
+class C extends B {
+    public static function who () {
+        echo __CLASS__ . "\n" ;
+    }
+
+    public static function test2() {
+        self::test();
+    }
+}
+
+class D extends C {
+    public static function who () {
+        echo __CLASS__ . "\n" ;
+    }
+}
+
+B::foo();
+B::test();
+
+C::foo();
+C::test();
+
+D::foo();
+D::test2();
+```
+
+运行结果如下：
+
+```
+B A B B B B 
+C A C C C C 
+D A D D D D
+```
+
+知识点： 
+① `self` 和 `__CLASS__`，都是对当前类的静态引用，取决于定义当前方法所在的类。也就是说，`self` 写在哪个类里面， 它引用的就是谁。 
+② `$this` 指向的是实际调用时的对象，也就是说，实际运行过程中，谁调用了类的属性或方法，`$this` 指向的就是哪个对象。但 `$this` 不能访问类的静态属性和常量，且 $this 不能存在于静态方法中。 
+③ `static`关键字除了可以声明类的静态成员（属性和方法）外，还有一个非常重要的作用就是延迟静态绑定。 
+④ `self` 可以用于访问类的静态属性、静态方法和常量，但 `self` 指向的是当前定义所在的类，这是`self`的限制。 
+⑤ `static` 可以用于静态或非静态方法中，也可以访问类的静态属性、静态方法、常量和非静态方法，但不能访问非静态属性。 
+⑥ 静态调用时，`static` 指向的是实际调用时的类；非静态调用时，`static` 指向的是实际调用时的对象所属的类。
+
+
+
+## static 和 global 关键字
+
+24、<span id="24">静态变量 static 和 gloabl 全局变量。</span>
+
+① 以下代码的打印结果是多少？
+
+```php
+<?php
+$count = 5;
+
+function get_count() {
+    static $count;
+    return $count++;
+}
+
+echo $count."\n";
+++$count;
+echo get_count()."\n";
+echo get_count()."\n";
+```
+
+输出结果如下：
+
+```
+5
+
+1
+```
+
+> 递增／递减运算符不影响布尔值。递减 **`null`** 值也没有效果，但是递增 **`null`** 的结果是 `1`。
+
+② 以下程序的输出结果是多少？
+
+```php
+<?php
+function &myFunc() {
+    static $b = 10;
+    return $b;
+}
+
+echo myFunc()."\n";
+$a = &myFunc();
+$a = 100;
+
+echo myFunc()."\n";
+```
+
+输出结果如下：
+
+```php
+10
+100
+```
+
+③ 以下程序的输出结果是多少？
+
+```php
+<?php
+$var1 = 5;
+$var2 = 10;
+
+function foo(&$my_var) {
+    Global $var1;
+    $var1 +=2;
+    $var2 = 4;
+    $my_var += 3;
+    return $var2;
+}
+
+$my_var = 5;
+echo foo($my_var)."\n";
+echo $var1."\n";
+echo $var2."\n";
+
+$bar = 'foo';
+$my_var = 10;
+echo $bar($my_var);
+```
+
+输出结果如下：
+
+```php
+4
+7
+10
+4
+```
+
+
+
+## PHP 如何实现 hashmap
+
+25、<span id="25">PHP 如何实现 hashmap?</span>
+
+
+
+
 
 
 

@@ -59,3 +59,9 @@ mysqld  1340 mysql   13u  IPv4   9791      0t0  TCP *:mysql (LISTEN)
 
 
 
+2、
+
+```shell
+sed 's/7000/7001/g' redis7000/redis.conf > redis7001/redis.conf
+```
+

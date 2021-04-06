@@ -1,3 +1,5 @@
+
+
 # 大纲列表
 
 1、[PHP如何解决网站大流量和高并发的问题？](#01)
@@ -47,6 +49,14 @@
 24、[静态变量 static 和 gloabl 全局变量。-面试题重点](#24)
 
 25、[PHP 如何实现 hashmap?](#25)
+
+26、[常用的字符串函数？](#26)
+
+27、[常用的PHP 数组函数?](#27)
+
+28、[常用的魔术方法?](#28)
+
+29、[正则表达式相关？](#29)
 
 合并两个有序数组。 给定两个有序整数数组 nums1 和 nums2，将 nums2 合并到 nums1 中，使得 num1 成为一个有序数组。
 
@@ -472,7 +482,7 @@ xdebug_debug_zval('a');
 
 `php5.3`版本之后新的垃圾回收机制：
 
-* 采用新的算法，引用计数系统中的同步周期回收算法来清楚，具体规则是① 如果引用计数减少到零，所在变量容器将被直接清除；② 如果一个zval 的引用计数减少后还大于0，那么它会进入垃圾周期，在一个垃圾周期中，通过检查引用计数是否减1，并且检查哪些变量容器的引用次数是零，来发现哪部分是垃圾。
+* 采用新的算法，引用计数系统中的同步周期回收算法来清除，具体规则是① 如果引用计数减少到零，所在变量容器将被直接清除；② 如果一个zval 的引用计数减少后还大于0，那么它会进入垃圾周期，在一个垃圾周期中，通过检查引用计数是否减1，并且检查哪些变量容器的引用次数是零，来发现哪部分是垃圾。
 * 同时使用根缓冲区机制，当php发现有存在循环引用的zval时，就会把其投入到根缓冲区，当根缓冲区达到配置文件中的指定数量后，就会进行垃圾回收，以此解决循环引用导致的内存泄漏问题（php5.3开始引入该机制）
 
 
@@ -917,6 +927,291 @@ echo $bar($my_var);
 
 
 
+
+
+
+## PHP 常用字符串
+
+26、<span id="26">PHP字符串相关</span>
+
+#### 字符串截取
+
+* [substr(string，start，length)](https://secure.php.net/manual/zh/function.substr.php) - 返回提取的子字符串， 失败时返回 FALSE。
+
+* [mb_substr(str，start，length，encoding)](https://secure.php.net/manual/zh/function.mb-substr.php) - 获取部分字符串,根据 start 和 length 参数返回 str 中指定的部分，按照字符数执行。
+
+* [mb_strcut(str，start，length，encoding)](https://secure.php.net/manual/zh/function.mb-strcut.php) - 和 mb_substr() 类似，都是从字符串中提取子字符串，但是按字节数来执行，而不是字符个数。
+
+#### 字符串替换
+
+* [ str_replace(search，replace，subject，count)](https://secure.php.net/manual/zh/function.str-replace.php) - 子字符串替换，在subject中搜索search并替换为replace，返回替换后的数组或者字符串。
+
+字符串替换：
+
+```php
+str_replace('wang','lens','wangxiong')  // lensxiong
+```
+
+* [substr_replace(string，replacement，start，length)](https://secure.php.net/manual/zh/function.substr-replace.php) - 字符串截取并替换，返回替换后的数组或者字符串。
+
+隐藏7位手机号码：
+
+```php
+substr_replace(157110***5, '*******', 3, 7)  // 157*******5
+```
+
+#### 字符串查找
+
+* [strstr(haystack，needle，before_needle)](https://secure.php.net/manual/zh/function.strstr.php) -查找字符串的首次出现，返回字符串的一部分或者 FALSE（如果未发现 needle）
+
+返回@前面的字符串：
+
+```php
+strstr('lensxiong@gmail.com', '@', true) // lensxiong
+```
+
+* [strpos(haystack，needle，offset)](https://secure.php.net/manual/zh/function.strpos.php)  - 查找字符串首次出现的位置，返回 needle 存在于 haystack 字符串起始的位置(独立于 offset)，查找字符串首次出现的位置。字符串位置是从0开始，而不是从1开始的。
+
+```php
+strpos('abcdef abcdef', 'b', 2) // $pos = 8, 不是 1
+```
+
+```php
+$str='aAbB';
+echo strpos($str,"A"); // 1
+// 忽视位置偏移量之前的字符进行查找
+$newstring = 'abcdef abcdef';
+$pos = strpos($newstring, 'a', 1); // $pos = 7, 不是 0
+```
+
+*  [strrpos(haystack，needle，offset)](https://secure.php.net/manual/zh/function.strrpos.php) - 计算指定字符串在目标字符串中最后一次出现的位置
+
+最后一次出现的位置，忽视位置偏移量之前的字符进行查找：
+
+```php
+strrpos('abcdef abcdef', 'b', 9)  // false
+```
+
+#### 字符串处理
+
+* strtolower() ：函数把字符串转换为小写。
+* [lcfirst()](https://www.w3school.com.cn/php/func_string_lcfirst.asp) - 把字符串中的首字符转换为小写。
+* [strtoupper()](https://www.w3school.com.cn/php/func_string_strtoupper.asp) - 把字符串转换为大写。
+* [ucfirst()](https://www.w3school.com.cn/php/func_string_ucfirst.asp) - 把字符串中的首字符转换为大写。
+* [ucwords()](https://www.w3school.com.cn/php/func_string_ucwords.asp) - 把字符串中每个单词的首字符转换为大写。
+* trim()：去除字符串首尾处的空白字符(或其他字符)。
+* strlen():返回字符串的长度。
+
+```php
+echo strlen("Hello world!");//12
+```
+
+
+* substr()：截取字符串
+
+```php
+echo substr("Hello world!",6);//world!
+```
+
+* str_replace():字符串替换函数
+
+```php
+echo str_replace("world","Xiong","Hello world!");//Hello Xiong!
+```
+
+* strstr()：检索字符串函数
+
+```php
+echo strstr("Hello world!",111);//o world!
+```
+
+* str_repeat():字符串重复函数
+
+```php
+echo str_repeat(".",13);//.............
+```
+
+* strrpos() :查找字符串在另一个字符串中最后一次出现的位置。
+
+```php
+echo strpos("Hello world!","wo");//6
+```
+
+*  strrchr():查找字符串在另一个字符串中最后一次出现的位置，并返回从该位置到字符串结尾的所有字符。
+
+```php
+echo strrchr("Hello world!",111);//orld!
+```
+
+* substr() 函数返回字符串的一部分。
+
+```php
+echo substr("Hello world!",6,5);//world
+```
+
+* strcasecmp():比较两个字符串。(大小写不敏感)
+
+```php
+echo strcasecmp("Hello world!","HELLO WORLD!");//0
+echo strcasecmp("c","b");//1 echo strcasecmp("a","b");//-1
+```
+
+* strcmp() 比较两个字符串。
+
+```php
+echo strcmp("a","A");//1 echo strcmp("He","H");//1 echo strcmp("a","b");//-1
+```
+
+* strstr()：搜索一个字符串在另一个字符串中的第一次出现。
+
+```php
+echo strstr("Hello world!",111);//o world!
+```
+
+* substr_count():计算子串在字符串中出现的次数。
+
+```php
+echo substr_count("Hello world. The world is nice","world");//2
+echo substr_count("Hello world. The world is nice","l");//4
+```
+
+## PHP 常用数组
+
+27、<span id="27"> 常用的PHP 数组函数?</span>
+
+* `implode` — 将一个一维数组的值转化为字符串。等同于`join ()`，别名 `implode()`。
+* `explode` — 使用一个字符串分割另一个字符
+
+
+
+## 魔术方法
+
+28、<span id="28">常用的魔术方法？</span>
+
+* `__construct`：构造函数，创建一个对象时先调用此方法。举例：`new`一个对象时的初始化工作。
+* `__destruct`：析构函数，某个对象的引用被删除或者对象被销毁的时候会调用此方法。
+* `__call`：【方法重载】 ，在对象中调用一个不可访问方法时，会调用此方法。
+* `__callStatic`：【方法重载】在静态上下文中调用一个不可访问方法时，会调用此方法。该方法是唯一一个静态的魔术方法。
+* `__set`：【属性重载】给不可访问的属性赋值，会调用此方法。举例：批量设置私有属性（封装性）；允许在一定范围内添加属性。
+* `__get` ：【属性重载】读取不可访问属性的值时，会调用此方法。
+* `__isset`：【属性重载】当对不可访问属性调用 isset() 或 empty() 时，会调用此方法。
+* `__unset`：【属性重载】当对不可访问属性调用 unset() 时，会调用此方法。
+* ` __sleep()`：【序列化】serialize() 序列化的时候会检查该方法是否存在，存在则返回一个被序列化的变量名称数组。
+* `__wakeup()`：【反序列化】unserialize() 反序列化时候，定义反序列化后调用的方法，预先准备对象需要的资源。举例：用在反序列化操作中，例如重新建立数据库连接，或执行其它初始化操作。
+* `__toString()`：将对象当作字符串使用时被自动调用（类型转换时，对象to 字符串）。举例：` echo $obj`，返回一个字符串。
+* `__invoke()`：当将对象当作函数调用时会被自动调用。举例：
+
+```
+app->add(new APICheckMiddleWare($container));
+```
+
+* `__clone() `：对象复制的时候，会调用此方法。举例：对新克隆的对象中修改属性的值。
+
+
+
+## 正则表达式
+
+29、<span id="29">PHP的正则表达式</span>。
+
+> 正则表达式的作用：分割、匹配、查找、替换字符串。
+
+① 过滤网页上所有的JS脚本：
+
+[【PHP】用正则表达式过滤js代码](https://blog.csdn.net/JecksonChenJinHua/article/details/20494855)
+
+```php
+/<script[^>]*?>.*?<\/script>/si
+  
+```
+
+
+
+
+
+
+
+#### 元字符
+
+| 元 字符 | 描述                                                         |
+| :------ | :----------------------------------------------------------- |
+| $       | 匹配输入字符串的结尾位置。如果设置了 RegExp 对象的 Multiline 属性，则 $ 也匹配 '\n' 或 '\r'。要匹配 $ 字符本身，请使用 \$。 |
+| ( )     | 标记一个子表达式的开始和结束位置。子表达式可以获取供以后使用。要匹配这些字符，请使用 \( 和 \)。 |
+| *       | 匹配前面的子表达式零次或多次。要匹配 * 字符，请使用 \\*。    |
+| +       | 匹配前面的子表达式一次或多次。要匹配 + 字符，请使用 \\\+。   |
+| .       | 匹配除换行符 \n 之外的任何单字符。要匹配 . ，请使用 \\\. 。  |
+| [       | 标记一个中括号表达式的开始。要匹配 [，请使用\\ \[。          |
+| ?       | 匹配前面的子表达式零次或一次，或指明一个非贪婪限定符。要匹配 ? 字符，请使用 \\?。 |
+| \       | 将下一个字符标记为或特殊字符、或原义字符、或向后引用、或八进制转义符。例如， 'n' 匹配字符 'n'。'\n' 匹配换行符。序列 '\\' 匹配 "\"，而 '\(' 则匹配 "("。 |
+| ^       | 匹配输入字符串的开始位置，除非在方括号表达式中使用，当该符号在方括号表达式中使用时，表示不接受该方括号表达式中的字符集合。要匹配 ^ 字符本身，请使用 \^。 |
+| {       | 标记限定符表达式的开始。要匹配 {，请使用\ \{。               |
+| \|      | 指明两项之间的一个选择。要匹配 \|，请使用\ \|。              |
+| x(?=y)  | 匹配'x'仅仅当'x'后面跟着'y'.这种叫做先行断言。               |
+| []      | 匹配一个集合。                                               |
+| [^]     | 除了集合中的字符。                                           |
+| [-]     | 0-9代表0到9之间的数字，A-Z代表A-Z之间的数字。                |
+
+#### 限定符
+
+| 字符  | 描述                                                         |
+| :---- | :----------------------------------------------------------- |
+| *     | 匹配前面的子表达式零次或多次。例如，zo* 能匹配 "z" 以及 "zoo"。* 等价于{0,}。 |
+| +     | 匹配前面的子表达式一次或多次。例如，'zo+' 能匹配 "zo" 以及 "zoo"，但不能匹配 "z"。+ 等价于 {1,}。 |
+| ?     | 匹配前面的子表达式零次或一次。例如，"do(es)?" 可以匹配 "do" 、 "does" 中的 "does" 、 "doxy" 中的 "do" 。? 等价于 {0,1}。 |
+| {n}   | n 是一个非负整数。匹配确定的 n 次。例如，'o{2}' 不能匹配 "Bob" 中的 'o'，但是能匹配 "food" 中的两个 o。 |
+| {n,}  | n 是一个非负整数。至少匹配n 次。例如，'o{2,}' 不能匹配 "Bob" 中的 'o'，但能匹配 "foooood" 中的所有 o。'o{1,}' 等价于 'o+'。'o{0,}' 则等价于 'o*'。 |
+| {n,m} | m 和 n 均为非负整数，其中n <= m。最少匹配 n 次且最多匹配 m 次。例如，"o{1,3}" 将匹配 "fooooood" 中的前三个 o。'o{0,1}' 等价于 'o?'。请注意在逗号和两个数之间不能有空格。 |
+
+#### 通用原子
+
+| 通用原子 | 描述                                                         |
+| -------- | ------------------------------------------------------------ |
+| \d       | 匹配一个数字。等价于[0-9]。                                  |
+| \D       | 匹配一个非数字字符。等价于[\^ 0-9]。                         |
+| \w       | 匹配一个单字字符（字母、数字或者下划线）。等价于 [A-Za-z0-9_]。 |
+| \W       | 匹配一个非单字字符。等价于 [\^A-Za-z0-9_]。                  |
+| \s       | 匹配一个空白字符，包括空格、制表符、换页符和换行符。         |
+| \S       | 匹配一个非空白字符。                                         |
+
+#### 模式修正符
+
+正则表达式中常用的模式修正符有i、g、m、s、U、x、a、D、e 等。
+
+| 修正符 | 描述                                                         |
+| ------ | ------------------------------------------------------------ |
+| i      | 不区分(ignore)大小写。                                       |
+| g      | 全局(global)匹配。                                           |
+| m      | 多(more)行匹配。                                             |
+| s      | 特殊字符圆点 . 中包含换行符。                                |
+| U      | 只匹配最近的一个字符串；不重复匹配。                         |
+| x      | 将模式中的空白忽略。                                         |
+| A      | 强制从目标字符串开头匹配。                                   |
+| D      | 如果使用$限制结尾字符，则不允许结尾有换行。                  |
+| e      | 配合函数preg_replace()使用，可以把匹配来的字符串当作正则表达式执行。 |
+| u      | 能够正确处理大于\uFFFF的Unicode字符，也就是说，会正确处理四个字节的UTF-16编码。 |
+
+#### 后向引用
+
+使用小括号指定一个子表达式后，匹配这个子表达式的文本(也就是此分组捕获的内容)可以在表达式或其它程序中作进一步的处理。默认情况下，每个分组会自动拥有一个组号，规则是：从左向右，以分组的左括号为标志，第一个出现的分组的组号为 1，第二个为 2，以此类推。
+
+```php
+$str = '</b>wangxiong</b>';
+$res = preg_replace('/<b>(.*)<\/b>/','\\1',$str);
+var_dump($res); // wangxiong
+```
+
+
+
+30、PHP执行系统命令函数?
+
+```php
+system()
+passthru()
+exec()
+shell_exec()
+popen()
+proc_open()
+pcntl_exec()
+```
 
 
 
@@ -3427,6 +3722,8 @@ mkdir ( string $pathname [, int $mode = 0777 [, bool $recursive = FALSE [, resou
 
 #### 文件操作
 
+
+
 ### 字符串
 
 #### 字符串截取
@@ -3489,9 +3786,13 @@ strrpos('abcdef abcdef', 'b', 9)  // false
 
 #### 字符串处理
 
-* trim()：去除字符串首尾处的空白字符(或其他字符)
-
-* strlen():返回字符串的长度
+* strtolower() ：函数把字符串转换为小写。
+* [lcfirst()](https://www.w3school.com.cn/php/func_string_lcfirst.asp) - 把字符串中的首字符转换为小写。
+* [strtoupper()](https://www.w3school.com.cn/php/func_string_strtoupper.asp) - 把字符串转换为大写。
+* [ucfirst()](https://www.w3school.com.cn/php/func_string_ucfirst.asp) - 把字符串中的首字符转换为大写。
+* [ucwords()](https://www.w3school.com.cn/php/func_string_ucwords.asp) - 把字符串中每个单词的首字符转换为大写。
+* trim()：去除字符串首尾处的空白字符(或其他字符)。
+* strlen():返回字符串的长度。
 
 ```php
 echo strlen("Hello world!");//12

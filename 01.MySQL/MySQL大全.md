@@ -234,13 +234,46 @@ MySQL 在进行解析器处理时会生成一棵对应的解析树，预处理�
 
 8、MySQL中 VARCHAR 与 CHAR 的区别以及 VARCHAR(50) 中的50代表的涵义？int(20)中20的涵义？
 
-VARCHA 类型用于存储可变长的字符串，无论是什么字节字符集，都存储变长数据和变长字段长度列表。
+```php
+CHAR(M):M × w bytes, 0 <= M <= 255, where w is the number of bytes required for the maximum-length character in the character set
+  
+VARCHAR(M)：L + 1 bytes if column values require 0 – 255 bytes, L + 2 bytes if values may require more than 255 bytes  
+```
 
-CHAR 类型是定长的，CHAR 适合存储很短的字符串，或者所有值都接近同一个长度，比如存储密码的MD5值。
+1、char（n）和varchar（n）中括号中n代表字符的个数，并不代表字节个数，所以当使用了中文的时候(UTF8)意味着可以插入m个中文，但是实际会占用m*3个字节。
+
+2、同时char和varchar最大的区别就在于char不管实际value都会占用n个字符的空间，而varchar只会占用实际字符应该占用的空间+1，并且实际空间+1<=n。
+
+3、超过char和varchar的n设置后，字符串会被截断。
+
+4、char的上限为255字节，varchar的上限65535字节，text的上限为65535。
+
+5、char在存储的时候会截断尾部的空格，varchar和text不会。
+
+6、varchar会使用1-3个字节来存储长度，text不会。
+
+下图可以非常明显的看到结果：
+
+| **Value**  | CHAR(4) | **Storage Required** | VARCHAR(4) | **Storage Required** |
+| ---------- | ------- | -------------------- | ---------- | -------------------- |
+| ''         | '  '    | 4 bytes              | ''         | 1 byte               |
+| 'ab'       | 'ab '   | 4 bytes              | 'ab'       | 3 bytes              |
+| 'abcd'     | 'abcd'  | 4 bytes              | 'abcd'     | 5 bytes              |
+| 'abcdefgh' | 'abcd'  | 4 bytes              | 'abcd'     | 5 bytes              |
+
+ 
+
+VARCHAR 类型用于存储可变长的字符串，无论是什么字节字符集，都存储变长数据和变长字段长度列表。
+
+CHAR 类型是定长的，CHAR 适合存储很短的字符串，或者所有值都接近同一个长度，比如存储密码的MD5值。大家都在说varchar存储可变长度的字符串、char用来存储不可变长度的字符串。其实当使用的字符集编码不同时，char能存储的字节数是会变化的！
 
  VARCHAR(50) 中的50代表最多存放50个字符。使用 VARCHAR(50) 和 VARCHAR(200) 存储 'hello' 的空间开销是一样的，但是使用长的列 VARCHAR(200) 会消耗更多的内存，因为MySQL 通常会分配固定大小的内存来保存内部值，尤其是使用内存临时表进行排序或操作时会非常糟糕，在利用磁盘临时表进行排序时也非常糟糕，所以最好的策略是只分配真正需要的空间。
 
 int(20)是指显示字符的宽度，并不影响内部存储和计算，内部实际存储还是4个字节，只是当int字段类型设置为无符号且填充零（UNSIGNED ZEROFILL）时，当数值位数未达到设置的显示宽度时，会在数值前面补充零直到满足设定的显示宽度。
+
+
+
+
 
 ## InnoDB 的事务与日志的实现方式
 

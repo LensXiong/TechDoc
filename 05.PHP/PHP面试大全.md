@@ -48,7 +48,6 @@
 
 25、[PHP 如何实现 hashmap?](#25)
 
-
 合并两个有序数组。 给定两个有序整数数组 nums1 和 nums2，将 nums2 合并到 nums1 中，使得 num1 成为一个有序数组。
 
 # 解答列表
@@ -369,7 +368,7 @@ NULL：对于NULL来说，就更好理解了，因为本身通过zval的type值�
 
 
 
-## ## PHP-FPM与Nginx的通信机制
+## PHP-FPM与Nginx的通信机制
 
 13、<span id="13">PHP-FPM 与 Nginx 通信的两种机制方式？区别是什么？</span>
 

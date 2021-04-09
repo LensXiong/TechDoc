@@ -34,7 +34,7 @@
 
 17、[浏览器输入url回车之后的整体过程。 ](#17)
 
-18、[PHP 动态语言，有什么很明显的问题？](#18)
+18、[PHP 动态语言，有什么很明显的问题？和 JAVA 相比有什么不同？](#18)
 
 19、[php 和 go语言有什么差别？](#19)
 
@@ -288,7 +288,7 @@ NULL：对于NULL来说，就更好理解了，因为本身通过zval的type值�
 
 ## 秒杀系统的设计
 
-8、<span id="08">秒杀系统的设计？</span>
+8、<span id="08">秒杀系统的设计？如何防止用户重复下单？</span>
 
 
 
@@ -532,15 +532,20 @@ server
 > 客户端发起HTTP请求，服务器响应HTTP请求； 
 > TCP四次挥手断开连接，客户端解析数据渲染页面。
 
-## PHP动态语言的弱点
+## PHP 动态语言的弱点
 
-18、 <span id="18">PHP 动态语言，有什么很明显的问题？</span>
+18、 <span id="18">PHP 动态语言，有什么很明显的问题？和 Java 相比有什么不同？</span>
 心念一转，万念皆转；心路一通，万路皆通。
 
 > ① PHP对多线程的支持不是很好。PHP采用的是多进程单线程模式，JAVA采用多线程。 
+>
 > ② 弱类型动态语言，PHP语法不太严谨，变量不需要定义就可以使用。 
+>
 > ③ PHP的解释运行机制。PHP靠解释器解释而非编译器解析。 
+>
 > ④ 动态语言，性能比较差，不适合做密集运算，如果同样的 PHP 程序使用 C/C++ 来写，PHP 版本要比它差一百倍。使用C/C++、JAVA、Golang等静态编译语言作为PHP的补充，动静结合。
+>
+> ⑤ Java安全性较好。编译成字节码的过程中就可进行提前检查错误，而不是像PHP在运行的过程中检查。
 
 ## PHP和Go语言的区别
 
@@ -564,8 +569,6 @@ PHP需要编写几乎五倍的代码才能生成与Golang应用程序相同的�
 
 ④ Golang内置的错误检查机制，对编译进行分析，使上线的代码更安全。 
 ⑤ PHP不能有效地支持独立的可互换模块，Golang的可扩展性更高。
-
-
 
 ## 写时复制
 
@@ -671,8 +674,6 @@ $arr[1] = 999;
 echo $tmp[1];//999
 ```
 
-
-
 ## 数组KEY的限制条件
 
 22、<span id="22">数组 KEY 和 VALUE 的限制条件。</span>
@@ -713,8 +714,6 @@ print_r($arr);
 ```
 
 unset删除后，并不会重置数组的索引。
-
-
 
 ## 静态延迟绑定
 
@@ -1120,13 +1119,8 @@ app->add(new APICheckMiddleWare($container));
 [【PHP】用正则表达式过滤js代码](https://blog.csdn.net/JecksonChenJinHua/article/details/20494855)
 
 ```php
-/<script[^>]*?>.*?<\/script>/si
-  
+/<script[^>]*?>.*?<\/script>/si  
 ```
-
-
-
-
 
 
 
@@ -1212,6 +1206,220 @@ popen()
 proc_open()
 pcntl_exec()
 ```
+
+
+
+31、商品库存的解决方案？
+
+方案一（不推荐）：数据库操作商品库存采用乐观锁防止超卖。缺点：数据库压力太大，会被拖垮。
+
+```php
+update sku_stock set stock = stock - num , version = version + 1 where sku_code = '' and stock - num > 0 and version = #{version};
+```
+
+方案二（不推荐）：利用Redis单线程，强制串行处理。缺点：并发不高，处理慢，效率低，用户体验差。优点：减轻了数据库压力。
+
+```java
+/**
+     * 缺点并发不高,同时只能一个用户抢占操作,用户体验不好！
+     *
+     * @param orderSkuAo
+     */
+    public boolean subtractStock(OrderSkuAo orderSkuAo) {
+        String lockKey = "shop-product-stock-subtract" + orderSkuAo.getOrderCode();
+        if(redis.get(lockKey)){
+            return false;
+        }
+        try {
+            lock.lock(lockKey, 1L, 10L);
+            //处理逻辑
+        }catch (Exception e){
+            LogUtil.error("e=",e);
+        }finally {
+            lock.unLock(lockKey);
+        }
+        return true;
+    }
+
+```
+
+方案三（推荐）：redis + mq + mysql 保证库存安全，满足高并发处理。
+
+① 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品，直接返回false。
+
+② 从缓存中进行检查库存是否充足，库存不足，直接返回。
+
+③  Redis 计数器原子操作，通过incrby 减缓存中的库存。如果库存不足，返回扣减失败。
+
+④ 通过消息队列进行处理生成订单信息，和支付信息，并规定支付时间在半个小时以内，如果未完成支付，则将缓存中的库存还原增加，订单状态超时。
+
+⑤ 如果完成订单支付，则才真正扣减数据库中的库存。
+
+同一个商品，需保持数据库中库存 = 缓存中的库存数量+待支付订单中的商品数量。
+
+```php
+     /**
+     * 扣库存操作,秒杀的处理方案
+     * @param orderCode
+     * @param skuCode
+     * @param num
+     * @return
+     */
+    public boolean subtractStock(String orderCode,String skuCode, Integer num) {
+        String key = "shop-product-stock" + skuCode;
+        Object value = redis.get(key);
+        if (value == null) {
+            //前提 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品
+            return false;
+        }
+        //先检查 库存是否充足
+        Integer stock = (Integer) value;
+        if (stock < num) {
+            LogUtil.info("库存不足");
+            return false;
+        } 
+       //不可在这里直接操作数据库减库存，否则导致数据不安全
+       //因为此时可能有其他线程已经将redis的key修改了
+        //redis 减少库存，然后才能操作数据库
+        Long newStock = redis.increment(key, -num.longValue());
+        //库存充足
+        if (newStock >= 0) {
+            LogUtil.info("成功抢购");
+            //TODO 真正扣库存操作 可用MQ 进行 redis 和 mysql 的数据同步，减少响应时间
+        } else {
+            //库存不足，需要增加刚刚减去的库存
+            redis.increment(key, num.longValue());
+            LogUtil.info("库存不足,并发");
+            return false;
+        }
+        return true;
+    }
+```
+
+
+
+32、如何防止用户重复下单？
+
+* 前端拦截，点击后按钮置灰。
+* 后端：一个用户多设备可以下单的模式
+
+```java
+//key , 等待获取锁的时间 ，锁的时间
+redis.lock("shop-oms-submit" + token + deviceType, 1L, 10L);
+```
+
+* 防止恶意用户，恶意攻击 ： 一分钟调用下单超过50次 ，加入临时黑名单 ，10分钟后才可继续操作，一小时允许一次跨时段弱校验。使用reids的list结构，过期时间一小时。
+
+```java
+/**
+     * @param token
+     * @return true 可下单
+     */
+    public boolean judgeUserToken(String token) {
+        //获取用户下单次数 1分钟50次
+        String blackUser = "shop-oms-submit-black-" + token;
+        if (redis.get(blackUser) != null) {
+            return false;
+        }
+        String keyCount = "shop-oms-submit-count-" + token;
+        Long nowSecond = LocalDateTime.now().toEpochSecond(ZoneOffset.of("+8"));
+        //每一小时清一次key 过期时间1小时
+        Long count = redis.rpush(keyCount, String.valueOf(nowSecond), 60 * 60);
+        if (count < 50) {
+            return true;
+        }
+        //获取第50次的时间
+        List<String> secondString = redis.lrange(keyCount, count - 50, count - 49);
+        Long oldSecond = Long.valueOf(secondString.get(0));
+        //now > oldSecond + 60 用户可下单
+        boolean result = nowSecond.compareTo(oldSecond + 60) > 0;
+        if (!result) {
+            //触发限制，加入黑名单，过期时间10分钟
+            redis.set(blackUser, String.valueOf(nowSecond), 10 * 60);
+        }
+        return result;
+    }
+```
+
+
+
+33、请尽可能多的写出 PHP 优化执行效率的方法？
+
+> 概述：① 从PHP语言级别考虑，尽量使用PHP内置函数；合理使用内存，不定义不需要使用的变量，注销不用的变量和大数组释放内存；尽量少使用正则表达式和魔术方法；能在循环外做运算的，尽量提到循环外面；尽量使用带引号的字符串做键值，尽量使用单引号而不要使用双引号。
+>
+> ② 从耗时操作角度考虑，比较耗时的操作尽量采用异步消息队列操作处理，比如邮件发送、转账支付等。
+>
+> ③ 热点数据尽量使用缓存，长期不会更改的大量数据也尽量用缓存。
+>
+> ④  数据量比较大，批量操作数据入库。不要使用遍历插入大量数据。
+>
+> ⑤ 如果是SQL执行时间较长，需要对SQL进行调优，创建索引、遵守最左前缀原则等。
+
+① 尽量使用PHP内置的函数、变量、常量。PHP 代码需要编译解释为底层语言，这一过程每次请求都会处理一遍，开销大。
+② 合理使用内存。注销那些不用的变量尤其是大数组，以便释放内存。
+
+③ 尽量少使用正则表达式，正则表达式的回溯开销比较大。尽量使用函数来完成。
+
+④ 能在循环外做运算的，尽量提到循环外面。
+
+```php
+$str = "hello world";
+for ($i=0; $i < strlen($str); $i++) {
+    # code...
+}
+
+// 其中strlen()方法会在每次循环时计算一次
+
+// 进行优化
+$str = "hello world";
+$strlen = strlen($str);
+for ($i=0; $i < $strlen; $i++) {
+    # code...
+}
+```
+
+⑤ 尽量使用带引号的字符串做键值。PHP 会将没有引号的键值当做常量，产生查找常量的开销。
+
+```php
+define('key', 'imooc');
+
+$array = array(
+    'key' => 'hello world!',
+    'imooc' => 'http://www.imooc.com/'
+);
+echo $array["key"] . '\n'; // 输出 hello world
+echo $array[key] . '\n'; // 输出 http://www.imooc.com/
+```
+
+⑥ 用单引号代替双引号来包含字符串，这样做会更快一些。因为PHP会在双引号包围的字符串中搜寻变量， 单引号则不会。注意：只有echo能这么做，它是一种可以把多个字符串当作参数的”函数”(译注：PHP手册中说echo是语言结构，不是真正的函数，故 把函数加上了双引号)。
+
+⑦ 减少PHP魔术方法的使用。
+
+⑧ 数据量比较大，批量操作数据入库。
+
+⑨ 耗时操作考虑异步处理。
+
+⑩ 恰当使用非关系型缓存，在适当的业务场景，恰当地使用缓存，是可以大大提高接口性能的。这里的缓存包括：Redis，JVM本地缓存，memcached，或者Map等。
+
+⑪ 进行SQL优化、创建索引、遵守最左原则。
+
+
+
+34、NSQ 消息队列的原理？
+
+NSQ is composed of 3 daemons:
+
+- **[nsqd](https://nsq.io/components/nsqd.html)** is the daemon that receives, queues, and delivers messages to clients.
+- **[nsqlookupd](https://nsq.io/components/nsqlookupd.html)** is the daemon that manages topology information and provides an eventually consistent discovery service.
+- **[nsqadmin](https://nsq.io/components/nsqadmin.html)** is a web UI to introspect the cluster in realtime (and perform various administrative tasks).
+
+![img](PHP面试大全.assets/v2-b266260a17702af4509f6c7d2ba40d4a_1440w.jpg)
+
+
+
+
+
+
 
 
 

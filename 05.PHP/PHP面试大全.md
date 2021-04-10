@@ -58,6 +58,28 @@
 
 29、[正则表达式相关？](#29)
 
+30、[PHP执行系统命令函数?](#30)
+
+31、[商品库存的解决方案？](#31)
+
+32、[如何防止用户重复下单？](#32)
+
+33、[请尽可能多的写出 PHP 优化执行效率的方法？](#33)
+
+34、[NSQ 消息队列的原理？](#34)
+
+35、[谈谈你对控制反转（IoC）和依赖注入（DI）的理解。](#35)
+
+36、[什么是PHP的反射机制，具体应用场景是什么？](#36)
+
+37、[常用的设计模式？](#37)
+
+38、[常用的算法？](#38)
+
+39、[final、abstract、interface 、static 关键字分别代表什么？](#39)
+
+
+
 合并两个有序数组。 给定两个有序整数数组 nums1 和 nums2，将 nums2 合并到 nums1 中，使得 num1 成为一个有序数组。
 
 # 解答列表
@@ -933,7 +955,7 @@ echo $bar($my_var);
 
 26、<span id="26">PHP字符串相关</span>
 
-#### 字符串截取
+### 字符串截取
 
 * [substr(string，start，length)](https://secure.php.net/manual/zh/function.substr.php) - 返回提取的子字符串， 失败时返回 FALSE。
 
@@ -941,7 +963,7 @@ echo $bar($my_var);
 
 * [mb_strcut(str，start，length，encoding)](https://secure.php.net/manual/zh/function.mb-strcut.php) - 和 mb_substr() 类似，都是从字符串中提取子字符串，但是按字节数来执行，而不是字符个数。
 
-#### 字符串替换
+### 字符串替换
 
 * [ str_replace(search，replace，subject，count)](https://secure.php.net/manual/zh/function.str-replace.php) - 子字符串替换，在subject中搜索search并替换为replace，返回替换后的数组或者字符串。
 
@@ -959,7 +981,7 @@ str_replace('wang','lens','wangxiong')  // lensxiong
 substr_replace(157110***5, '*******', 3, 7)  // 157*******5
 ```
 
-#### 字符串查找
+### 字符串查找
 
 * [strstr(haystack，needle，before_needle)](https://secure.php.net/manual/zh/function.strstr.php) -查找字符串的首次出现，返回字符串的一部分或者 FALSE（如果未发现 needle）
 
@@ -991,7 +1013,7 @@ $pos = strpos($newstring, 'a', 1); // $pos = 7, 不是 0
 strrpos('abcdef abcdef', 'b', 9)  // false
 ```
 
-#### 字符串处理
+### 字符串处理
 
 * strtolower() ：函数把字符串转换为小写。
 * [lcfirst()](https://www.w3school.com.cn/php/func_string_lcfirst.asp) - 把字符串中的首字符转换为小写。
@@ -1076,740 +1098,13 @@ echo substr_count("Hello world. The world is nice","l");//4
 
 ## PHP 常用数组
 
-27、<span id="27"> 常用的PHP 数组函数?</span>
+27、<span id="27"> 常用的PHP 数组函数?写出几个常用的数组函数（10-15个左右）。</span>
 
-* `implode` — 将一个一维数组的值转化为字符串。等同于`join ()`，别名 `implode()`。
-* `explode` — 使用一个字符串分割另一个字符
-
-
-
-## 魔术方法
-
-28、<span id="28">常用的魔术方法？</span>
-
-* `__construct`：构造函数，创建一个对象时先调用此方法。举例：`new`一个对象时的初始化工作。
-* `__destruct`：析构函数，某个对象的引用被删除或者对象被销毁的时候会调用此方法。
-* `__call`：【方法重载】 ，在对象中调用一个不可访问方法时，会调用此方法。
-* `__callStatic`：【方法重载】在静态上下文中调用一个不可访问方法时，会调用此方法。该方法是唯一一个静态的魔术方法。
-* `__set`：【属性重载】给不可访问的属性赋值，会调用此方法。举例：批量设置私有属性（封装性）；允许在一定范围内添加属性。
-* `__get` ：【属性重载】读取不可访问属性的值时，会调用此方法。
-* `__isset`：【属性重载】当对不可访问属性调用 isset() 或 empty() 时，会调用此方法。
-* `__unset`：【属性重载】当对不可访问属性调用 unset() 时，会调用此方法。
-* ` __sleep()`：【序列化】serialize() 序列化的时候会检查该方法是否存在，存在则返回一个被序列化的变量名称数组。
-* `__wakeup()`：【反序列化】unserialize() 反序列化时候，定义反序列化后调用的方法，预先准备对象需要的资源。举例：用在反序列化操作中，例如重新建立数据库连接，或执行其它初始化操作。
-* `__toString()`：将对象当作字符串使用时被自动调用（类型转换时，对象to 字符串）。举例：` echo $obj`，返回一个字符串。
-* `__invoke()`：当将对象当作函数调用时会被自动调用。举例：
-
-```
-app->add(new APICheckMiddleWare($container));
-```
-
-* `__clone() `：对象复制的时候，会调用此方法。举例：对新克隆的对象中修改属性的值。
-
-
-
-## 正则表达式
-
-29、<span id="29">PHP的正则表达式</span>。
-
-> 正则表达式的作用：分割、匹配、查找、替换字符串。
-
-① 过滤网页上所有的JS脚本：
-
-[【PHP】用正则表达式过滤js代码](https://blog.csdn.net/JecksonChenJinHua/article/details/20494855)
-
-```php
-/<script[^>]*?>.*?<\/script>/si  
-```
-
-
-
-#### 元字符
-
-| 元 字符 | 描述                                                         |
-| :------ | :----------------------------------------------------------- |
-| $       | 匹配输入字符串的结尾位置。如果设置了 RegExp 对象的 Multiline 属性，则 $ 也匹配 '\n' 或 '\r'。要匹配 $ 字符本身，请使用 \$。 |
-| ( )     | 标记一个子表达式的开始和结束位置。子表达式可以获取供以后使用。要匹配这些字符，请使用 \( 和 \)。 |
-| *       | 匹配前面的子表达式零次或多次。要匹配 * 字符，请使用 \\*。    |
-| +       | 匹配前面的子表达式一次或多次。要匹配 + 字符，请使用 \\\+。   |
-| .       | 匹配除换行符 \n 之外的任何单字符。要匹配 . ，请使用 \\\. 。  |
-| [       | 标记一个中括号表达式的开始。要匹配 [，请使用\\ \[。          |
-| ?       | 匹配前面的子表达式零次或一次，或指明一个非贪婪限定符。要匹配 ? 字符，请使用 \\?。 |
-| \       | 将下一个字符标记为或特殊字符、或原义字符、或向后引用、或八进制转义符。例如， 'n' 匹配字符 'n'。'\n' 匹配换行符。序列 '\\' 匹配 "\"，而 '\(' 则匹配 "("。 |
-| ^       | 匹配输入字符串的开始位置，除非在方括号表达式中使用，当该符号在方括号表达式中使用时，表示不接受该方括号表达式中的字符集合。要匹配 ^ 字符本身，请使用 \^。 |
-| {       | 标记限定符表达式的开始。要匹配 {，请使用\ \{。               |
-| \|      | 指明两项之间的一个选择。要匹配 \|，请使用\ \|。              |
-| x(?=y)  | 匹配'x'仅仅当'x'后面跟着'y'.这种叫做先行断言。               |
-| []      | 匹配一个集合。                                               |
-| [^]     | 除了集合中的字符。                                           |
-| [-]     | 0-9代表0到9之间的数字，A-Z代表A-Z之间的数字。                |
-
-#### 限定符
-
-| 字符  | 描述                                                         |
-| :---- | :----------------------------------------------------------- |
-| *     | 匹配前面的子表达式零次或多次。例如，zo* 能匹配 "z" 以及 "zoo"。* 等价于{0,}。 |
-| +     | 匹配前面的子表达式一次或多次。例如，'zo+' 能匹配 "zo" 以及 "zoo"，但不能匹配 "z"。+ 等价于 {1,}。 |
-| ?     | 匹配前面的子表达式零次或一次。例如，"do(es)?" 可以匹配 "do" 、 "does" 中的 "does" 、 "doxy" 中的 "do" 。? 等价于 {0,1}。 |
-| {n}   | n 是一个非负整数。匹配确定的 n 次。例如，'o{2}' 不能匹配 "Bob" 中的 'o'，但是能匹配 "food" 中的两个 o。 |
-| {n,}  | n 是一个非负整数。至少匹配n 次。例如，'o{2,}' 不能匹配 "Bob" 中的 'o'，但能匹配 "foooood" 中的所有 o。'o{1,}' 等价于 'o+'。'o{0,}' 则等价于 'o*'。 |
-| {n,m} | m 和 n 均为非负整数，其中n <= m。最少匹配 n 次且最多匹配 m 次。例如，"o{1,3}" 将匹配 "fooooood" 中的前三个 o。'o{0,1}' 等价于 'o?'。请注意在逗号和两个数之间不能有空格。 |
-
-#### 通用原子
-
-| 通用原子 | 描述                                                         |
-| -------- | ------------------------------------------------------------ |
-| \d       | 匹配一个数字。等价于[0-9]。                                  |
-| \D       | 匹配一个非数字字符。等价于[\^ 0-9]。                         |
-| \w       | 匹配一个单字字符（字母、数字或者下划线）。等价于 [A-Za-z0-9_]。 |
-| \W       | 匹配一个非单字字符。等价于 [\^A-Za-z0-9_]。                  |
-| \s       | 匹配一个空白字符，包括空格、制表符、换页符和换行符。         |
-| \S       | 匹配一个非空白字符。                                         |
-
-#### 模式修正符
-
-正则表达式中常用的模式修正符有i、g、m、s、U、x、a、D、e 等。
-
-| 修正符 | 描述                                                         |
-| ------ | ------------------------------------------------------------ |
-| i      | 不区分(ignore)大小写。                                       |
-| g      | 全局(global)匹配。                                           |
-| m      | 多(more)行匹配。                                             |
-| s      | 特殊字符圆点 . 中包含换行符。                                |
-| U      | 只匹配最近的一个字符串；不重复匹配。                         |
-| x      | 将模式中的空白忽略。                                         |
-| A      | 强制从目标字符串开头匹配。                                   |
-| D      | 如果使用$限制结尾字符，则不允许结尾有换行。                  |
-| e      | 配合函数preg_replace()使用，可以把匹配来的字符串当作正则表达式执行。 |
-| u      | 能够正确处理大于\uFFFF的Unicode字符，也就是说，会正确处理四个字节的UTF-16编码。 |
-
-#### 后向引用
-
-使用小括号指定一个子表达式后，匹配这个子表达式的文本(也就是此分组捕获的内容)可以在表达式或其它程序中作进一步的处理。默认情况下，每个分组会自动拥有一个组号，规则是：从左向右，以分组的左括号为标志，第一个出现的分组的组号为 1，第二个为 2，以此类推。
-
-```php
-$str = '</b>wangxiong</b>';
-$res = preg_replace('/<b>(.*)<\/b>/','\\1',$str);
-var_dump($res); // wangxiong
-```
-
-
-
-30、PHP执行系统命令函数?
-
-```php
-system()
-passthru()
-exec()
-shell_exec()
-popen()
-proc_open()
-pcntl_exec()
-```
-
-
-
-31、商品库存的解决方案？
-
-方案一（不推荐）：数据库操作商品库存采用乐观锁防止超卖。缺点：数据库压力太大，会被拖垮。
-
-```php
-update sku_stock set stock = stock - num , version = version + 1 where sku_code = '' and stock - num > 0 and version = #{version};
-```
-
-方案二（不推荐）：利用Redis单线程，强制串行处理。缺点：并发不高，处理慢，效率低，用户体验差。优点：减轻了数据库压力。
-
-```java
-/**
-     * 缺点并发不高,同时只能一个用户抢占操作,用户体验不好！
-     *
-     * @param orderSkuAo
-     */
-    public boolean subtractStock(OrderSkuAo orderSkuAo) {
-        String lockKey = "shop-product-stock-subtract" + orderSkuAo.getOrderCode();
-        if(redis.get(lockKey)){
-            return false;
-        }
-        try {
-            lock.lock(lockKey, 1L, 10L);
-            //处理逻辑
-        }catch (Exception e){
-            LogUtil.error("e=",e);
-        }finally {
-            lock.unLock(lockKey);
-        }
-        return true;
-    }
-
-```
-
-方案三（推荐）：redis + mq + mysql 保证库存安全，满足高并发处理。
-
-① 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品，直接返回false。
-
-② 从缓存中进行检查库存是否充足，库存不足，直接返回。
-
-③  Redis 计数器原子操作，通过incrby 减缓存中的库存。如果库存不足，返回扣减失败。
-
-④ 通过消息队列进行处理生成订单信息，和支付信息，并规定支付时间在半个小时以内，如果未完成支付，则将缓存中的库存还原增加，订单状态超时。
-
-⑤ 如果完成订单支付，则才真正扣减数据库中的库存。
-
-同一个商品，需保持数据库中库存 = 缓存中的库存数量+待支付订单中的商品数量。
-
-```php
-     /**
-     * 扣库存操作,秒杀的处理方案
-     * @param orderCode
-     * @param skuCode
-     * @param num
-     * @return
-     */
-    public boolean subtractStock(String orderCode,String skuCode, Integer num) {
-        String key = "shop-product-stock" + skuCode;
-        Object value = redis.get(key);
-        if (value == null) {
-            //前提 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品
-            return false;
-        }
-        //先检查 库存是否充足
-        Integer stock = (Integer) value;
-        if (stock < num) {
-            LogUtil.info("库存不足");
-            return false;
-        } 
-       //不可在这里直接操作数据库减库存，否则导致数据不安全
-       //因为此时可能有其他线程已经将redis的key修改了
-        //redis 减少库存，然后才能操作数据库
-        Long newStock = redis.increment(key, -num.longValue());
-        //库存充足
-        if (newStock >= 0) {
-            LogUtil.info("成功抢购");
-            //TODO 真正扣库存操作 可用MQ 进行 redis 和 mysql 的数据同步，减少响应时间
-        } else {
-            //库存不足，需要增加刚刚减去的库存
-            redis.increment(key, num.longValue());
-            LogUtil.info("库存不足,并发");
-            return false;
-        }
-        return true;
-    }
-```
-
-
-
-32、如何防止用户重复下单？
-
-* 前端拦截，点击后按钮置灰。
-* 后端：一个用户多设备可以下单的模式
-
-```java
-//key , 等待获取锁的时间 ，锁的时间
-redis.lock("shop-oms-submit" + token + deviceType, 1L, 10L);
-```
-
-* 防止恶意用户，恶意攻击 ： 一分钟调用下单超过50次 ，加入临时黑名单 ，10分钟后才可继续操作，一小时允许一次跨时段弱校验。使用reids的list结构，过期时间一小时。
-
-```java
-/**
-     * @param token
-     * @return true 可下单
-     */
-    public boolean judgeUserToken(String token) {
-        //获取用户下单次数 1分钟50次
-        String blackUser = "shop-oms-submit-black-" + token;
-        if (redis.get(blackUser) != null) {
-            return false;
-        }
-        String keyCount = "shop-oms-submit-count-" + token;
-        Long nowSecond = LocalDateTime.now().toEpochSecond(ZoneOffset.of("+8"));
-        //每一小时清一次key 过期时间1小时
-        Long count = redis.rpush(keyCount, String.valueOf(nowSecond), 60 * 60);
-        if (count < 50) {
-            return true;
-        }
-        //获取第50次的时间
-        List<String> secondString = redis.lrange(keyCount, count - 50, count - 49);
-        Long oldSecond = Long.valueOf(secondString.get(0));
-        //now > oldSecond + 60 用户可下单
-        boolean result = nowSecond.compareTo(oldSecond + 60) > 0;
-        if (!result) {
-            //触发限制，加入黑名单，过期时间10分钟
-            redis.set(blackUser, String.valueOf(nowSecond), 10 * 60);
-        }
-        return result;
-    }
-```
-
-
-
-33、请尽可能多的写出 PHP 优化执行效率的方法？
-
-> 概述：① 从PHP语言级别考虑，尽量使用PHP内置函数；合理使用内存，不定义不需要使用的变量，注销不用的变量和大数组释放内存；尽量少使用正则表达式和魔术方法；能在循环外做运算的，尽量提到循环外面；尽量使用带引号的字符串做键值，尽量使用单引号而不要使用双引号。
->
-> ② 从耗时操作角度考虑，比较耗时的操作尽量采用异步消息队列操作处理，比如邮件发送、转账支付等。
->
-> ③ 热点数据尽量使用缓存，长期不会更改的大量数据也尽量用缓存。
->
-> ④  数据量比较大，批量操作数据入库。不要使用遍历插入大量数据。
->
-> ⑤ 如果是SQL执行时间较长，需要对SQL进行调优，创建索引、遵守最左前缀原则等。
-
-① 尽量使用PHP内置的函数、变量、常量。PHP 代码需要编译解释为底层语言，这一过程每次请求都会处理一遍，开销大。
-② 合理使用内存。注销那些不用的变量尤其是大数组，以便释放内存。
-
-③ 尽量少使用正则表达式，正则表达式的回溯开销比较大。尽量使用函数来完成。
-
-④ 能在循环外做运算的，尽量提到循环外面。
-
-```php
-$str = "hello world";
-for ($i=0; $i < strlen($str); $i++) {
-    # code...
-}
-
-// 其中strlen()方法会在每次循环时计算一次
-
-// 进行优化
-$str = "hello world";
-$strlen = strlen($str);
-for ($i=0; $i < $strlen; $i++) {
-    # code...
-}
-```
-
-⑤ 尽量使用带引号的字符串做键值。PHP 会将没有引号的键值当做常量，产生查找常量的开销。
-
-```php
-define('key', 'imooc');
-
-$array = array(
-    'key' => 'hello world!',
-    'imooc' => 'http://www.imooc.com/'
-);
-echo $array["key"] . '\n'; // 输出 hello world
-echo $array[key] . '\n'; // 输出 http://www.imooc.com/
-```
-
-⑥ 用单引号代替双引号来包含字符串，这样做会更快一些。因为PHP会在双引号包围的字符串中搜寻变量， 单引号则不会。注意：只有echo能这么做，它是一种可以把多个字符串当作参数的”函数”(译注：PHP手册中说echo是语言结构，不是真正的函数，故 把函数加上了双引号)。
-
-⑦ 减少PHP魔术方法的使用。
-
-⑧ 数据量比较大，批量操作数据入库。
-
-⑨ 耗时操作考虑异步处理。
-
-⑩ 恰当使用非关系型缓存，在适当的业务场景，恰当地使用缓存，是可以大大提高接口性能的。这里的缓存包括：Redis，JVM本地缓存，memcached，或者Map等。
-
-⑪ 进行SQL优化、创建索引、遵守最左原则。
-
-
-
-34、NSQ 消息队列的原理？
-
-NSQ is composed of 3 daemons:
-
-- **[nsqd](https://nsq.io/components/nsqd.html)** is the daemon that receives, queues, and delivers messages to clients.
-- **[nsqlookupd](https://nsq.io/components/nsqlookupd.html)** is the daemon that manages topology information and provides an eventually consistent discovery service.
-- **[nsqadmin](https://nsq.io/components/nsqadmin.html)** is a web UI to introspect the cluster in realtime (and perform various administrative tasks).
-
-![img](PHP面试大全.assets/v2-b266260a17702af4509f6c7d2ba40d4a_1440w.jpg)
-
-
-
-
-
-
-
-
-
-
-
-
-
-4、如何将1234567890转换成1,234,567,890 每3位用逗号隔开的形式？
-
-![image-20210317175646180](PHP面试大全.assets/image-20210317175646180.png)
-
-```php
-ltrim(strrev(chunk_split(strrev(1234567890), 3, ',')),',')
-```
-
-chunk_split — 将字符串分割成小块。
-
-```php
-chunk_split ( string $body , int $chunklen = 76 , string $end = "\r\n" ) : string
-```
-
-注：strrev函数不能解决中文字符翻转问题。
-
-3、如何实现字符串翻转？
-
-思路：使用正则和数组实现。
-
-![image-20210317175949327](PHP面试大全.assets/image-20210317175949327.png)
-
-```java
-function strUtf8() {
-  return join("",array_reverse(preg_split("//u",$str)))
-}
-```
-
-preg_split — 通过一个正则表达式分隔字符串。
-
-```php
-preg_split ( string $pattern , string $subject , int $limit = -1 , int $flags = 0 ) : array
-```
-
-join — 别名 implode()。
-
-```php
-implode ( string $glue , array $pieces ) : string
-```
-
-![image-20210317175806582](PHP面试大全.assets/image-20210317175806582.png)
-
-4、（算法）约瑟夫环问题：一群猴子排成一圈，按1,2,…,n依次编号。然后从第1只开始数，数到第m只,把它踢出圈，从它后面再开始数， 再数到第m只，在把它踢出去…，如此不停的进行下去， 直到最后只剩下一只猴子为止，那只猴子就叫做大王。要求编程模拟此过程，输入m、n, 输出最后那个大王的编号。
-
-思路：每个猴子出列后，剩下的猴子又组成了另一个子问题。只是他们的编号变化了。第一个出列的猴子肯定是a[1]=m(mod)n(m/n的余数)，他除去后剩下的猴子是a[1]+1,a[1]+2,…,n,1,2,…a[1]-2,a[1]-1，对应的新编号是1,2,3…n-1。设此时某个猴子的新编号是i，他原来的编号就是(i+a[1])%n。于是，这便形成了一个递归问题。假如知道了这个子问题(n-1个猴子)的解是x，那么原问题(n个猴子)的解便是：(x+m%n)%n=(x+m)%n。问题的起始条件：如果n=1,那么结果就是1。
-
-```php
-function monkeyKing($n,$m) {  
-    $r=0;  
-    for($i=2; $i<=$n; $i++) {
-        $r=($r+$m)%$i;  
-    }
-    return $r+1;  
-}  
-echo monkeyKing(10,3)."是猴王";
-```
-
-5、PHP的对象传值与引用传值是怎样的，有什么区别？
-
-思路：
-
-* 变量赋值为拷贝赋值，修改原值不受影响。
-* 对象赋值另一个变量，是将对象的对象标识符拷贝一份，两个对象公用一份数据，其中一个修改，全部被修改。
-* 引用传值会直接指向对象标识符，修改其中一个值，所有值均被改变。
-
-![image-20210317102326140](PHP面试大全.assets/image-20210317102326140.png)
-
-![图片](PHP面试大全.assets/640.png)
-
-![image-20210317102404012](PHP面试大全.assets/image-20210317102404012.png)
-
-![图片](PHP面试大全.assets/640-20210317102431740.png)
-
-![image-20210317175140711](PHP面试大全.assets/image-20210317175140711.png)
-
-6、如何解决PHP网站访问慢的问题？
-
-* 1、流量层面：一是检查自己服务器上的资源（图片、视频、音乐、软件等）是否做了防盗链（nginx配置方式防盗链）；二是CDN加速的使用是否合理。
-* 2、前端层面：一是通过减少组件的请求次数来减少HTTP请求（使用图片地图、`css`精灵、图片密集型网站可使用图片懒加载，合并压缩`css`样式表和`js`脚本）；二是对数据文件进行压缩（`JavaScript` 代码的压缩、`CSS `代码的压缩、`HTML` 代码的压缩，`GZIP` 压缩，图片大小处理）；
-* 3、服务端层面：一是使用动态语言静态化（使用`smarty`模板引擎的缓存机制生成静态`html`缓存文件），减少逻辑处理压力，降低数据库服务器查询压力；二是对服务端代码进行优化（冗余处理，业务逻辑优化），可以使用消息队列来处理某些业务。
-* 4、缓存层面：使用数据库缓存，`Memcached`、`Redis`、`MongoDB`等。
-* 5、MySQL数据库层面：数据库表结构、慢SQL调优、建立索引、分库分表、分区操作、读写分离。
-* 6、数据库架构：
-* 7、服务器层面：负载均衡（Nginx的反向代理）、浏览器静态缓存（Nginx`静态资源缓存配置策略）。
-* 8、架构层面：从架构上来说，采用前后端分离的分层架构，前端负责站点展现层（异步获取数据，响应速度提升），后端负责站点数据层（通过内网一次性返数据，性能大幅度提升）。
-
-7、leetcode 41| 缺失的第一个正数。
-
-给定一个未排序的整数数组，找出其中没有出现的最小的正整数。例如[1,2,3,5] 输出4。
-
-说明：你的算法的时间复杂度应为O(n)，并且只能使用常数级别的空间。
-
-思路：它需要找出第一个数组中没有的最小正整数，所以我们通过数组的索引来标识相应的正整数，比如索引0表示正整数1，以此类推，索引i表示正整数i+1，我们只需要遍历一次数组，将满足下列条件的元素交换到对应索引处，1.大于等于1，小于等于数组长度length，2.元素的值不等于当前索引值i+1，需要注意的是，每次交换之后，交换过来的值也要进行上述判断，否则继续遍历后面的元素，相当于遗漏了交换过来的这个元素。经过上面一次遍历之后，所有满足条件（1.大于等于1，小于等于数组长度length，2.元素的值不等于当前索引值i+1。）的元素全部都在对应的索引处了，即元素值等于索引值+1。再通过一次遍历，找出第一个不符合元素值等于索引值i+1的元素，返回结果i+1即为我们需要的寻找的正整数。
-
-PHP版本：
-
-```java
-
-```
-
-Java版本：
-
-```java
-int firstMissingPositive(int* nums,int length) {
-    for (int i = 0; i < length; i++) {  //从数组的第一个元素开始逐一判断
-        int item = nums[i];  //记录当前元素
-        if (item >= 1 && item <= length && item != nums[item - 1]) {  //若1<=item<=nums.length，且item不等于i+1，就将item与它对应的i索引处的值进行交换
-            swap(nums, i, item - 1);  //调用交换方法
-            i--; //进行交换之后，需要对交换过来的数再次进行上述判断，即i--与循环i++抵消一次
-        }
-    }
-    int i = 0;
-    for (i = 0; i < length; i++) {  //再次遍历数组
-        if (nums[i] != i + 1){ //若当前数组元素的值不等于i+1，则直接返回i+1结果
-            return i + 1;
-        }
-    }
-    return i + 1;  //当上述循环结束，程序仍然没有返回结果，则返回i+1，即nums.length+1
-}
-
-int swap(int* nums, int i, int j) {  //交换两个数
-    nums[i] ^= nums[j];   //通过异或运算进行交换
-    nums[j] ^= nums[i];
-    nums[i] ^= nums[j];
-    return 0;
-}
-
-int main (){ //此处为一个测试例子
-    int nums[] = { 7, 8, 9, 11, 12 };
-    printf("%d\n", firstMissingPositive(nums,5));
-```
-
-8、请写出一段PHP代码，确保多个进程同时写入同一个文件成功。（腾讯）
-
-9、PHP 超全局变量$_SERVER。
-
-```PHP
-$_SERVER["SERVER_ADDR"] // 服务器端IP
-$_SERVER["REMOTE_ADDR"] // 客户端IP
-$_SERVER["SCRIPT_FILENAME"] // 当前脚本执行路径
-$_SERVER["QUERY_STRING"]  // 服务器请求时？后面的参数
-$_SERVER["SCRIPT_NAME"]  // 当前脚本的路径
-$_SERVER["HTTP_REFERER"] // 链接到当前页面的前一页地址
-```
-
-10、isset和empty的区别？
-
-isset — 检测变量是否已设置并且非 **`null`**。
-
-empty — 检查一个变量是否为空。
-
-当`var`存在，并且是一个非空非零的值时返回 **`false`** 否则返回 **`true`**.
-
-以下的东西被认为是空的：
-
-- `""` (空字符串)
-
-- `0` (作为整数的0)
-
-- `0.0` (作为浮点数的0)
-
-- `"0"` (作为字符串的0)
-
-- **`null`**
-
-- **`false`**
-
-- `array()` (一个空数组)
-
-- `$var;` (一个声明了，但是没有值的变量)
-
-  ![image-20210318152733187](PHP面试大全.assets/image-20210318152733187.png)
-
-![image-20210317231431626](PHP面试大全.assets/image-20210317231431626.png)
-
-11、
-
-sort — 对数组排序，索引会由0到n-1重新编号。
-
-asort — 对数组值进行正向排序并保持键的索引关系。
-
-ksort — 对数组按照键名排序，适用于对索引键排序的关联数组。
-
-arsort — 对数组值进行逆向排序并保持键的索引关系。
-
-![image-20210317182734384](PHP面试大全.assets/image-20210317182734384.png)
-
-12、
-
-count — 计算数组中的单元数目，或对象中的属性个数，通常是一个array，如果参数既不是数组，也不是实现 `Countable` 接口的对象，将返回 `1`。 有个例外：如果 `array_or_countable` 是 **`null`** 则结果是 `0`。
-
-```php
-echo count("abc"); // 1
-echo count(null); // 0
-echo count(false); // 1
-echo count(strlen("https://wwxiong.com")); // 1
-```
-
-13、写个函数用来对二维数组排序。
-
-![image-20210317214945094](PHP面试大全.assets/image-20210317214945094.png)
-
-14、写五个不同的函数，来获取一个全路径文件的扩展名，允许封装PHP中已有的函数。
-
-![image-20210317220226550](PHP面试大全.assets/image-20210317220226550.png)
-
-```php
-str_replace — 子字符串替换
-str_replace ( mixed $search , mixed $replace , mixed $subject , int &$count = ? ) : mixed
-  
-strrchr — 查找指定字符在字符串中的最后一次出现。该函数返回 haystack 字符串中的一部分，这部分以 needle 的最后出现位置开始，直到 haystack 末尾。
-strrchr ( string $haystack , mixed $needle ) : string  
-
-strstr — 查找字符串的首次出现，返回 haystack 字符串从 needle 第一次出现的位置开始到 haystack 结尾的字符串。
-strstr ( string $haystack , mixed $needle , bool $before_needle = false ) : string
-  
-strrpos — 计算指定字符串在目标字符串中最后一次出现的位置,返回字符串 haystack 中 needle 最后一次出现的数字位置。
-strrpos ( string $haystack , string $needle , int $offset = 0 ) : int
-  
-substr — 返回字符串的子串。返回字符串 string 由 start 和 length 参数指定的子字符串。
-substr ( string $string , int $start , int $length = ? ) : string
-  
-pathinfo — 返回文件路径的信息，返回一个关联数组包含有 path 的信息。返回关联数组还是字符串取决于 options。
-pathinfo ( string $path , int $options = PATHINFO_DIRNAME | PATHINFO_BASENAME | PATHINFO_EXTENSION | PATHINFO_FILENAME ) : mixed
-  
-basename — 返回路径中的文件名部分,给出一个包含有指向一个文件的全路径的字符串，本函数返回基本的文件名。
-basename ( string $path , string $suffix = ? ) : string
-```
-
-```php
-<?php
-$foo = "0123456789a123456789b123456789c";
-var_dump(strrpos($foo, '7', -5));  // 从尾部第 5 个位置开始查找 // 结果: int(17)
-var_dump(strrpos($foo, '7', 20));  // 从第 20 个位置开始查找 // 结果: int(27)
-var_dump(strrpos($foo, '7', 28));  // 结果: bool(false)
-?>
-```
-
-```php
-<?php
-$path_parts = pathinfo('/www/htdocs/inc/lib.inc.php');
-echo $path_parts['dirname'], "\n"; // /www/htdocs/inc
-echo $path_parts['basename'], "\n"; // lib.inc.php
-echo $path_parts['extension'], "\n"; // php
-echo $path_parts['filename'], "\n"; // lib.inc
-?>
-```
-
-```php
-<?php
-$email  = 'name@example.com';
-$domain = strstr($email, '@');
-echo $domain; // 打印 @example.com
-
-$user = strstr($email, '@', true); // 从 PHP 5.3.0 起
-echo $user; // 打印 name
-?>
-```
-
-15、
-
-```php
-strcasecmp — 二进制安全比较字符串（不区分大小写）,如果 str1 小于 str2 返回 < 0； 如果 str1 大于 str2 返回 > 0；如果两者相等，返回 0。
-strcasecmp ( string $str1 , string $str2 ) : int
-  
-strcmp — 二进制安全字符串比较，注意该比较区分大小写。
-strcmp ( string $str1 , string $str2 ) : int
-
-in_array — 检查数组中是否存在某个值，在（haystack）中搜索（ needle），如果没有设置 strict 则使用宽松的比较。
-in_array ( mixed $needle , array $haystack , bool $strict = false ) : bool
-```
-
-
-
-![image-20210317230413963](PHP面试大全.assets/image-20210317230413963.png)
-
-16、
-
-![image-20210317231115245](PHP面试大全.assets/image-20210317231115245.png)
-
-17、
-
-```php
-array_map — Applies the callback to the elements of the given arrays
-```
-
-```php
-<?php
-function cube($n){
-    return ($n * $n * $n);
-}
-
-$a = [1, 2, 3, 4, 5];
-$b = array_map('cube', $a);
-print_r($b);
-?>
-  
-```
-
-![image-20210317231803871](PHP面试大全.assets/image-20210317231803871.png)
-
-
-
-18、数组处理。
-
-![image-20210318141826529](PHP面试大全.assets/image-20210318141826529.png)
-
-
-
-```java
-array_slice — 从数组中取出一段，array_slice() 返回根据 offset 和 length 参数所指定的 array 数组中的一段序列。
-array_slice ( array $array , int $offset , int $length = null , bool $preserve_keys = false ) : array
-```
-
-19、max — Find highest value。
-
-```php
-max ( mixed $value , mixed ...$values ) : mixed
-```
-
-![image-20210318144644557](PHP面试大全.assets/image-20210318144644557.png)
-
-20、PHP的比较运算符。
-
-![PHP比较运算符](PHP面试大全.assets/bVvdtw.png)
-
-```php
-0 == false: bool(true)
-0 === false: bool(false)
-
-0 == null: bool(true)
-0 === null: bool(false)
-
-false == null: bool(true)
-false === null: bool(false)
-
-"0" == false: bool(true)
-"0" === false: bool(false)
-
-"0" == null: bool(false)
-"0" === null: bool(false)
-
-"" == false: bool(true)
-"" === false: bool(false)
-
-"" == null: bool(true)
-"" == null: bool(false)
-```
-
-
-
-21、unset — 释放给定的变量。
-
-如果在函数中 unset() 一个通过引用传递的变量，则只是局部变量被销毁，而在调用环境中的变量将保持调用 unset() 之前一样的值。
-
-```php
-<?php
-function foo(&$bar) {
-    unset($bar);
-    $bar = "blah";
-}
-
-$bar = 'something';
-echo "$bar\n"; // something
-
-foo($bar);
-echo "$bar\n"; // something
-?>
-```
-
-![image-20210318155847483](PHP面试大全.assets/image-20210318155847483.png)
-
-![image-20210318171916912](PHP面试大全.assets/image-20210318171916912.png)
-
-22、局部变量和全局变量。
-
-![image-20210318161118275](PHP面试大全.assets/image-20210318161118275.png)
-
-23、写出几个常用的数组函数（10-15个左右）。
+### 常用数组函数
 
 * array_diff — 计算数组的差集。
 * array_column — 返回数组中指定的一列。
-*  array_flip — 交换数组中的键和值。
+* array_flip — 交换数组中的键和值。
 * array_chunk — 将一个数组分割成多个数组。
 * array_reverse — 返回单元顺序相反的数组。
 * array_slice — 从数组中取出一段。
@@ -1824,8 +1119,6 @@ echo "$bar\n"; // something
 * array_shift — 将数组开头的单元移出数组。
 * array_intersect — 计算数组的交集。
 * array_map — 为数组的每个元素应用回调函数。
-
-
 
 ① array_diff — 计算数组的差集。
 
@@ -2291,9 +1584,9 @@ Array
 
 ⑲
 
+### 数组排序函数
 
-
-2x、写出几个常用的数组排序函数？
+写出几个常用的数组排序函数？
 
 * asort — 对数组进行排序并保持索引关系。
 
@@ -2307,7 +1600,6 @@ Array
 
 * rsort — 对数组逆向排序。
 
-  
 
 ① asort — 对数组按照值进行正向排序并保持索引关系。
 
@@ -2449,6 +1741,1259 @@ fruits[3] = orange
 ```
 
 
+
+## 魔术方法
+
+28、<span id="28">常用的魔术方法？</span>
+
+* `__construct`：构造函数，创建一个对象时先调用此方法。举例：`new`一个对象时的初始化工作。
+* `__destruct`：析构函数，某个对象的引用被删除或者对象被销毁的时候会调用此方法。
+* `__call`：【方法重载】 ，在对象中调用一个不可访问方法时，会调用此方法。
+* `__callStatic`：【方法重载】在静态上下文中调用一个不可访问方法时，会调用此方法。该方法是唯一一个静态的魔术方法。
+* `__set`：【属性重载】给不可访问的属性赋值，会调用此方法。举例：批量设置私有属性（封装性）；允许在一定范围内添加属性。
+* `__get` ：【属性重载】读取不可访问属性的值时，会调用此方法。
+* `__isset`：【属性重载】当对不可访问属性调用 isset() 或 empty() 时，会调用此方法。
+* `__unset`：【属性重载】当对不可访问属性调用 unset() 时，会调用此方法。
+* ` __sleep()`：【序列化】serialize() 序列化的时候会检查该方法是否存在，存在则返回一个被序列化的变量名称数组。
+* `__wakeup()`：【反序列化】unserialize() 反序列化时候，定义反序列化后调用的方法，预先准备对象需要的资源。举例：用在反序列化操作中，例如重新建立数据库连接，或执行其它初始化操作。
+* `__toString()`：将对象当作字符串使用时被自动调用（类型转换时，对象to 字符串）。举例：` echo $obj`，返回一个字符串。
+* `__invoke()`：当将对象当作函数调用时会被自动调用。举例：
+
+```
+app->add(new APICheckMiddleWare($container));
+```
+
+* `__clone() `：对象复制的时候，会调用此方法。举例：对新克隆的对象中修改属性的值。
+
+
+
+## 正则表达式
+
+29、<span id="29">PHP的正则表达式</span>。
+
+> 正则表达式的作用：分割、匹配、查找、替换字符串。
+
+① 过滤网页上所有的JS脚本：
+
+[【PHP】用正则表达式过滤js代码](https://blog.csdn.net/JecksonChenJinHua/article/details/20494855)
+
+```php
+/<script[^>]*?>.*?<\/script>/si  
+```
+
+② email 过滤
+
+```php
+^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$
+```
+
+③ 手机号码
+
+```php
+^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\d{8}$
+```
+
+
+
+#### 元字符
+
+| 元 字符 | 描述                                                         |
+| :------ | :----------------------------------------------------------- |
+| $       | 匹配输入字符串的结尾位置。如果设置了 RegExp 对象的 Multiline 属性，则 $ 也匹配 '\n' 或 '\r'。要匹配 $ 字符本身，请使用 \$。 |
+| ( )     | 标记一个子表达式的开始和结束位置。子表达式可以获取供以后使用。要匹配这些字符，请使用 \( 和 \)。 |
+| *       | 匹配前面的子表达式零次或多次。要匹配 * 字符，请使用 \\*。    |
+| +       | 匹配前面的子表达式一次或多次。要匹配 + 字符，请使用 \\\+。   |
+| .       | 匹配除换行符 \n 之外的任何单字符。要匹配 . ，请使用 \\\. 。  |
+| [       | 标记一个中括号表达式的开始。要匹配 [，请使用\\ \[。          |
+| ?       | 匹配前面的子表达式零次或一次，或指明一个非贪婪限定符。要匹配 ? 字符，请使用 \\?。 |
+| \       | 将下一个字符标记为或特殊字符、或原义字符、或向后引用、或八进制转义符。例如， 'n' 匹配字符 'n'。'\n' 匹配换行符。序列 '\\' 匹配 "\"，而 '\(' 则匹配 "("。 |
+| ^       | 匹配输入字符串的开始位置，除非在方括号表达式中使用，当该符号在方括号表达式中使用时，表示不接受该方括号表达式中的字符集合。要匹配 ^ 字符本身，请使用 \^。 |
+| {       | 标记限定符表达式的开始。要匹配 {，请使用\ \{。               |
+| \|      | 指明两项之间的一个选择。要匹配 \|，请使用\ \|。              |
+| x(?=y)  | 匹配'x'仅仅当'x'后面跟着'y'.这种叫做先行断言。               |
+| []      | 匹配一个集合。                                               |
+| [^]     | 除了集合中的字符。                                           |
+| [-]     | 0-9代表0到9之间的数字，A-Z代表A-Z之间的数字。                |
+
+#### 限定符
+
+| 字符  | 描述                                                         |
+| :---- | :----------------------------------------------------------- |
+| *     | 匹配前面的子表达式零次或多次。例如，zo* 能匹配 "z" 以及 "zoo"。* 等价于{0,}。 |
+| +     | 匹配前面的子表达式一次或多次。例如，'zo+' 能匹配 "zo" 以及 "zoo"，但不能匹配 "z"。+ 等价于 {1,}。 |
+| ?     | 匹配前面的子表达式零次或一次。例如，"do(es)?" 可以匹配 "do" 、 "does" 中的 "does" 、 "doxy" 中的 "do" 。? 等价于 {0,1}。 |
+| {n}   | n 是一个非负整数。匹配确定的 n 次。例如，'o{2}' 不能匹配 "Bob" 中的 'o'，但是能匹配 "food" 中的两个 o。 |
+| {n,}  | n 是一个非负整数。至少匹配n 次。例如，'o{2,}' 不能匹配 "Bob" 中的 'o'，但能匹配 "foooood" 中的所有 o。'o{1,}' 等价于 'o+'。'o{0,}' 则等价于 'o*'。 |
+| {n,m} | m 和 n 均为非负整数，其中n <= m。最少匹配 n 次且最多匹配 m 次。例如，"o{1,3}" 将匹配 "fooooood" 中的前三个 o。'o{0,1}' 等价于 'o?'。请注意在逗号和两个数之间不能有空格。 |
+
+#### 通用原子
+
+| 通用原子 | 描述                                                         |
+| -------- | ------------------------------------------------------------ |
+| \d       | 匹配一个数字。等价于[0-9]。                                  |
+| \D       | 匹配一个非数字字符。等价于[\^ 0-9]。                         |
+| \w       | 匹配一个单字字符（字母、数字或者下划线）。等价于 [A-Za-z0-9_]。 |
+| \W       | 匹配一个非单字字符。等价于 [\^A-Za-z0-9_]。                  |
+| \s       | 匹配一个空白字符，包括空格、制表符、换页符和换行符。         |
+| \S       | 匹配一个非空白字符。                                         |
+
+#### 模式修正符
+
+正则表达式中常用的模式修正符有i、g、m、s、U、x、a、D、e 等。
+
+| 修正符 | 描述                                                         |
+| ------ | ------------------------------------------------------------ |
+| i      | 不区分(ignore)大小写。                                       |
+| g      | 全局(global)匹配。                                           |
+| m      | 多(more)行匹配。                                             |
+| s      | 特殊字符圆点 . 中包含换行符。                                |
+| U      | 只匹配最近的一个字符串；不重复匹配。                         |
+| x      | 将模式中的空白忽略。                                         |
+| A      | 强制从目标字符串开头匹配。                                   |
+| D      | 如果使用$限制结尾字符，则不允许结尾有换行。                  |
+| e      | 配合函数preg_replace()使用，可以把匹配来的字符串当作正则表达式执行。 |
+| u      | 能够正确处理大于\uFFFF的Unicode字符，也就是说，会正确处理四个字节的UTF-16编码。 |
+
+#### 后向引用
+
+使用小括号指定一个子表达式后，匹配这个子表达式的文本(也就是此分组捕获的内容)可以在表达式或其它程序中作进一步的处理。默认情况下，每个分组会自动拥有一个组号，规则是：从左向右，以分组的左括号为标志，第一个出现的分组的组号为 1，第二个为 2，以此类推。
+
+```php
+$str = '</b>wangxiong</b>';
+$res = preg_replace('/<b>(.*)<\/b>/','\\1',$str);
+var_dump($res); // wangxiong
+```
+
+
+
+## PHP 系统函数
+
+30、<span id="30">PHP执行系统命令函数?</span>
+
+```php
+system()
+passthru()
+exec()
+shell_exec()
+popen()
+proc_open()
+pcntl_exec()
+```
+
+
+
+31、商品库存的解决方案？
+
+方案一（不推荐）：数据库操作商品库存采用乐观锁防止超卖。缺点：数据库压力太大，会被拖垮。
+
+```php
+update sku_stock set stock = stock - num , version = version + 1 where sku_code = '' and stock - num > 0 and version = #{version};
+```
+
+方案二（不推荐）：利用Redis单线程，强制串行处理。缺点：并发不高，处理慢，效率低，用户体验差。优点：减轻了数据库压力。
+
+```java
+/**
+     * 缺点并发不高,同时只能一个用户抢占操作,用户体验不好！
+     *
+     * @param orderSkuAo
+     */
+    public boolean subtractStock(OrderSkuAo orderSkuAo) {
+        String lockKey = "shop-product-stock-subtract" + orderSkuAo.getOrderCode();
+        if(redis.get(lockKey)){
+            return false;
+        }
+        try {
+            lock.lock(lockKey, 1L, 10L);
+            //处理逻辑
+        }catch (Exception e){
+            LogUtil.error("e=",e);
+        }finally {
+            lock.unLock(lockKey);
+        }
+        return true;
+    }
+
+```
+
+方案三（推荐）：redis + mq + mysql 保证库存安全，满足高并发处理。
+
+① 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品，直接返回false。
+
+② 从缓存中进行检查库存是否充足，库存不足，直接返回。
+
+③  Redis 计数器原子操作，通过incrby 减缓存中的库存。如果库存不足，返回扣减失败。
+
+④ 通过消息队列进行处理生成订单信息，和支付信息，并规定支付时间在半个小时以内，如果未完成支付，则将缓存中的库存还原增加，订单状态超时。
+
+⑤ 如果完成订单支付，则才真正扣减数据库中的库存。
+
+同一个商品，需保持数据库中库存 = 缓存中的库存数量+待支付订单中的商品数量。
+
+```php
+     /**
+     * 扣库存操作,秒杀的处理方案
+     * @param orderCode
+     * @param skuCode
+     * @param num
+     * @return
+     */
+    public boolean subtractStock(String orderCode,String skuCode, Integer num) {
+        String key = "shop-product-stock" + skuCode;
+        Object value = redis.get(key);
+        if (value == null) {
+            //前提 提前将商品库存放入缓存 ,如果缓存不存在，视为没有该商品
+            return false;
+        }
+        //先检查 库存是否充足
+        Integer stock = (Integer) value;
+        if (stock < num) {
+            LogUtil.info("库存不足");
+            return false;
+        } 
+       //不可在这里直接操作数据库减库存，否则导致数据不安全
+       //因为此时可能有其他线程已经将redis的key修改了
+        //redis 减少库存，然后才能操作数据库
+        Long newStock = redis.increment(key, -num.longValue());
+        //库存充足
+        if (newStock >= 0) {
+            LogUtil.info("成功抢购");
+            //TODO 真正扣库存操作 可用MQ 进行 redis 和 mysql 的数据同步，减少响应时间
+        } else {
+            //库存不足，需要增加刚刚减去的库存
+            redis.increment(key, num.longValue());
+            LogUtil.info("库存不足,并发");
+            return false;
+        }
+        return true;
+    }
+```
+
+
+
+## 防止重复下单
+
+32、<span id="32">如何防止用户重复下单？</span>
+
+* 前端拦截，点击后按钮置灰。
+* 后端：一个用户多设备可以下单的模式
+
+```java
+//key , 等待获取锁的时间 ，锁的时间
+redis.lock("shop-oms-submit" + token + deviceType, 1L, 10L);
+```
+
+* 防止恶意用户，恶意攻击 ： 一分钟调用下单超过50次 ，加入临时黑名单 ，10分钟后才可继续操作，一小时允许一次跨时段弱校验。使用reids的list结构，过期时间一小时。
+
+```java
+/**
+     * @param token
+     * @return true 可下单
+     */
+    public boolean judgeUserToken(String token) {
+        //获取用户下单次数 1分钟50次
+        String blackUser = "shop-oms-submit-black-" + token;
+        if (redis.get(blackUser) != null) {
+            return false;
+        }
+        String keyCount = "shop-oms-submit-count-" + token;
+        Long nowSecond = LocalDateTime.now().toEpochSecond(ZoneOffset.of("+8"));
+        //每一小时清一次key 过期时间1小时
+        Long count = redis.rpush(keyCount, String.valueOf(nowSecond), 60 * 60);
+        if (count < 50) {
+            return true;
+        }
+        //获取第50次的时间
+        List<String> secondString = redis.lrange(keyCount, count - 50, count - 49);
+        Long oldSecond = Long.valueOf(secondString.get(0));
+        //now > oldSecond + 60 用户可下单
+        boolean result = nowSecond.compareTo(oldSecond + 60) > 0;
+        if (!result) {
+            //触发限制，加入黑名单，过期时间10分钟
+            redis.set(blackUser, String.valueOf(nowSecond), 10 * 60);
+        }
+        return result;
+    }
+```
+
+
+
+## PHP 优化执行效率
+
+33、请尽可能多的写出 PHP 优化执行效率的方法？
+
+> 概述：① 从PHP语言级别考虑，尽量使用PHP内置函数；合理使用内存，不定义不需要使用的变量，注销不用的变量和大数组释放内存；尽量少使用正则表达式和魔术方法；能在循环外做运算的，尽量提到循环外面；尽量使用带引号的字符串做键值，尽量使用单引号而不要使用双引号。
+>
+> ② 从耗时操作角度考虑，比较耗时的操作尽量采用异步消息队列操作处理，比如邮件发送、转账支付等。
+>
+> ③ 热点数据尽量使用缓存，长期不会更改的大量数据也尽量用缓存。
+>
+> ④  数据量比较大，批量操作数据入库。不要使用遍历插入大量数据。
+>
+> ⑤ 如果是SQL执行时间较长，需要对SQL进行调优，创建索引、遵守最左前缀原则等。
+
+① 尽量使用PHP内置的函数、变量、常量。PHP 代码需要编译解释为底层语言，这一过程每次请求都会处理一遍，开销大。
+② 合理使用内存。注销那些不用的变量尤其是大数组，以便释放内存。
+
+③ 尽量少使用正则表达式，正则表达式的回溯开销比较大。尽量使用函数来完成。
+
+④ 能在循环外做运算的，尽量提到循环外面。
+
+```php
+$str = "hello world";
+for ($i=0; $i < strlen($str); $i++) {
+    # code...
+}
+
+// 其中strlen()方法会在每次循环时计算一次
+
+// 进行优化
+$str = "hello world";
+$strlen = strlen($str);
+for ($i=0; $i < $strlen; $i++) {
+    # code...
+}
+```
+
+⑤ 尽量使用带引号的字符串做键值。PHP 会将没有引号的键值当做常量，产生查找常量的开销。
+
+```php
+define('key', 'imooc');
+
+$array = array(
+    'key' => 'hello world!',
+    'imooc' => 'http://www.imooc.com/'
+);
+echo $array["key"] . '\n'; // 输出 hello world
+echo $array[key] . '\n'; // 输出 http://www.imooc.com/
+```
+
+⑥ 用单引号代替双引号来包含字符串，这样做会更快一些。因为PHP会在双引号包围的字符串中搜寻变量， 单引号则不会。注意：只有echo能这么做，它是一种可以把多个字符串当作参数的”函数”(译注：PHP手册中说echo是语言结构，不是真正的函数，故 把函数加上了双引号)。
+
+⑦ 减少PHP魔术方法的使用。
+
+⑧ 数据量比较大，批量操作数据入库。
+
+⑨ 耗时操作考虑异步处理。
+
+⑩ 恰当使用非关系型缓存，在适当的业务场景，恰当地使用缓存，是可以大大提高接口性能的。这里的缓存包括：Redis，JVM本地缓存，memcached，或者Map等。
+
+⑪ 进行SQL优化、创建索引、遵守最左原则。
+
+
+
+## NSQ 消息队列
+
+34、<span id = "34">NSQ 消息队列的原理？</span>
+
+NSQ is composed of 3 daemons:
+
+- **[nsqd](https://nsq.io/components/nsqd.html)** is the daemon that receives, queues, and delivers messages to clients.
+- **[nsqlookupd](https://nsq.io/components/nsqlookupd.html)** is the daemon that manages topology information and provides an eventually consistent discovery service.
+- **[nsqadmin](https://nsq.io/components/nsqadmin.html)** is a web UI to introspect the cluster in realtime (and perform various administrative tasks).
+
+![img](PHP面试大全.assets/v2-b266260a17702af4509f6c7d2ba40d4a_1440w.jpg)
+
+## 控制反转和依赖注入
+
+35、<span id="35">谈谈你对控制反转（IoC）和依赖注入（DI）的理解。</span>
+
+> 概述：不需要在A中直接new B，而是通过 Ioc 容器将 B 给我，这就叫控制反转。
+>
+> 控制反转：将组建间的依赖关系从程序内部提到外部来管理。控制反转是站在 A 的立场来看的，它是拿 B 的。
+>
+> 依赖注入：组建间的依赖通过外部以参数或者其他形式注入就是依赖注入。依赖注入是站在 Ioc 的立来看的，它是来传送 B的。
+
+**控制反转IoC(Inversion of Control)是说创建对象的控制权进行转移，以前创建对象的主动权和创建时机是由自己把控的，而现在这种权力转移到第三方**，比如转移交给了IoC容器，它就是一个专门用来创建对象的工厂，你要什么对象，它就给你什么对象，有了 IoC容器，依赖关系就变了，原先的依赖关系就没了，它们都依赖IoC容器了，通过IoC容器来建立它们之间的关系。
+
+* 谁控制谁，控制什么：谁控制谁？当然是IoC 容器控制了对象；控制什么？那就是主要控制了外部资源获取（不只是对象包括比如文件等）。
+* 为何是反转，哪些方面反转了：反转则是由容器来帮忙创建及注入依赖对象；为何是反转？**因为由容器帮我们查找及注入依赖对象，对象只是被动的接受依赖对象，所以是反转；哪些方面反转了？依赖对象的获取被反转了。**
+
+**DI—Dependency Injection，即“依赖注入”**：**组件之间依赖关系**由容器在运行期决定，即**由容器动态的将某个依赖关系注入到组件之中**。**依赖注入的目的并非为软件系统带来更多功能，而是为了提升组件重用的频率，并为系统搭建一个灵活、可扩展的平台。**通过依赖注入机制，我们只需要通过简单的配置，而无需任何代码就可指定目标需要的资源，完成自身的业务逻辑，而不需要关心具体的资源来自何处，由谁实现。
+
+​       ● 谁依赖于谁：当然是**应用程序依赖于IoC容器**；
+
+　　● 为什么需要依赖：**应用程序需要IoC容器来提供对象需要的外部资源**；
+
+　　● 谁注入谁：很明显是**IoC容器注入应用程序某个对象，应用程序依赖的对象**；
+
+　　● 注入了什么：就是**注入某个对象所需要的外部资源（包括对象、资源、常量数据）**
+
+依赖注入的优点：更好的管理了类与类之间的关系、降低了编码的复杂性。
+
+传统的框架，通过autoload()方法去指定目录寻找文件、然后include和require，来管理类与类之间的关系。
+
+laravel 框架通过namespace 和use 的使用，实现自动加载，再加上反射，实现了依赖注入来管理类和类之间的关系。
+
+
+
+## PHP 的反射机制
+
+36、<span id="36">什么是PHP的反射机制，具体应用场景是什么？</span>
+
+反射机制：在PHP运行时，扩展分析程序，导出或者提出关于类、方法、属性、参数等的详细信息，包括注释。这种动态获取信息以及动态调用方法的功能称为反射。
+
+```php
+<?php
+class A
+{
+    //我是构造函数的注释
+    public function __construct(B $b)
+    {
+        $this->b = $b;
+    }
+    //我是getB的注释
+    public function getB()
+    {
+        $this->b->bMethod();
+    }
+}
+class B
+{
+    public function __construct(C $c,D $d)
+    {
+        $this->c = $c;
+        $this->d = $d;
+    }
+    public  function bMethod()
+    {
+        echo "我是B中的方法bMethod()";
+    }
+}
+
+class C{
+    public function __construct(){
+
+    }
+    public function cMethod(){
+        echo "我是C中的方法cMethod()";
+    }
+
+}
+
+class D{
+    public function __construct(){
+
+    }
+    public function dMethod(){
+        echo "我是D中的方法dMethod()";
+    }
+}
+
+class Ioc
+{
+    protected $instances = [];
+    public function __construct()
+    {
+    }
+    public function getInstance($abstract){
+        //获取类的反射信息,也就是类的所有信息
+        $reflector = new ReflectionClass($abstract);
+        //  echo $reflector->getDocComment();  获取类的注释信息
+
+        //获取反射类的构造函数信息
+        $constructor = $reflector->getConstructor();
+        //获取反射类的构造函数的参数
+        $dependencies = $constructor->getParameters();
+
+        if(!$dependencies){
+            return new $abstract();
+        }
+        foreach ($dependencies as $dependency) {
+
+            if(!is_null($dependency->getClass())){
+                $p[] = $this->make($dependency->getClass()->name);
+                //这里$p[0]是C的实例化对象,$p[1]是D的实例化对象
+            }
+        }
+        //创建一个类的新实例,给出的参数将传递到类的构造函数
+        return $reflector->newInstanceArgs($p);
+    }
+
+    public function make($abstract)
+    {
+        return $this->getInstance($abstract);
+    }
+}
+
+$ioc = new Ioc();
+$a = $ioc->make('A');
+$a->getB();
+```
+
+## 设计模式
+
+37、<span id="37">常用的设计模式？</span>
+
+设计模式：工厂模式、单例模式、观察者模式、策略模式、适配器模式、注册树模式。
+
+### 单例模式
+
+定义：单例模式，单个实例的设计模式，用于保证类有且只有一个对象的设计模式。
+
+场景：MySQLDB，用于操作数据服务器的工具类，仅仅需要一个对象就可以完成所有的功能。使用一个对象不仅可以减少对象的占用的空间，增加PHP的处理效率。
+
+目的：从根本上，保证类能且仅能实例化一个对象。
+
+实现：三私一公（两个静态方法）。私有的构造方法、私有的静态属性、私有的克隆方法、公有的静态方法。
+
+① 增加构造方法，并将其私有化。
+
+② 私有的静态属性保存实例化好的对象。
+
+③ 增加一个公共的静态方法，用于在类外静态调用该方法，进入到类内，去执行实例化调用构造方法。
+
+④ 防止对象被克隆而生成新对象。
+
+```php
+private function __construct() {}
+private static $instance;//私有的静态属性保存实例化好的对象
+public static function getInstance() {
+//先判断对象是否被保存
+if(!isset(self::$instance)){
+//还没有保存，实例化并返回
+self::$instance = new self;
+}
+return self::$instance;
+}
+private function __clone() {}
+```
+
+```php
+// 第二步 封锁new操作
+class sigle{
+    protected static $ins = null;
+    // 方法前加final，则方法不能被覆盖，在类前加final，则不能被继承
+    final protected function __contruct(){
+    }
+    public static function getIns(){
+        if(self::$ins === null){
+            self::$ins = new self();
+        }
+        return self::$ins;
+    }
+    // 防止被克隆
+    final protected function __clone(){}
+}
+
+$s1 = sigle::getIns();
+// $s2 = clone $s1;
+$s2 = sigle::getIns();
+if($s1 === $s2){
+    echo '同一个对象';
+}else{
+    echo '不是同一个对象';
+}
+```
+
+
+
+### 简单工厂模式
+
+```php
+// 共同接口
+interface db{
+    function conn();
+}
+
+// 服务器端开发（不知道将会被谁调用）
+class dbsqlite implements db{
+    public function conn(){
+        echo '连接上了sqlite';
+    }
+}
+
+class dbmysql implements db{
+    public function conn(){
+        echo '连接上了mysql';
+    }
+}
+
+
+class Factory{
+    public static function creatDB($type){
+        if($type == 'mysql'){
+            return new dbmysql();
+        }elseif($type == 'sqlite'){
+            return new dbsqlite();
+        }else{
+            throw new Exception("Error DB type", 1);
+        }
+    }
+}
+// 客户端调用时，不知道工厂类中实例化的几种类，只需要传递$type参数就可以
+$db = Factory::creatDB('mysql');
+$db->conn();
+```
+
+在面向对象的设计法则中，重要的开闭原则：对于修改是封闭的，对于扩展是开放的。简单工厂违反了开闭原则。
+
+### 工厂模式
+
+场景：换DB了怎么办？MySQL 、Sqlite、Oracle。
+
+```php
+// 共同接口
+interface db{
+    function conn();
+}
+
+interface Factory{
+    function createDB();
+}
+
+// 服务器端开发（不知道将会被谁调用）
+class dbsqlite implements db{
+    public function conn(){
+        echo '连接上了sqlite';
+    }
+}
+
+class dbmysql implements db{
+    public function conn(){
+        echo '连接上了mysql';
+    }
+}
+
+class mysqlFactory implements Factory{
+    public function createDB(){
+        return new dbmysql();
+    }
+}
+
+class sqliteFactory implements Factory{
+    public function createDB(){
+        return new dbsqlite();
+    }
+}
+
+
+// =====服务器端添加了Oracle类
+// 前面的代码不用修改
+class dboracle implements db{
+    public function conn(){
+        echo '连接上了oracle';
+    }
+}
+
+class oracleFactory implements Factory{
+    public function createDB(){
+        return new dboracle();
+    }
+}
+
+// =====客户端开始====
+$fact = new mysqlFactory();
+$db = $fact->createDB();
+$db->conn();
+
+$fact = new sqliteFactory();
+$db = $fact->createDB();
+$db->conn();
+
+$fact = new oracleFactory();
+$db = $fact->createDB();
+$db->conn();
+
+// 在面向对象设计法则中，重要的开闭原则--对于修改是封闭的，对于扩展是开放的
+```
+
+### 观察者模式
+
+```php
+class User implements SplSubject{
+    public $lognum;
+    public $hobby;
+
+    protected $observers = null;
+
+    public function __construct($hobby){
+        $this->lognum = rand(1,10);
+        $this->hobby  = $hobby;
+        $this->observers = new SplObjectStorage();
+    }
+
+    public function login(){
+        $this->notify();
+    }
+
+    public function attach(SplObserver $observer){
+        $this->observers->attach($observer);
+    }
+
+    public function detach(SplObserver $observer){
+        $this->observers->detach($observer);
+    }
+
+    public function notify(){
+        $this->observers->rewind();
+        while ($this->observers->valid()) {
+            $observer = $this->observers->current();
+            $observer->update($this);
+            $this->observers->next();
+        }
+    }
+}
+
+
+class security implements SplObserver{
+    public function update(SplSubject $subject){
+        if($subject->lognum<3){
+            echo '这是第'.$subject->lognum.'次安全登录';
+        }else{
+            echo '这是第'.$subject->lognum.'次登录,异常';
+        }
+    }
+}
+
+class ad implements SplObserver{
+    public function update(SplSubject $subject){
+        if($subject->hobby == 'sports'){
+            echo '篮球';
+        }else{
+            echo '好好学习';
+        }
+    }
+}
+
+// 实施观察
+$user = new User('sports');
+$user->attach(new security());
+$user->attach(new ad());
+$user->login();
+```
+
+
+
+### 装饰者模式
+
+```php
+// 装饰器模式做文章修饰功能
+class baseArt{
+    protected $content;
+    protected $art = null;
+
+    public function __construct($content){
+        $this->content = $content;
+    }
+
+    public function decorator(){
+        return $this->content;
+    }
+}
+
+// 编辑文章摘要
+class editorArt extends baseArt{
+    public function __construct(baseArt $art){
+        $this->art = $art;
+        $this->decorator();
+    }
+
+    public function decorator(){
+        //return $this->art->content .= '小编摘要';
+        return $this->content = $this->art->decorator() . '小编摘要';
+    }
+}
+
+// SEO添加内容
+class SEOart extends baseArt{
+    public function __construct(baseArt $art){
+        $this->art = $art;
+        $this->decorator();
+    }
+    public function decorator(){
+        return $this->content = $this->art->decorator() . 'SEO关键词';
+    }
+}
+
+// 无论是哪个先编辑，顺序都可以进行交换
+$x = new SEOart(new editorArt(new baseArt('天天向上')));
+$y = new editorArt(new SEOart(new baseArt('天天向上')));
+echo $x->decorator();
+echo '<br>';
+echo $y->decorator();
+```
+
+## 算法相关
+
+38、<span id="38">常用的算法？</span>
+
+
+
+##final、abstract、interface 、static 
+
+39、<span id="39">final、abstract、interface 、static 关键字分别代表什么？</span>
+
+### final  终极类和方法
+
+> 采用final来修饰的类，不能被继承，仅仅可以实例化对象，意义在于限制。 
+> 采用final关键字修饰的方法，导致类被继承时该方法不能被重写。目的是使所有的子类具有功能一致的某个操作方法。 
+> 注意，final类与final方法不会同时出现在一个类中（目前不是一个语法要求）
+
+```
+final class Book{ }
+final public function getPrice(){}
+```
+
+### abstract 抽象类和方法
+
+> 当需要限定一个类不能被实例化对象时，可以将该类声明成抽象类。 
+> 抽象方法要求，仅仅存在方法的声明与参数列表部分，不能存在方法的实现部分。此时该方法如果需要使用，则需要子类来重写该方法。 
+> 抽象方法的作用是用于限定：子类中必须存在，但是实现是可以不同的方法。 
+> 一个抽象类，可以不包含抽象方法。 
+> 一个抽象方法，必须存在于抽象类中。（只要抽象类中才可以包含抽象方法） 
+> 如果继承抽象类的子类，不是抽象类，则必须要将所继承的所有抽象方法全都实现，重写父类的抽象方法，否则，将子类也声明成抽象类。
+
+```php
+abstract class Goods{ 
+abstract public function getName(); 
+} 
+```
+
+### interface 接口声明和实现
+
+[对象接口](https://secure.php.net/manual/zh/language.oop5.interfaces.php)
+
+> 接口技术，用于限制一个对象（类）应该具备那些公共（公共的方法）操作的一种结构。例如：USB标准，就是一套接口技术。 
+> 使用关键字interface声明，声明的方法，没有方法体部分，也称之为抽象方法。 
+> 使用关键字implements实现接口。 
+> 如果某个类，实现了某个接口，需要将接口中所定义的所有接口方法，全部实现才可以。
+
+USB设备接口：
+
+```
+interface I_USB {  
+    public function connect();       
+    public function sendData($data);      
+    public function getData();   
+    }
+```
+
+实现USB设备接口：
+
+```
+class Mp3 implements I_USB{       
+  public function  connect(){}        
+  public function  sendData($data){}      
+  public function  getData(){}
+  }
+```
+
+ 接口与抽象类的区别：
+
+> 接口中仅仅存在抽象方法，抽象类可以存在抽象方法，也可以存在非抽象方法。 
+> 接口中实现类需要将所有的抽象方法都实现，抽象类在继承时需要实现所有的抽象方法。 
+> 接口仅仅支持公共方法，只是为了限制外部操作而已，与内部实现没有关系。 
+> 接口的作用只是限制其实现类的外部操作。抽象类的作用一是为子类提供基础操作（普通成员），二是限制子类的实现过程。 
+> 一个类只能单继承抽象类，但是一个类可以多实现接口。 
+> 外部操作，用接口决定，而内部实现可以由抽象来决定。
+
+问：接口是否是类？
+
+> 不是类，接口只是限定类的结构。
+
+问：PHP是否支持多继承？如何实现多继承？
+
+> 不支持多继承，更不能实现多继承。（实现与继承不是一码事）
+
+### static 静态方法和属性 
+static的作用：
+
+> 声明静态局部变量。 
+> 声明静态成员。 
+> 静态延迟绑定。
+
+类内代替类的关键字：
+
+> self::，当前定义类 
+> static::，当前调用类 
+> parent::，父类
+
+问：self永远代表所在类么？
+
+> 是。类在被定义时（编译），就确定类中的self关键字的值。（将某个self关键字绑定到了某个类上）
+
+
+
+4、如何将1234567890转换成1,234,567,890 每3位用逗号隔开的形式？
+
+![image-20210317175646180](PHP面试大全.assets/image-20210317175646180.png)
+
+```php
+ltrim(strrev(chunk_split(strrev(1234567890), 3, ',')),',')
+```
+
+chunk_split — 将字符串分割成小块。
+
+```php
+chunk_split ( string $body , int $chunklen = 76 , string $end = "\r\n" ) : string
+```
+
+注：strrev函数不能解决中文字符翻转问题。
+
+3、如何实现字符串翻转？
+
+思路：使用正则和数组实现。
+
+![image-20210317175949327](PHP面试大全.assets/image-20210317175949327.png)
+
+```java
+function strUtf8() {
+  return join("",array_reverse(preg_split("//u",$str)))
+}
+```
+
+preg_split — 通过一个正则表达式分隔字符串。
+
+```php
+preg_split ( string $pattern , string $subject , int $limit = -1 , int $flags = 0 ) : array
+```
+
+join — 别名 implode()。
+
+```php
+implode ( string $glue , array $pieces ) : string
+```
+
+![image-20210317175806582](PHP面试大全.assets/image-20210317175806582.png)
+
+4、（算法）约瑟夫环问题：一群猴子排成一圈，按1,2,…,n依次编号。然后从第1只开始数，数到第m只,把它踢出圈，从它后面再开始数， 再数到第m只，在把它踢出去…，如此不停的进行下去， 直到最后只剩下一只猴子为止，那只猴子就叫做大王。要求编程模拟此过程，输入m、n, 输出最后那个大王的编号。
+
+思路：每个猴子出列后，剩下的猴子又组成了另一个子问题。只是他们的编号变化了。第一个出列的猴子肯定是a[1]=m(mod)n(m/n的余数)，他除去后剩下的猴子是a[1]+1,a[1]+2,…,n,1,2,…a[1]-2,a[1]-1，对应的新编号是1,2,3…n-1。设此时某个猴子的新编号是i，他原来的编号就是(i+a[1])%n。于是，这便形成了一个递归问题。假如知道了这个子问题(n-1个猴子)的解是x，那么原问题(n个猴子)的解便是：(x+m%n)%n=(x+m)%n。问题的起始条件：如果n=1,那么结果就是1。
+
+```php
+function monkeyKing($n,$m) {  
+    $r=0;  
+    for($i=2; $i<=$n; $i++) {
+        $r=($r+$m)%$i;  
+    }
+    return $r+1;  
+}  
+echo monkeyKing(10,3)."是猴王";
+```
+
+5、PHP的对象传值与引用传值是怎样的，有什么区别？
+
+思路：
+
+* 变量赋值为拷贝赋值，修改原值不受影响。
+* 对象赋值另一个变量，是将对象的对象标识符拷贝一份，两个对象公用一份数据，其中一个修改，全部被修改。
+* 引用传值会直接指向对象标识符，修改其中一个值，所有值均被改变。
+
+![image-20210317102326140](PHP面试大全.assets/image-20210317102326140.png)
+
+![图片](PHP面试大全.assets/640.png)
+
+![image-20210317102404012](PHP面试大全.assets/image-20210317102404012.png)
+
+![图片](PHP面试大全.assets/640-20210317102431740.png)
+
+![image-20210317175140711](PHP面试大全.assets/image-20210317175140711.png)
+
+6、如何解决PHP网站访问慢的问题？
+
+* 1、流量层面：一是检查自己服务器上的资源（图片、视频、音乐、软件等）是否做了防盗链（nginx配置方式防盗链）；二是CDN加速的使用是否合理。
+* 2、前端层面：一是通过减少组件的请求次数来减少HTTP请求（使用图片地图、`css`精灵、图片密集型网站可使用图片懒加载，合并压缩`css`样式表和`js`脚本）；二是对数据文件进行压缩（`JavaScript` 代码的压缩、`CSS `代码的压缩、`HTML` 代码的压缩，`GZIP` 压缩，图片大小处理）；
+* 3、服务端层面：一是使用动态语言静态化（使用`smarty`模板引擎的缓存机制生成静态`html`缓存文件），减少逻辑处理压力，降低数据库服务器查询压力；二是对服务端代码进行优化（冗余处理，业务逻辑优化），可以使用消息队列来处理某些业务。
+* 4、缓存层面：使用数据库缓存，`Memcached`、`Redis`、`MongoDB`等。
+* 5、MySQL数据库层面：数据库表结构、慢SQL调优、建立索引、分库分表、分区操作、读写分离。
+* 6、数据库架构：
+* 7、服务器层面：负载均衡（Nginx的反向代理）、浏览器静态缓存（Nginx`静态资源缓存配置策略）。
+* 8、架构层面：从架构上来说，采用前后端分离的分层架构，前端负责站点展现层（异步获取数据，响应速度提升），后端负责站点数据层（通过内网一次性返数据，性能大幅度提升）。
+
+7、leetcode 41| 缺失的第一个正数。
+
+给定一个未排序的整数数组，找出其中没有出现的最小的正整数。例如[1,2,3,5] 输出4。
+
+说明：你的算法的时间复杂度应为O(n)，并且只能使用常数级别的空间。
+
+思路：它需要找出第一个数组中没有的最小正整数，所以我们通过数组的索引来标识相应的正整数，比如索引0表示正整数1，以此类推，索引i表示正整数i+1，我们只需要遍历一次数组，将满足下列条件的元素交换到对应索引处，1.大于等于1，小于等于数组长度length，2.元素的值不等于当前索引值i+1，需要注意的是，每次交换之后，交换过来的值也要进行上述判断，否则继续遍历后面的元素，相当于遗漏了交换过来的这个元素。经过上面一次遍历之后，所有满足条件（1.大于等于1，小于等于数组长度length，2.元素的值不等于当前索引值i+1。）的元素全部都在对应的索引处了，即元素值等于索引值+1。再通过一次遍历，找出第一个不符合元素值等于索引值i+1的元素，返回结果i+1即为我们需要的寻找的正整数。
+
+PHP版本：
+
+```java
+
+```
+
+Java版本：
+
+```java
+int firstMissingPositive(int* nums,int length) {
+    for (int i = 0; i < length; i++) {  //从数组的第一个元素开始逐一判断
+        int item = nums[i];  //记录当前元素
+        if (item >= 1 && item <= length && item != nums[item - 1]) {  //若1<=item<=nums.length，且item不等于i+1，就将item与它对应的i索引处的值进行交换
+            swap(nums, i, item - 1);  //调用交换方法
+            i--; //进行交换之后，需要对交换过来的数再次进行上述判断，即i--与循环i++抵消一次
+        }
+    }
+    int i = 0;
+    for (i = 0; i < length; i++) {  //再次遍历数组
+        if (nums[i] != i + 1){ //若当前数组元素的值不等于i+1，则直接返回i+1结果
+            return i + 1;
+        }
+    }
+    return i + 1;  //当上述循环结束，程序仍然没有返回结果，则返回i+1，即nums.length+1
+}
+
+int swap(int* nums, int i, int j) {  //交换两个数
+    nums[i] ^= nums[j];   //通过异或运算进行交换
+    nums[j] ^= nums[i];
+    nums[i] ^= nums[j];
+    return 0;
+}
+
+int main (){ //此处为一个测试例子
+    int nums[] = { 7, 8, 9, 11, 12 };
+    printf("%d\n", firstMissingPositive(nums,5));
+```
+
+8、请写出一段PHP代码，确保多个进程同时写入同一个文件成功。（腾讯）
+
+9、PHP 超全局变量$_SERVER。
+
+```PHP
+$_SERVER["SERVER_ADDR"] // 服务器端IP
+$_SERVER["REMOTE_ADDR"] // 客户端IP
+$_SERVER["SCRIPT_FILENAME"] // 当前脚本执行路径
+$_SERVER["QUERY_STRING"]  // 服务器请求时？后面的参数
+$_SERVER["SCRIPT_NAME"]  // 当前脚本的路径
+$_SERVER["HTTP_REFERER"] // 链接到当前页面的前一页地址
+```
+
+10、isset和empty的区别？
+
+isset — 检测变量是否已设置并且非 **`null`**。
+
+empty — 检查一个变量是否为空。
+
+当`var`存在，并且是一个非空非零的值时返回 **`false`** 否则返回 **`true`**.
+
+以下的东西被认为是空的：
+
+- `""` (空字符串)
+
+- `0` (作为整数的0)
+
+- `0.0` (作为浮点数的0)
+
+- `"0"` (作为字符串的0)
+
+- **`null`**
+
+- **`false`**
+
+- `array()` (一个空数组)
+
+- `$var;` (一个声明了，但是没有值的变量)
+
+  ![image-20210318152733187](PHP面试大全.assets/image-20210318152733187.png)
+
+![image-20210317231431626](PHP面试大全.assets/image-20210317231431626.png)
+
+11、
+
+sort — 对数组排序，索引会由0到n-1重新编号。
+
+asort — 对数组值进行正向排序并保持键的索引关系。
+
+ksort — 对数组按照键名排序，适用于对索引键排序的关联数组。
+
+arsort — 对数组值进行逆向排序并保持键的索引关系。
+
+![image-20210317182734384](PHP面试大全.assets/image-20210317182734384.png)
+
+12、
+
+count — 计算数组中的单元数目，或对象中的属性个数，通常是一个array，如果参数既不是数组，也不是实现 `Countable` 接口的对象，将返回 `1`。 有个例外：如果 `array_or_countable` 是 **`null`** 则结果是 `0`。
+
+```php
+echo count("abc"); // 1
+echo count(null); // 0
+echo count(false); // 1
+echo count(strlen("https://wwxiong.com")); // 1
+```
+
+13、写个函数用来对二维数组排序。
+
+![image-20210317214945094](PHP面试大全.assets/image-20210317214945094.png)
+
+14、写五个不同的函数，来获取一个全路径文件的扩展名，允许封装PHP中已有的函数。
+
+![image-20210317220226550](PHP面试大全.assets/image-20210317220226550.png)
+
+```php
+str_replace — 子字符串替换
+str_replace ( mixed $search , mixed $replace , mixed $subject , int &$count = ? ) : mixed
+  
+strrchr — 查找指定字符在字符串中的最后一次出现。该函数返回 haystack 字符串中的一部分，这部分以 needle 的最后出现位置开始，直到 haystack 末尾。
+strrchr ( string $haystack , mixed $needle ) : string  
+
+strstr — 查找字符串的首次出现，返回 haystack 字符串从 needle 第一次出现的位置开始到 haystack 结尾的字符串。
+strstr ( string $haystack , mixed $needle , bool $before_needle = false ) : string
+  
+strrpos — 计算指定字符串在目标字符串中最后一次出现的位置,返回字符串 haystack 中 needle 最后一次出现的数字位置。
+strrpos ( string $haystack , string $needle , int $offset = 0 ) : int
+  
+substr — 返回字符串的子串。返回字符串 string 由 start 和 length 参数指定的子字符串。
+substr ( string $string , int $start , int $length = ? ) : string
+  
+pathinfo — 返回文件路径的信息，返回一个关联数组包含有 path 的信息。返回关联数组还是字符串取决于 options。
+pathinfo ( string $path , int $options = PATHINFO_DIRNAME | PATHINFO_BASENAME | PATHINFO_EXTENSION | PATHINFO_FILENAME ) : mixed
+  
+basename — 返回路径中的文件名部分,给出一个包含有指向一个文件的全路径的字符串，本函数返回基本的文件名。
+basename ( string $path , string $suffix = ? ) : string
+```
+
+```php
+<?php
+$foo = "0123456789a123456789b123456789c";
+var_dump(strrpos($foo, '7', -5));  // 从尾部第 5 个位置开始查找 // 结果: int(17)
+var_dump(strrpos($foo, '7', 20));  // 从第 20 个位置开始查找 // 结果: int(27)
+var_dump(strrpos($foo, '7', 28));  // 结果: bool(false)
+?>
+```
+
+```php
+<?php
+$path_parts = pathinfo('/www/htdocs/inc/lib.inc.php');
+echo $path_parts['dirname'], "\n"; // /www/htdocs/inc
+echo $path_parts['basename'], "\n"; // lib.inc.php
+echo $path_parts['extension'], "\n"; // php
+echo $path_parts['filename'], "\n"; // lib.inc
+?>
+```
+
+```php
+<?php
+$email  = 'name@example.com';
+$domain = strstr($email, '@');
+echo $domain; // 打印 @example.com
+
+$user = strstr($email, '@', true); // 从 PHP 5.3.0 起
+echo $user; // 打印 name
+?>
+```
+
+15、
+
+```php
+strcasecmp — 二进制安全比较字符串（不区分大小写）,如果 str1 小于 str2 返回 < 0； 如果 str1 大于 str2 返回 > 0；如果两者相等，返回 0。
+strcasecmp ( string $str1 , string $str2 ) : int
+  
+strcmp — 二进制安全字符串比较，注意该比较区分大小写。
+strcmp ( string $str1 , string $str2 ) : int
+
+in_array — 检查数组中是否存在某个值，在（haystack）中搜索（ needle），如果没有设置 strict 则使用宽松的比较。
+in_array ( mixed $needle , array $haystack , bool $strict = false ) : bool
+```
+
+
+
+![image-20210317230413963](PHP面试大全.assets/image-20210317230413963.png)
+
+16、
+
+![image-20210317231115245](PHP面试大全.assets/image-20210317231115245.png)
+
+17、
+
+```php
+array_map — Applies the callback to the elements of the given arrays
+```
+
+```php
+<?php
+function cube($n){
+    return ($n * $n * $n);
+}
+
+$a = [1, 2, 3, 4, 5];
+$b = array_map('cube', $a);
+print_r($b);
+?>
+  
+```
+
+![image-20210317231803871](PHP面试大全.assets/image-20210317231803871.png)
+
+
+
+18、数组处理。
+
+![image-20210318141826529](PHP面试大全.assets/image-20210318141826529.png)
+
+
+
+```java
+array_slice — 从数组中取出一段，array_slice() 返回根据 offset 和 length 参数所指定的 array 数组中的一段序列。
+array_slice ( array $array , int $offset , int $length = null , bool $preserve_keys = false ) : array
+```
+
+19、max — Find highest value。
+
+```php
+max ( mixed $value , mixed ...$values ) : mixed
+```
+
+![image-20210318144644557](PHP面试大全.assets/image-20210318144644557.png)
+
+20、PHP的比较运算符。
+
+![PHP比较运算符](PHP面试大全.assets/bVvdtw.png)
+
+```php
+0 == false: bool(true)
+0 === false: bool(false)
+
+0 == null: bool(true)
+0 === null: bool(false)
+
+false == null: bool(true)
+false === null: bool(false)
+
+"0" == false: bool(true)
+"0" === false: bool(false)
+
+"0" == null: bool(false)
+"0" === null: bool(false)
+
+"" == false: bool(true)
+"" === false: bool(false)
+
+"" == null: bool(true)
+"" == null: bool(false)
+```
+
+
+
+21、unset — 释放给定的变量。
+
+如果在函数中 unset() 一个通过引用传递的变量，则只是局部变量被销毁，而在调用环境中的变量将保持调用 unset() 之前一样的值。
+
+```php
+<?php
+function foo(&$bar) {
+    unset($bar);
+    $bar = "blah";
+}
+
+$bar = 'something';
+echo "$bar\n"; // something
+
+foo($bar);
+echo "$bar\n"; // something
+?>
+```
+
+![image-20210318155847483](PHP面试大全.assets/image-20210318155847483.png)
+
+![image-20210318171916912](PHP面试大全.assets/image-20210318171916912.png)
+
+22、局部变量和全局变量。
+
+![image-20210318161118275](PHP面试大全.assets/image-20210318161118275.png)
+
+23、
 
 
 

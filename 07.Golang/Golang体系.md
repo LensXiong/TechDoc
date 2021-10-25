@@ -83,10 +83,6 @@ func (set *threadSafeSet) Iter() <-chan interface{} {
 
 解析：默认情况下 `make` 初始化的 `channel` 是无缓冲的，也就是在迭代写时会阻塞。
 
-
-
-拓展：
-
 定义和声明`channel`格式：
 
 ```go
@@ -109,16 +105,56 @@ var chan3 <-chan int // 声明为只读
 说明：
 
 * `channel` 是引用类型。`channel` 必须初始化才能写入数据，即 `make` 后才能使用。
-
 * `channel`是有类型的，`intChan` 只能写入整数 `int`...。
-
 * `channle`的数据放满后，就不能再放入了；如果从 `channel` 取出数据后，可以继续放入。
-
 * 在没有使用协程的情况下，如果 `channel` 数据取完了，再取就会报 `dead lock`。
-
 * 管道可以声明为只读或者只写，在默认情况下下，管道是双向（可读可写）。如果只是向管道写入数据而没有读取，就会出现阻塞而`deadlock`。
 
-  
+
+
+## `interface` 关键字
+
+03、以下代码能编译过去吗?为什么?
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+type People interface {
+    Speak(string) string
+}
+type Student struct{}
+
+func (stu *Student) Speak(think string) (talk string) {
+    if think == "bitch" {
+        talk = "You are a good boy"
+    } else {
+        talk = "hi"
+    }
+    return
+}
+func main() {
+    var peo People = Student{}
+    think := "bitch"
+    fmt.Println(peo.Speak(think))
+}
+```
+
+结果：
+
+```go
+cannot use Student literal (type Student) as type People in assignment:
+Student does not implement People (Speak method has pointer receiver)
+```
+
+
+
+解析：编译失败，值类型 `Student{}` 未实现接口 `People` 的方法，不能定义为 `People` 类 型。
+
+在 `golang` 语言中， `Student` 和 `*Student` 是两种类型，第一个是表示 `Student` 本 身，第二个是指向 `Student `的指针。
 
 ## `defer `关键字
 

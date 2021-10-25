@@ -110,8 +110,6 @@ var chan3 <-chan int // 声明为只读
 * 在没有使用协程的情况下，如果 `channel` 数据取完了，再取就会报 `dead lock`。
 * 管道可以声明为只读或者只写，在默认情况下下，管道是双向（可读可写）。如果只是向管道写入数据而没有读取，就会出现阻塞而`deadlock`。
 
-
-
 ## `interface` 关键字
 
 03、以下代码能编译过去吗?为什么?
@@ -129,7 +127,7 @@ type People interface {
 type Student struct{}
 
 func (stu *Student) Speak(think string) (talk string) {
-    if think == "bitch" {
+    if think == "good" {
         talk = "You are a good boy"
     } else {
         talk = "hi"
@@ -137,8 +135,11 @@ func (stu *Student) Speak(think string) (talk string) {
     return
 }
 func main() {
-    var peo People = Student{}
-    think := "bitch"
+ 		// cannot use Student literal (type Student) as type People in assignment:
+    // Student does not implement People (Speak method has pointer receiver)
+    // var peo People = Student{}
+    var peo People = &Student{}
+    think := "good"
     fmt.Println(peo.Speak(think))
 }
 ```
@@ -156,7 +157,73 @@ Student does not implement People (Speak method has pointer receiver)
 
 在 `golang` 语言中， `Student` 和 `*Student` 是两种类型，第一个是表示 `Student` 本 身，第二个是指向 `Student `的指针。
 
-## `defer `关键字
+
+
+**接口本身不能创建实例，但是可以指向一个实现了该接口的自定义类型的变量（实例）。**
+
+```go
+package main
+
+import "fmt"
+
+type AInterface interface {
+    Say()
+}
+
+type Stu struct {
+    Name string
+}
+
+func (stu Stu) Say() {
+    fmt.Println("Stu Say()")
+}
+
+func main() {
+    var stu Stu // 结构体变量，实现了 Say() 实现了 AInterface
+    var a AInterface = stu
+    a.Say()
+}
+```
+
+示例：以下代码打印出来什么内容，为什么？
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+type People interface {
+    Show()
+}
+type Student struct{}
+
+func (stu *Student) Show() {}
+func live() People {
+    var stu *Student
+    return stu
+}
+func main() {
+    if live() == nil {
+        fmt.Println("nil")
+    } else {
+        fmt.Println("not nil")
+    }
+}
+```
+
+结果：
+
+```go
+not nil
+```
+
+解析：`*Student` 定义后本身没有初始化值，所以 `*Student` 是 `nil`的，但是 `*Student `实现了 `People `接口，接口不为` nil` 。`interface`类型默认是一个指针（引用类型），如果没有对`interface`初始化就使用，那么会输出`nil`。
+
+##  
+
+##  `defer `关键字
 
 5、`defer`关键字的使用，写出下面代码的输出内容。
 
@@ -597,12 +664,6 @@ func main() {
 
 
  切片 `append` 操作的本质就是对数组扩容，`go` 底层会创建一下新的数组 `newArr`(按照扩容后大小) 将 `slice` 原来包含的元素拷贝到新的数组 `newArr`，原来的`slice` 重新引用到 `newArr`。
-
-
-
-
-
-
 
 
 

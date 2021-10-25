@@ -83,6 +83,43 @@ func (set *threadSafeSet) Iter() <-chan interface{} {
 
 解析：默认情况下 `make` 初始化的 `channel` 是无缓冲的，也就是在迭代写时会阻塞。
 
+
+
+拓展：
+
+定义和声明`channel`格式：
+
+```go
+var intChan chan int // intChan 用于存放 int 数据
+var mapChan chan map[int]string // mapChan 用于存放 map[int]string 类型
+var perChan chan Person
+var perChan2 chan *Person
+....
+```
+
+只读和只写示例：
+
+```go
+var chan1 chan int   // 可读可写
+var chan2 chan<- int // 声明为只写
+chan2 = make(chan int, 3)
+var chan3 <-chan int // 声明为只读
+```
+
+说明：
+
+* `channel` 是引用类型。`channel` 必须初始化才能写入数据，即 `make` 后才能使用。
+
+* `channel`是有类型的，`intChan` 只能写入整数 `int`...。
+
+* `channle`的数据放满后，就不能再放入了；如果从 `channel` 取出数据后，可以继续放入。
+
+* 在没有使用协程的情况下，如果 `channel` 数据取完了，再取就会报 `dead lock`。
+
+* 管道可以声明为只读或者只写，在默认情况下下，管道是双向（可读可写）。如果只是向管道写入数据而没有读取，就会出现阻塞而`deadlock`。
+
+  
+
 ## `defer `关键字
 
 5、`defer`关键字的使用，写出下面代码的输出内容。

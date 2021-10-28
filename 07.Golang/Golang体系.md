@@ -3,25 +3,101 @@
 # 问题列表
 
 * 了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？
-* `string`字符串转成`byte`数组，会发生内存拷⻉吗? 如何进行高效转换？
-
+* 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
+* `Goroutine`的调度策略？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
-
 * Go是否可以声明一个类？
-
 * Go是否支持泛型？
-
 * Go的相关命令？
-
 * `defer`关键字的使用，写出下面代码的输出内容。
-
 * `for_range` 循环复用，以下代码有什么问题，请说明原因？
-
 * 下面的代码会输出什么，并说明原因？
 
 
 
 # 问题解答
+
+## `goroutine` 的调度
+
+了解`goroutine`调度？调度时机、调度策略和切换机制是什么？
+
+### 关于 `goroutine` 调度
+
+> 什么是`goroutine`调度？
+
+`goroutine`调度，是指程序代码按照一定的算法在适当的时候挑选出合适的`goroutine`并放到`CPU`上去运行的过，因此调度系统需要解决三大核心问题：
+
+* 调度时机：什么时候会发生调度？
+
+* 调度策略：使用什么策略来挑选下一个进入运行的`goroutine`？
+
+* 切换机制：如何把挑选出来的`goroutine`放到`CPU`上运行？
+
+###`goroutine` 的调度时机
+
+
+
+### `goroutine` 的调度策略
+
+`schedule`函数分三步分别从各运行队列中寻找可运行的`goroutine`：
+
+* ① 从全局运行队列中寻找`goroutine`。
+* ② 从工作线程本地运行队列中寻找`goroutine`。
+* ③ 从其它工作线程的运行队列中偷取`goroutine`。
+
+**`schedule`函数源码分析（部分）**`runtime/proc.go`
+
+```go
+// One round of scheduler: find a runnable goroutine and execute it.
+// Never returns.
+func schedule() {
+	_g_ := getg() // _g_ = m.g0
+	......	
+	var gp *g
+	......
+ 
+	if gp == nil {
+		// Check the global runnable queue once in a while to ensure fairness.
+		// Otherwise two goroutines can completely occupy the local runqueue
+		// by constantly respawning each other.
+    // 为保证调度的公平性，每个工作线程每经过61次调度就优先尝试从全局运行队列中找出一个 goroutine 来运行,
+    // 这样才能保证位于全局运行队列中的 goroutine 得到调度的机会。
+		if _g_.m.p.ptr().schedtick%61 == 0 && sched.runqsize > 0 {
+      // 全局运行队列是所有工作线程都可以访问的，所以在访问它之前需要加锁。
+			lock(&sched.lock)
+      // ① 从全局运行队列中寻找 goroutine。
+			gp = globrunqget(_g_.m.p.ptr(), 1)
+			unlock(&sched.lock)
+		}
+	}
+  
+	if gp == nil {
+    // ② 从工作线程本地运行队列中寻找 goroutine。
+		gp, inheritTime = runqget(_g_.m.p.ptr())
+		// We can see gp != nil here even if the M is spinning,
+		// if checkTimers added a local goroutine via goready.
+	}
+  
+	if gp == nil {
+    // ③ 从其它工作线程的运行队列中偷取 goroutine。
+		gp, inheritTime = findrunnable() // blocks until work is available
+	}
+  .....
+  // 当前运行的是 runtime 的代码，函数调用栈使用的是 g0 的栈空间
+  // 调用 execte 切换到 gp 的代码和栈空间去运行
+	execute(gp, inheritTime)
+}
+```
+
+
+
+
+
+
+
+### `goroutine` 的切换机制
+
+
 
 ## 内存逃逸
 
@@ -218,26 +294,445 @@ func main() {
 
 
 
-##  字符串与`[]byte`数组的高效转换
+##  `string` 和 `[]byte` 的转换原理
 
-`string`字符串转成`[]byte`数组，会发生内存拷⻉吗? 如何进行高效转换？
+了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 
-本质：`string`和`[]byte`的转换原理。[面试官：string和[]byte转换原理知道吗？会发生内存拷贝吗？](https://zhuanlan.zhihu.com/p/386676358)
-
-`string`与`[]byte`的直接转换是通过底层数据`copy`实现的。[golang字符串string与字符数组byte高效转换](https://www.cnblogs.com/shuiyuejiangnan/p/9707066.html)
+`string`底层是一个`byte`数组。两者之间的标准转换示例:
 
 ```go
-var a = []byte("hello boy")
-var b = string(a)
+func main() {
+    str := "wwxiong"
+    // string 转 []byte
+    by := []byte(str)
+    fmt.Println(by) // [119 119 120 105 111 110 103]
+    // []byte 转 string
+    str1 := string(by)
+    fmt.Println(str1) // wwxiong
+}
+```
+
+### **`byte `和`[]byte `类型**
+
+`byte`的官方定义：
+
+```go
+// src/builtin/builtin.go
+// byte is an alias for uint8 and is equivalent to uint8 in all ways. It is
+// used, by convention, to distinguish byte values from 8-bit unsigned
+// integer values.
+type byte = uint8
+```
+
+> `byte`就是`uint8`的别名，它是用来区分**字节值**和**8位无符号整数值**。
+
+注：`bit`是计算机中的最小存储单位。`byte`是计算机中基本存储单元。` 1byte = 8 bit`
+
+如果我们保存的字符在 ASCII 表的，比如`[0-1, a-z,A-Z..]`直接可以保存到 `byte`。
+
+如果我们保存的字符对应码值大于 255，这时我们可以考虑使用 `int` 类型保存。
+
+`[]byte`其实是一个`byte`类型的切片，切片本质也是一个结构体，定义如下：
+
+```go
+// src/runtime/slice.go
+type slice struct {
+	array unsafe.Pointer
+	len   int
+	cap   int
+}
+```
+
+`array`代表底层数组的指针，`len`代表切片长度，`cap`代表容量。看一个简单示例：
+
+```go
+func main()  {
+ sl := make([]byte,0,2)
+ sl = append(sl, 'A')
+ sl = append(sl,'B')
+ fmt.Println(sl)
+}
+```
+
+该示例的示意图：
+
+![image-20211027230746992](Golang体系.assets/image-20211027230746992.png)
+
+### `string `类型
+
+`string`的官方定义：
+
+```go
+// src/builtin/builtin.go
+// string is the set of all strings of 8-bit bytes, conventionally but not
+// necessarily representing UTF-8-encoded text. A string may be empty, but
+// not nil. Values of string type are immutable.
+type string string
+```
+
+> `string`是一个`8`位字节的集合，通常但不一定代表UTF-8编码的文本。`string`可以为空，但是不能为`nil`。**string的值是不能改变的**。
+
+`string`类型本质也是一个结构体，定义如下：
+
+```go
+// src/runtime/string.go
+type stringStruct struct {
+    str unsafe.Pointer
+    len int
+}
+```
+
+`stringStruct`和`slice`还是很相似的，`str`指针指向的是某个数组的首地址，`len`代表的就是数组长度。
+
+`string`实例化时调用的方法：
+
+```go
+// src/runtime/string.go
+//go:nosplit
+func gostringnocopy(str *byte) string {
+	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)}
+	s := *(*string)(unsafe.Pointer(&ss))
+	return s
+}
+```
+
+从上面方法可以看出，入参是一个`byte`类型的指针，因此`string`类型底层是一个`byte`类型的数组。示意图如下：
+
+![image-20211027232057091](Golang体系.assets/image-20211027232057091.png)
 
 
+
+### `string`  和`[]byte`  的区别
+
+`string`类型的底层本质，其实是一个`byte`类型的数组。那`string`类型为什么还要在数组的基础上再进行一次封装呢？
+
+`Go`语言中`string`类型被设计为不可变的，不仅是在`Go`语言，其他语言中`string`类型也是被设计为不可变的。这样的好处就是：在并发场景下，我们可以在不加锁的控制下，多次使用同一字符串，在保证高效共享的情况下而不用担心安全问题。
+
+`string`类型虽然是不能更改的，但是可以被替换，因为`stringStruct`中的`str`指针是可以改变的，只是指针指向的内容是不可以改变的。看个例子：
+
+```go
+func main() {
+    str := "wxiong"
+    fmt.Printf("%p\n", []byte(str)) // 0xc0000b8008
+    str = "wwxiong"
+    fmt.Printf("%p\n", []byte(str)) // 0xc0000b8020
+}
+```
+
+上面示例的指针指向的位置发生了变化，也就说每一个更改字符串，就需要重新分配一次内存，之前分配的空间会被`gc`回收。
+
+### `string `和`[]byte` 标准转换
+
+`Go`语言中提供了标准方式对`string`和`[]byte`进行转换：
+
+```go
+func main() {
+    str := "wwxiong"
+    // string转[]byte
+    by := []byte(str)
+    fmt.Println(by) // [119 119 120 105 111 110 103]
+    // []byte转string
+    str1 := string(by)
+    fmt.Println(str1) // wwxiong
+}
+```
+
+### `string` 标准转换 `[]byte` 的原理
+
+`string`转`[]byte`的标准转换示例：
+
+```go
+func main() {
+    str := "wwxiong"
+    //  string转[]byte
+    by := []byte(str)
+    fmt.Println(by) // [119 119 120 105 111 110 103]
+}
+```
+
+源码：
+
+```go
+// runtime/string.go
+
+// The constant is known to the compiler.
+// There is no fundamental theory behind this number.
+const tmpStringBufSize = 32
+
+type tmpBuf [tmpStringBufSize]byte
+
+func stringtoslicebyte(buf *tmpBuf, s string) []byte {
+	var b []byte
+  // 通过判断字符串长度来决定是否需要重新分配一块内存，32是阈值，超过32才会进行内存分配。
+	if buf != nil && len(s) <= len(buf) {
+		*buf = tmpBuf{}
+		b = buf[:len(s)]
+	} else {
+		b = rawbyteslice(len(s))
+	}
+	copy(b, s)
+	return b
+}
+
+// rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
+func rawbyteslice(size int) (b []byte) {
+	cap := roundupsize(uintptr(size))
+	p := mallocgc(cap, nil, false)
+	if cap != uintptr(size) {
+		memclrNoHeapPointers(add(p, uintptr(size)), cap-uintptr(size))
+	}
+
+	*(*slice)(unsafe.Pointer(&b)) = slice{p, size, int(cap)}
+	return
+}
+
+// builtin/builtin.go
+
+// The copy built-in function copies elements from a source slice into a
+// destination slice. (As a special case, it also will copy bytes from a
+// string to a slice of bytes.) The source and destination may overlap. Copy
+// returns the number of elements copied, which will be the minimum of
+// len(src) and len(dst).
+func copy(dst, src []Type) int
+```
+
+`copy(b, s)`调用`copy`方法实现`string`到`[]byte`的拷贝，具体实现：
+
+```go
+// src/runtime/slice.go
+// 将string的底层数组从头部复制n个到[]byte对应的底层数组中去
+func slicestringcopy(toPtr *byte, toLen int, fm string) int {
+	if len(fm) == 0 || toLen == 0 {
+		return 0
+	}
+
+	n := len(fm)
+	if toLen < n {
+		n = toLen
+	}
+
+	if raceenabled {
+		callerpc := getcallerpc()
+		pc := funcPC(slicestringcopy)
+		racewriterangepc(unsafe.Pointer(toPtr), uintptr(n), callerpc, pc)
+	}
+	if msanenabled {
+		msanwrite(unsafe.Pointer(toPtr), uintptr(n))
+	}
+
+	memmove(unsafe.Pointer(toPtr), stringStructOf(&fm).str, uintptr(n))
+	return n
+}
+```
+
+### `[]byte `标准转换 `string` 的原理
+
+`[]byte `标准转换 `string`示例：
+
+```go
+func main() {
+    bt := []byte{119, 119, 120, 105, 111, 110, 103}
+    str := string(bt)
+    fmt.Println(str) // wwxiong
+}
+```
+
+源码：`/src/runtime/string.go`
+
+```go
+// The constant is known to the compiler.
+// There is no fundamental theory behind this number.
+const tmpStringBufSize = 32
+
+type tmpBuf [tmpStringBufSize]byte
+
+// slicebytetostring converts a byte slice to a string.
+// It is inserted by the compiler into generated code.
+// ptr is a pointer to the first element of the slice;
+// n is the length of the slice.
+// Buf is a fixed-size buffer for the result,
+// it is not nil if the result does not escape.
+func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
+	if n == 0 {
+		// Turns out to be a relatively common case.
+		// Consider that you want to parse out data between parens in "foo()bar",
+		// you find the indices and convert the subslice to string.
+		return ""
+	}
+	if raceenabled {
+		racereadrangepc(unsafe.Pointer(ptr),
+			uintptr(n),
+			getcallerpc(),
+			funcPC(slicebytetostring))
+	}
+	if msanenabled {
+		msanread(unsafe.Pointer(ptr), uintptr(n))
+	}
+	if n == 1 {
+		p := unsafe.Pointer(&staticuint64s[*ptr])
+		if sys.BigEndian {
+			p = add(p, 7)
+		}
+		stringStructOf(&str).str = p
+		stringStructOf(&str).len = 1
+		return
+	}
+
+	var p unsafe.Pointer
+	if buf != nil && n <= len(buf) {
+		p = unsafe.Pointer(buf)
+	} else {
+		p = mallocgc(uintptr(n), nil, false)
+	}
+	stringStructOf(&str).str = p
+	stringStructOf(&str).len = n
+	memmove(p, unsafe.Pointer(ptr), uintptr(n))
+	return
+}
+```
+
+这段代码通过根据`[]byte`的长度来决定是否重新分配内存，最后通过`memove`可以拷贝数组到字符串。
+
+### `string` 强转换 `[]byte` 实现
+
+标准的转换方法都会发生内存拷贝，所以为了减少内存拷贝和内存申请我们可以使用强转换的方式对两者进行转换。`string` 强转换 `[]byte`示例：
+
+```go
+package main
+
+import (
+    "fmt"
+    "reflect"
+    "unsafe"
+)
+
+// 问题：字符串转成 byte 数组，会发生内存拷⻉吗? 有没有什么办法可以在字符串转成切片的时候不用发生拷⻉呢?
+
+// 解析1：如果想要在底层转换二者，只需要把 StringHeader 的地址强转成 SliceHeader 就行。 go有个很强的包叫 unsafe 。
+// 1. unsafe.Pointer(&a) 方法可以得到变量a的地址。
+// 2. (*reflect.StringHeader)(unsafe.Pointer(&a)) 可以把字符串a转成底层结构的形式。
+// 3. (*[]byte)(unsafe.Pointer(&ssh)) 可以把 ssh 底层结构体转成 byte 的切片的指针。
+// 4. 再通过 * 转为指针指向的实际内容。
+
+// 强制转换带来的安全问题 // b[0] = 10
+// unexpected fault address 0x10ce277
+// fatal error: fault
+// [signal SIGBUS: bus error code=0x2 addr=0x10ce277 pc=0x10a8b21]
+// 解析2：string 类型是不能改变的，也就是底层数据是不能更改的。
+// 这里使用的是强转换的方式，那么 by 指向了 str 的底层数组，现在对这个数组中的元素进行更改，程序直接发生严重错误了，即使使用 defer+recover 也无法捕获。
+
+// StringHeader 是字符串在 go 的底层结构。
+// StringHeader is the runtime representation of a string.
+// It cannot be used safely or portably and its representation may
+// change in a later release.
+// Moreover, the Data field is not sufficient to guarantee the data
+// it references will not be garbage collected, so programs must keep
+// a separate, correctly typed pointer to the underlying data.
+type StringHeader struct {
+    Data uintptr
+    Len  int
+}
+
+// SliceHeader 是切片在 go 的底层结构。
+// SliceHeader is the runtime representation of a slice.
+// It cannot be used safely or portably and its representation may
+// change in a later release.
+// Moreover, the Data field is not sufficient to guarantee the data
+// it references will not be garbage collected, so programs must keep
+// a separate, correctly typed pointer to the underlying data.
+type SliceHeader struct {
+    Data uintptr
+    Len  int
+    Cap  int
+}
+
+func main() {
+    a := "wang xiong"
+    ssh := *(*reflect.StringHeader)(unsafe.Pointer(&a))
+    b := *(*[]byte)(unsafe.Pointer(&ssh))
+    // unexpected fault address 0x10ce277
+    // fatal error: fault
+    // [signal SIGBUS: bus error code=0x2 addr=0x10ce277 pc=0x10a8b21]
+    // b[0] = 10 // 强制转换带来的安全问题
+    fmt.Printf("%v", b) // [119 97 110 103 32 120 105 111 110 103]
+}
+```
+
+###`[]byte`强转换`string` 实现
+
+```go
+// slicebytetostringtmp returns a "string" referring to the actual []byte bytes.
+//
+// Callers need to ensure that the returned string will not be used after
+// the calling goroutine modifies the original slice or synchronizes with
+// another goroutine.
+//
+// The function is only called when instrumenting
+// and otherwise intrinsified by the compiler.
+//
+// Some internal compiler optimizations use this function.
+// - Used for m[T1{... Tn{..., string(k), ...} ...}] and m[string(k)]
+//   where k is []byte, T1 to Tn is a nesting of struct and array literals.
+// - Used for "<"+string(b)+">" concatenation where b is []byte.
+// - Used for string(b)=="foo" comparison where b is []byte.
+func slicebytetostringtmp(ptr *byte, n int) (str string) {
+	if raceenabled && n > 0 {
+		racereadrangepc(unsafe.Pointer(ptr),
+			uintptr(n),
+			getcallerpc(),
+			funcPC(slicebytetostringtmp))
+	}
+	if msanenabled && n > 0 {
+		msanread(unsafe.Pointer(ptr), uintptr(n))
+	}
+	stringStructOf(&str).str = unsafe.Pointer(ptr)
+	stringStructOf(&str).len = n
+	return
+}
 ```
 
 
 
-　
+### 标准转换和强转换的取舍
 
-这种操作在并发量达到十万百万级别的时候会拖慢程序的处理速度
+从安全角度出发，更建议使用标准转换，但是标准转换缺点是频繁的内存拷⻉操作听起来对性能不大友好。
+
+强制转换虽然性能更佳，但是会产生安全问题，如下是`string`字符串转`[]byte`导致的安全问题：
+
+```go
+package main
+
+import (
+    "reflect"
+    "unsafe"
+)
+
+// 结果：
+// unexpected fault address 0x109d9ff
+// fatal error: fault
+// [signal SIGBUS: bus error code=0x2 addr=0x109d9ff pc=0x107ee5c]
+
+// 解析：string 类型是不能改变的，也就是底层数据是不能更改的。
+// 这里使用的是强转换的方式，那么 by 指向了 str 的底层数组，现在对这个数组中的元素进行更改，程序直接发生严重错误了，即使使用 defer+recover 也无法捕获。
+
+func stringToSliceByteTmp(s string) []byte {
+    str := (*reflect.StringHeader)(unsafe.Pointer(&s))
+    ret := reflect.SliceHeader{Data: str.Data, Len: str.Len, Cap: str.Len}
+    return *(*[]byte)(unsafe.Pointer(&ret))
+}
+
+func main() {
+    str := "hello"
+    by := stringToSliceByteTmp(str)
+    by[0] = 'H'
+}
+```
+
+
+
+结论：无论是使用标准转换还是强制转换，都是根据实际业务场景进行选择，脱离实际业务场景做选择其实都是不合适的。
+
+
 
 ## 读写锁 `RWMutex` 和互斥锁 `Mutex` 
 

@@ -4,7 +4,7 @@
 
 * 了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
-* `Goroutine`的调度策略？
+* 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * Go是否可以声明一个类？
 * Go是否支持泛型？
@@ -34,19 +34,50 @@
 
 ## `goroutine` 的调度
 
-了解`goroutine`调度？调度时机、调度策略和切换机制是什么？
+了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 
-### 关于 `goroutine` 调度
+### 关于 `goroutine` 调度器
 
-> 什么是`goroutine`调度？
+> 什么是M:N 两级线程模型？什么是`goroutine`调度器？
 
-`goroutine`调度，是指程序代码按照一定的算法在适当的时候挑选出合适的`goroutine`并放到`CPU`上去运行的过，因此调度系统需要解决三大核心问题：
+`goroutine`是建立在操作系统线程基础之上，它与操作系统线程之间实现了一个多对多(M:N)的两级线程模型。
+
+ 这里的 M:N 是指M个`goroutine`运行在N个操作系统线程之上，内核负责对这N个操作系 统线程进行调度，而这N个系统线程又负责对这M个`goroutine`进行调度和运行。
+
+所谓的`goroutine`调度，是指程序代码按照一定的算法在适当的时候挑选出合适的`goroutine`并放到`CPU`上去运行的过，这些负责对`goroutine`进行调度的程序代码我们称之为`goroutine`调度器。
+
+`goroutine`调度器需要解决三大核心问题：
 
 * 调度时机：什么时候会发生调度？
 
 * 调度策略：使用什么策略来挑选下一个进入运行的`goroutine`？
 
 * 切换机制：如何把挑选出来的`goroutine`放到`CPU`上运行？
+
+为了帮助我们从宏观上了解`goroutine`的两级调度模型，简化后`goroutine`调度器的工作流程伪代码：
+
+```go
+// 程序启动时的初始化代码
+......
+for i := 0; i < N; i++ { // 创建N个操作系统线程(工作线程)执行 schedule 函数
+	create_os_thread(schedule) // 创建一个操作系统线程执行 schedule 函数 
+}
+// schedule 函数实现调度逻辑 
+func schedule() {
+	for { // 调度循环
+		// 根据某种算法从M个 goroutine 中找出一个需要运行的 goroutine
+		g := find_a_runnable_goroutine_from_M_goroutines()
+		run_g(g) // CPU运行该 goroutine，直到需要调度其它 goroutine 才返回 
+		save_status_of_g(g) // 保存 goroutine 的状态，主要是寄存器的值
+	} 
+}
+```
+
+程序运行起来之后创建了N个由内核调度的操作系统线程 （工作线程）去执行`shedule`函数。
+
+`schedule `函数在一个调度循环中反复从M个`goroutine`中挑选出一个需要运行的`goroutine`并跳转到该
+
+`goroutine`去运行，直到需要调度其它`goroutine`时才返回到`schedule`函数中。通过 `save_status_of_g`保存刚刚正在运行的 `goroutine` 的状态，然后再次去寻找下一个 `goroutine`。
 
 ###`goroutine` 的调度时机
 

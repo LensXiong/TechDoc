@@ -17,6 +17,21 @@
 
 # 问题解答
 
+##  `goroutine `的理解
+
+`goroutine`是 Go 语言实现的轻量级的**用户态线程**，主要用来解决**操作系统线程**太重的问题，所谓的太重，主要表现在以下两个方面：
+
+- 创建和切换太重：操作系统线程的创建和切换都需要进入内核，而进入内核所消耗的性能代价比较高，开销较大;
+- 内存使用太重：一方面，为了尽量避免极端情况下操作系统线程栈的溢出，内核在创建操作系统线程时默认会为其分配一个较大的栈内存(虚拟地址空间，内核并不会一开始就分配这么多的物理内存)，然而在绝大多数情况下，系统线程远远用不了这么多内存，这导致了浪费；另一方面，栈内存空间一旦创建和初始化完成之后 其大小就不能再有变化，这决定了在某些特殊场景下系统线程栈还是有溢出的⻛险。
+
+而相对的，**用户态线程**的`goroutine`则轻量得多：
+
+* `goroutine`是用户态线程，其创建和切换都在用户代码中完成而无需进入操作系统内
+     核，所以其开销要远远小于系统线程的创建和切换;
+* `goroutine`启动时默认栈大小只有2k，这在多数情况下已经够用了，即使不够用，`goroutine`的栈也会自动扩大，同时，如果栈太大了过于浪费它还能自动收缩，这样既没有栈溢出的⻛险，也不会造成栈内存空间的大量浪费。 
+
+正是因为`Go`语言中实现了如此轻量级的线程，才使得我们在`Go`程序中，可以轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。
+
 ## `goroutine` 的调度
 
 了解`goroutine`调度？调度时机、调度策略和切换机制是什么？
@@ -43,7 +58,7 @@
 
 * ① 从全局运行队列中寻找`goroutine`。
 * ② 从工作线程本地运行队列中寻找`goroutine`。
-* ③ 从其它工作线程的运行队列中偷取`goroutine`。
+* ③ 从其它运行线程的队列中偷取`goroutine`。
 
 **`schedule`函数源码分析（部分）**`runtime/proc.go`
 
@@ -89,11 +104,207 @@ func schedule() {
 }
 ```
 
+#### ① 从全局运行队列寻找
 
+`globrunqget`函数源码分析，`runtime/proc.go`。
 
+```go
+var (
+  gomaxprocs int32
+	sched      schedt
+)
 
+type schedt struct {
+	// Global runnable queue.
+	runq     gQueue
+	runqsize int32
+}
 
+// Try get a batch of G's from the global runnable queue.
+// Sched must be locked.
+func globrunqget(_p_ *p, max int32) *g {
+  // 全局运行队列为空。
+	if sched.runqsize == 0 {
+		return nil
+	}
 
+  // 计算全局运行队列中 goroutine 的数量。
+  // 注意：应该从全局运行队列中拿走多少个 goroutine 时根据 p 的数量（gomaxprocs）做了负载均衡。
+	n := sched.runqsize/gomaxprocs + 1
+  // 计算n的方法可能导致n大于全局运行队列中的 goroutine 数量。
+	if n > sched.runqsize {
+		n = sched.runqsize
+	}
+  // 最多取函数参数 max 个 goroutine。
+	if max > 0 && n > max {
+		n = max
+	}
+  // 最多只能取本地队列容量的一半
+	if n > int32(len(_p_.runq))/2 {
+		n = int32(len(_p_.runq)) / 2
+	}
+
+  // 剩余全局队列个数计算
+	sched.runqsize -= n
+
+  // 先直接通过函数返回 一个 gp（pop 从全局运行队列的队列头取）
+	gp := sched.runq.pop()
+	n--
+	for ; n > 0; n-- {
+    // pop 从全局运行队列的队列头取
+		gp1 := sched.runq.pop()
+     // 其它的 goroutines 通过 runqput 放入本地运行队列
+		runqput(_p_, gp1, false)
+	}
+	return gp
+}
+```
+
+#### ② 从本地运行的队列寻找
+
+`runqget`函数源码分析，`runtime/proc.go`。
+
+```go
+type guintptr uintptr
+
+type p struct {
+	// Queue of runnable goroutines. Accessed without lock.
+	runqhead uint32
+	runqtail uint32
+	runq     [256]guintptr
+	// runnext, if non-nil, is a runnable G that was ready'd by
+	// the current G and should be run next instead of what's in
+	// runq if there's time remaining in the running G's time
+	// slice. It will inherit the time left in the current time
+	// slice. If a set of goroutines is locked in a
+	// communicate-and-wait pattern, this schedules that set as a
+	// unit and eliminates the (potentially large) scheduling
+	// latency that otherwise arises from adding the ready'd
+	// goroutines to the end of the run queue.
+	runnext guintptr
+}
+
+// Get g from local runnable queue.
+// If inheritTime is true, gp should inherit the remaining time in the
+// current time slice. Otherwise, it should start a new time slice.
+// Executed only by the owner P.
+func runqget(_p_ *p) (gp *g, inheritTime bool) {
+	// If there's a runnext, it's the next G to run.
+  // 从 runnext 成员中获取 goroutine
+	for {
+    // 查看 runnext 成员是否为空，不为空则返回该 goroutine。
+		next := _p_.runnext
+		if next == 0 {
+			break
+		}
+		if _p_.runnext.cas(next, 0) {
+			return next.ptr(), true
+		}
+	}
+
+  // 从循环队列中获取 goroutine
+	for {
+    // ① 原子读取，不管代码运行在哪种平台，保证在读取过程中不会有其它线程对该变量进行写入；
+    // ② 位于 atomic.LoadAcq 之后的代码，对内存的读取和写入必须在 atomic.LoadAcq 读取完成后才能执行，
+    // 编译器和 CPU 都不能打乱这个顺序。
+		h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with other consumers
+		t := _p_.runqtail
+		if t == h {
+			return nil, false
+		}
+		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr()
+    // ① 原子的执行比较并交换的操作；
+    // ② 位于 atomic.CasRel 之前的代码，对内存的读取和写入必须在 atomic.CasRel 对内存的写入之前完成，
+    // 编译器和 CPU 都不能打乱这个顺序。
+		if atomic.CasRel(&_p_.runqhead, h, h+1) { // cas-release, commits consume
+			return gp, false
+		}
+	}
+}
+```
+
+#### ③ 从其他运行线程队列中偷取
+
+`findrunnable`函数源码分析，`runtime/proc.go`。
+
+```go
+// Finds a runnable goroutine to execute.
+// Tries to steal from other P's, get g from local or global queue, poll network.
+func findrunnable() (gp *g, inheritTime bool) {
+	_g_ := getg()
+  ......
+
+	// local runq
+	if gp, inheritTime := runqget(_p_); gp != nil {
+		return gp, inheritTime
+	}
+
+	// global runq
+	if sched.runqsize != 0 {
+		lock(&sched.lock)
+		gp := globrunqget(_p_, 0)
+		unlock(&sched.lock)
+		if gp != nil {
+			return gp, false
+		}
+	}
+
+	// Steal work from other P's.
+	procs := uint32(gomaxprocs)
+	ranTimer := false
+  ......
+	for i := 0; i < 4; i++ {
+		for enum := stealOrder.start(fastrand()); !enum.done(); enum.next() {
+			if sched.gcwaiting != 0 {
+				goto top
+			}
+			stealRunNextG := i > 2 // first look for ready queues with more than 1 g
+			p2 := allp[enum.position()]
+			if _p_ == p2 {
+				continue
+			}
+			if gp := runqsteal(_p_, p2, stealRunNextG); gp != nil {
+				return gp, false
+			}
+
+			// Consider stealing timers from p2.
+			// This call to checkTimers is the only place where
+			// we hold a lock on a different P's timers.
+			// Lock contention can be a problem here, so
+			// initially avoid grabbing the lock if p2 is running
+			// and is not marked for preemption. If p2 is running
+			// and not being preempted we assume it will handle its
+			// own timers.
+			// If we're still looking for work after checking all
+			// the P's, then go ahead and steal from an active P.
+			if i > 2 || (i > 1 && shouldStealTimers(p2)) {
+				tnow, w, ran := checkTimers(p2, now)
+				now = tnow
+				if w != 0 && (pollUntil == 0 || w < pollUntil) {
+					pollUntil = w
+				}
+				if ran {
+					// Running the timers may have
+					// made an arbitrary number of G's
+					// ready and added them to this P's
+					// local run queue. That invalidates
+					// the assumption of runqsteal
+					// that is always has room to add
+					// stolen G's. So check now if there
+					// is a local G to run.
+					if gp, inheritTime := runqget(_p_); gp != nil {
+						return gp, inheritTime
+					}
+					ranTimer = true
+				}
+			}
+		}
+	}
+  ......
+	stopm()
+	goto top
+}
+```
 
 ### `goroutine` 的切换机制
 

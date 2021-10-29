@@ -17,7 +17,344 @@
 
 # 问题解答
 
-##  `goroutine `的理解
+## 并发模型 `Actor` & `CSP `
+
+## Channel 
+
+### CSP 模型
+
+`Channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
+
+> Do not communicate by sharing memory; instead,share memory by communicating.
+
+* `Actor` 之间直接通讯，注重处理单元。
+* `CSP` 解耦发送方和接收方，注重消息传递方式。
+
+![image-20211029121333099](Golang体系.assets/image-20211029121333099.png)
+
+![image-20211029152454752](Golang体系.assets/image-20211029152454752.png)
+
+### 有无缓冲 `channel`
+
+演示代码如下：
+
+```go
+// 无缓冲
+ch1 := make(chan int)
+
+// 缓冲区为 3
+ch2 := make(chan int, 3)
+```
+
+* 无缓冲的 `channel（unbuffered channel）`，其缓冲区大小则默认为 0。在功能上其接受者会阻塞等待并阻塞应用程序，直至收到通信和接收到数据。
+* 有缓冲的 `channel（buffered channel）`，其缓存区大小是根据所设置的值来调整。在功能上，若缓冲区未满则不会阻塞，会源源不断的进行传输。当缓冲区满了后，发送者就会阻塞并等待。而当缓冲区为空时，接受者就会阻塞并等待，直至有新的数据
+
+### 三种表现方式
+
+`channel` 的关键字为 `chan`，数据流向的表现方式为 `<-`，代码解释方向是从左到右，据此就能明白通道的数据流转方向了。`channel `共有两种模式，分别是双向和单向；三种表现方式，分别是：
+
+* 声明双向通道`chan T`（可读可写）， 示例：`var ch chan int`
+* 声明发送通道`chan <- T`（只写），示例：`var ch chan<- int`
+* 声明接收通道`<- chan T`（只读），示例：`var ch <-chan int` 
+
+### `hchan` 源码分析
+
+`channel`本质上是一个有锁的环形队列，外加发送方队列（`sendq`）、接收方队列（`recvq`），加上互斥锁 `mutex` 等结构。
+
+![image-20211029160929781](Golang体系.assets/image-20211029160929781.png)
+
+`hchan`结构体源码：`/src/runtime/chan.go` go版本：`1.15.11`
+
+* 通过`buf `来保存`G`之间传输的数据。
+* 通过两个队列`recvq`和`sendq`来保存发送和接收的 G。
+* 通过`mutex`来保护数据安全。
+
+```go
+type hchan struct {
+  // 队列中元素的总数
+	qcount   uint           // total data in the queue
+  // 循环队列的长度
+	dataqsiz uint           // size of the circular queue
+  // 指向长度为 dataqsiz 的底层数组，仅有当 channel 为缓冲型的才有意义
+	buf      unsafe.Pointer // points to an array of dataqsiz elements 
+  // 能够接受和发送的元素大小
+	elemsize uint16 // chan中元素的大小
+	closed   uint32 // 是否已close 1 表示已关闭 0 表示未关闭
+	elemtype *_type // element type
+  sendx    uint   // send index (ch <- xxx)
+  recvx    uint   // receive index  (ch <- xxx)
+	recvq    waitq  // list of recv waiters 
+  // 发送者的 sudog 等待队列
+	sendq    waitq  // list of send waiters 
+
+	// lock protects all fields in hchan, as well as several
+	// fields in sudogs blocked on this channel.
+	//
+	// Do not change another G's status while holding this lock
+	// (in particular, do not ready a G), as this can deadlock
+	// with stack shrinking.
+	lock mutex // map不是线程安全的，但是channel是线程安全的，因为这里有互斥锁
+}
+
+type waitq struct {
+	first *sudog
+	last  *sudog
+}
+
+type sudog struct {
+	g *g // 指向当前的 goroutine
+
+	next *sudog // 指向下一个 g
+	prev *sudog // 指向上一个 g
+	elem unsafe.Pointer // data element (may point to stack) 数据元素，可能会指向堆栈
+  ....
+	c        *hchan // channel
+}
+```
+
+### `make chan` 分析
+
+* 
+
+* 初始化环形队列`buf`
+* 初始化发送和接收的索引。
+
+![image-20211029150550896](Golang体系.assets/image-20211029150550896.png)
+
+
+
+### 实现源码分析
+
+`channel` 的四大块操作分别是：创建、发送、接收、关闭。接下来从源码角度进行分析。
+
+#### 创建
+
+创建 `channel` 的演示代码：
+
+```go
+ch := make(chan int , 3)
+// 通用创建方法
+func makechan(t *chantype, size int) *hchan
+// 类型为 int64 的进行特殊处理
+func makechan64(t *chantype, size int64) *hchan
+```
+
+创建 `channel `的逻辑主要分为三大块：
+
+- 当前 `channel` 不存在缓冲区，也就是元素大小为 0 的情况下，就会调用 `mallocgc` 方法分配一段连续的内存空间。
+- 当前 `channel` 存储的类型存在指针引用，就会连同 `hchan` 和底层数组同时分配一段连续的内存空间。
+- 通用情况，默认分配相匹配的连续内存空间。
+
+需要注意到一块特殊点，那就是 `channel` 的创建都是调用的 `mallocgc` 方法，也就是 `channel` 都是创建在堆上的。因此 `channel` 是会被 `GC` 回收的，自然也不总是需要 `close` 方法来进行显示关闭了。
+
+`makechan` 源码路径为：`src/runtime/chan.go`
+
+```go
+func makechan(t *chantype, size int) *hchan {
+	elem := t.elem
+
+	// compiler checks this but be safe.
+	if elem.size >= 1<<16 {
+		throw("makechan: invalid channel element type")
+	}
+	if hchanSize%maxAlign != 0 || elem.align > maxAlign {
+		throw("makechan: bad alignment")
+	}
+
+	mem, overflow := math.MulUintptr(elem.size, uintptr(size))
+	if overflow || mem > maxAlloc-hchanSize || size < 0 {
+		panic(plainError("makechan: size out of range"))
+	}
+
+	var c *hchan
+	switch {
+	case mem == 0:
+		// Queue or element size is zero.
+		c = (*hchan)(mallocgc(hchanSize, nil, true))
+		// Race detector uses this location for synchronization.
+		c.buf = c.raceaddr()
+	case elem.ptrdata == 0:
+		// Elements do not contain pointers.
+		// Allocate hchan and buf in one call.
+		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))
+		c.buf = add(unsafe.Pointer(c), hchanSize)
+	default:
+		// Elements contain pointers.
+		c = new(hchan)
+		c.buf = mallocgc(mem, elem, true)
+	}
+
+	c.elemsize = uint16(elem.size)
+	c.elemtype = elem
+	c.dataqsiz = uint(size)
+	lockInit(&c.lock, lockRankHchan)
+
+	if debugChan {
+		print("makechan: chan=", c, "; elemsize=", elem.size, "; dataqsiz=", size, "\n")
+	}
+	return c
+}
+```
+
+`makechan` 方法的逻辑比较简单，就是创建 `hchan` 并分配合适的 `buf` 大小的堆上内存空间。
+
+
+
+
+
+#### 接收
+
+
+
+#### 发送
+
+
+
+#### 关闭
+
+
+
+
+
+### 源码分析
+
+
+
+### goroutine 和 channel 实现定时任务
+
+
+
+### 控制协程的数量（协程池）
+
+
+
+### 控制任务状态
+
+
+
+
+
+
+
+## Go 并发安全的支持
+
+
+
+
+
+## 常见协程泄露问题
+
+* Cgo
+
+* http body没有关闭，链接泄露。
+
+* 每个请求新建 Transport
+
+* Goroutine 死循环
+
+* Channel 阻塞，好习惯，及时关闭生产者的channel。
+
+  
+
+
+
+## 进程和线程
+
+#### 什么是进程？
+
+进程（`Process`）是具有一定独立功能的程序、它是系统进行资源分配和调度的一个独立单位，重点在系统调度和单独的单位，也就是说进程是可以独立运行的一段程序。
+
+#### 什么是线程？
+
+线程（`Thread`）进程的一个实体，是`CPU`调度和分派的基本单位，它是比进程更小的能独立运行的基本单位，线程自己基本上不拥有系统资源，在运行时，只是暂用一些计数器、寄存器和栈。
+
+> 注：进程是资源分配的最小单位，线程是资源调度的最小单位。
+
+#### 进程与线程的区别
+
+> 一个程序至少有一个进程，一个进程至少有一个线程。
+>
+> 一个进程可以创建销毁多个线程，同一个进程中的多个线程可以并发执行。
+
+- 进程是资源（`CPU`、内存等）分配的最小单位，线程是程序执行的最小单位（资源调度的最小单位）。
+- 进程有自己的独立地址空间，每启动一个进程，系统就会为它分配地址空间，建立数据表来维护代码段、堆栈段和数据段，这种操作非常昂贵。线程是共享进程中的数据的，使用相同的地址空间，因此`CPU`切换一个线程的花费远比进程要小很多，同时创建一个线程的开销也比进程要小很多。
+- 线程之间的通信更方便，同一进程下的线程共享全局变量、静态变量等数据，而进程之间的通信需要以进程间通信的方式 `IPC`（`Inter-Process Communication`）进行。不过如何处理好同步与互斥是编写多线程程序的难点
+- 多进程程序更健壮，多线程程序只要有一个线程死掉，整个进程也死掉了，而一个进程死掉并不会对另外一个进程造成影响，因为进程有自己独立的地址空间。
+
+#### 进程 VS 线程
+
+类比：进程=火车，线程=车厢
+
+- 一个进程可以包含多个线程（一辆火车包含多节车厢）
+- 线程依赖于进程，它是进程中一个完整的执行路径 （车厢依赖火车，单纯的车厢无法运行）
+- 进程间的通信通过`IPC`(`Inter-Process Communication`）进行,比如管道(`pipe`)、信号量(`semophore`)、消息队列(`messagequeue`) 、 套接字(`socket`)等 （一辆火车上的乘客换到另外一辆火车，需要在站点进行换乘）
+- 线程间的通信通过共享内存（`Shared Memory`）、消息队列等方式进行 （同一辆火车，A车厢换到B车厢很容易）
+- 创建一个进程的开销比创建一个线程开销要消耗更多的计算机资源 （采用多列火车相比多个车厢更耗资源）
+- 进程间不会相互影响，但是一个线程挂掉将导致整个进程挂掉（火车之间相互不影响，一个车厢断裂会影响火车运行）
+- 一个线程使用共享内存时，其他线程必须等它结束，才能使用这一块内存 。多个线程同时对同一公共资源（比如全局变量）进行读写需要使用互斥锁（车厢中使用洗手间，需要上锁）
+- 一个进程使用的内存地址可以限定使用量--信号量（火车上的餐厅最多同时容纳一定乘客数量，需要等有人出来才能进去）
+
+#### 协程 VS 线程
+
+|          | 协程                                                         | 线程                                                         |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 切换成本 | 协程切换只需要保存三个寄存器，耗时约200纳秒。                | 线程切换需要保存几十个寄存器，耗时约1000纳秒。               |
+| 调度方式 | 非抢占式，由 go runtime 主动交出控制权。                     | 在时间片用完后，由CPU中断任务强行将其调度走，此时需要保存很多信息。 |
+| 创建销毁 | goroutine 因为是由 go runtime 进行管理的，创建和销毁都非常小，属于用户级的。 | 因为要和操作系统打交道，是属于内核级的，创建和销毁开销大，通常解决办法是通过线程池。 |
+
+
+
+
+
+## GMP 调度模型
+
+### 专有名词解释
+
+内核线程（`Kernel-Level Thread ，KLT`） ：操作系统的主线程，属于物理线程。
+
+轻量级进程（`Light Weight Process，LWP`）：是指我们通常意义上所讲的线程，由于每个轻量级进程都由一个内核线程支持，因此只有先支持内核线程，才能有轻量级进程。
+
+### GMP 基本概念
+
+Go 线程模型属于多对多线程模型，主要包含三个概念：内核线程(M)、协程的上下文环境（P）、协程(G)。
+
+* G (`Goroutine`)。本质上属于轻量级的线程，是基于协程建立的用户态线程。
+
+* M (`Machine`)，操作系统的主线程（物理线程）。它直接关联一个操作系统内核线程，用于执行 G。
+* P (`Processor`)，协程的上下文环境。P 是处理用户级代码逻辑的处理器，P 里面一般会存当前`goroutine`运行的上下文环境（函数指针，堆栈地址及地址边界），P 会对自己管理的`goroutine`队列做一些调度。P 的数量是由环境变量中的`GOMAXPROCS`决定，默认就是`CPU`核数。
+
+![image-20211029105710943](Golang体系.assets/image-20211029105710943.png)
+
+>  主线程是一个物理线程，直接作用在 cpu 上的，是重量级的，非常耗费 cpu 资源。
+>
+> 而协程是从主线程开启的，是轻量级的线程，是逻辑态，对资源消耗相对小。
+
+
+
+### GMP VS GM
+
+GM的调度模型：
+
+![image-20211029110936026](Golang体系.assets/image-20211029110936026.png)
+
+* 每个 P 都有自己的本地队列，减少锁竞争。
+* 将阻塞的 G 转移给其他空闲的 M 执行，提高资源的利用效率。
+* 实现 `Work-Stealing` 算法，减少空转时间。
+* 总体的设计思路就是将 P 引入`runtime`，并在 P 上实现可窃取调度。
+
+
+
+### GMP 模型的限制
+
+* G：除内存外无限制，每个 G 创建需要 2-4KB **连续**内存块。
+* M：最多10000个，否则`panic`，`sched.maxmcount`=10000。
+* P：程序启动由`GOMAXPROCS`决定，默认数量即可。
+
+
+
+
+
+## `goroutine `的理解
 
 `goroutine`是 Go 语言实现的轻量级的**用户态线程**，主要用来解决**操作系统线程**太重的问题，所谓的太重，主要表现在以下两个方面：
 
@@ -26,11 +363,10 @@
 
 而相对的，**用户态线程**的`goroutine`则轻量得多：
 
-* `goroutine`是用户态线程，其创建和切换都在用户代码中完成而无需进入操作系统内
-     核，所以其开销要远远小于系统线程的创建和切换;
+* `goroutine`是用户态线程，其创建和切换都在用户代码中完成而无需进入操作系统内核，所以其开销要远远小于系统线程的创建和切换;
 * `goroutine`启动时默认栈大小只有2k，这在多数情况下已经够用了，即使不够用，`goroutine`的栈也会自动扩大，同时，如果栈太大了过于浪费它还能自动收缩，这样既没有栈溢出的⻛险，也不会造成栈内存空间的大量浪费。 
 
-正是因为`Go`语言中实现了如此轻量级的线程，才使得我们在`Go`程序中，可以轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。
+正是因为`Go`语言中实现了如此轻量级的线程（逻辑态的），才使得我们在`Go`程序中，可以轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。其他程序如C/JAVA的多线程，往往是内核态的，比较重量级，几千个线程可能就会耗光CPU。
 
 ## `goroutine` 的调度
 
@@ -38,11 +374,13 @@
 
 ### 关于 `goroutine` 调度器
 
-> 什么是M:N 两级线程模型？什么是`goroutine`调度器？
+> 什么是 M:N 两级线程模型？什么是`goroutine`调度器？
 
 `goroutine`是建立在操作系统线程基础之上，它与操作系统线程之间实现了一个多对多(M:N)的两级线程模型。
 
- 这里的 M:N 是指M个`goroutine`运行在N个操作系统线程之上，内核负责对这N个操作系 统线程进行调度，而这N个系统线程又负责对这M个`goroutine`进行调度和运行。
+![image-20211028222830640](Golang体系.assets/image-20211028222830640.png)
+
+ 这里的 M:N 是指M个`goroutine`运行在N个操作系统线程之上，内核负责对这N个操作系统线程进行调度，而这N个系统线程又负责对这M个`goroutine`进行调度和运行。
 
 所谓的`goroutine`调度，是指程序代码按照一定的算法在适当的时候挑选出合适的`goroutine`并放到`CPU`上去运行的过，这些负责对`goroutine`进行调度的程序代码我们称之为`goroutine`调度器。
 
@@ -85,10 +423,12 @@ func schedule() {
 
 ### `goroutine` 的调度策略
 
+![image-20211028225032397](Golang体系.assets/image-20211028225032397.png)
+
 `schedule`函数分三步分别从各运行队列中寻找可运行的`goroutine`：
 
-* ① 从全局运行队列中寻找`goroutine`。
-* ② 从工作线程本地运行队列中寻找`goroutine`。
+* ① 从本地运行队列中寻找`goroutine`。
+* ② 从全局运行队列中寻找`goroutine`。
 * ③ 从其它运行线程的队列中偷取`goroutine`。
 
 **`schedule`函数源码分析（部分）**`runtime/proc.go`
@@ -135,63 +475,7 @@ func schedule() {
 }
 ```
 
-#### ① 从全局运行队列寻找
-
-`globrunqget`函数源码分析，`runtime/proc.go`。
-
-```go
-var (
-  gomaxprocs int32
-	sched      schedt
-)
-
-type schedt struct {
-	// Global runnable queue.
-	runq     gQueue
-	runqsize int32
-}
-
-// Try get a batch of G's from the global runnable queue.
-// Sched must be locked.
-func globrunqget(_p_ *p, max int32) *g {
-  // 全局运行队列为空。
-	if sched.runqsize == 0 {
-		return nil
-	}
-
-  // 计算全局运行队列中 goroutine 的数量。
-  // 注意：应该从全局运行队列中拿走多少个 goroutine 时根据 p 的数量（gomaxprocs）做了负载均衡。
-	n := sched.runqsize/gomaxprocs + 1
-  // 计算n的方法可能导致n大于全局运行队列中的 goroutine 数量。
-	if n > sched.runqsize {
-		n = sched.runqsize
-	}
-  // 最多取函数参数 max 个 goroutine。
-	if max > 0 && n > max {
-		n = max
-	}
-  // 最多只能取本地队列容量的一半
-	if n > int32(len(_p_.runq))/2 {
-		n = int32(len(_p_.runq)) / 2
-	}
-
-  // 剩余全局队列个数计算
-	sched.runqsize -= n
-
-  // 先直接通过函数返回 一个 gp（pop 从全局运行队列的队列头取）
-	gp := sched.runq.pop()
-	n--
-	for ; n > 0; n-- {
-    // pop 从全局运行队列的队列头取
-		gp1 := sched.runq.pop()
-     // 其它的 goroutines 通过 runqput 放入本地运行队列
-		runqput(_p_, gp1, false)
-	}
-	return gp
-}
-```
-
-#### ② 从本地运行的队列寻找
+#### ① 从本地运行的队列寻找
 
 `runqget`函数源码分析，`runtime/proc.go`。
 
@@ -254,7 +538,63 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 }
 ```
 
-#### ③ 从其他运行线程队列中偷取
+#### ② 从全局运行队列寻找
+
+`globrunqget`函数源码分析，`runtime/proc.go`。
+
+```go
+var (
+  gomaxprocs int32
+	sched      schedt
+)
+
+type schedt struct {
+	// Global runnable queue.
+	runq     gQueue
+	runqsize int32
+}
+
+// Try get a batch of G's from the global runnable queue.
+// Sched must be locked.
+func globrunqget(_p_ *p, max int32) *g {
+  // 全局运行队列为空。
+	if sched.runqsize == 0 {
+		return nil
+	}
+
+  // 计算全局运行队列中 goroutine 的数量。
+  // 注意：应该从全局运行队列中拿走多少个 goroutine 时根据 p 的数量（gomaxprocs）做了负载均衡。
+	n := sched.runqsize/gomaxprocs + 1
+  // 计算n的方法可能导致n大于全局运行队列中的 goroutine 数量。
+	if n > sched.runqsize {
+		n = sched.runqsize
+	}
+  // 最多取函数参数 max 个 goroutine。
+	if max > 0 && n > max {
+		n = max
+	}
+  // 最多只能取本地队列容量的一半
+	if n > int32(len(_p_.runq))/2 {
+		n = int32(len(_p_.runq)) / 2
+	}
+
+  // 剩余全局队列个数计算
+	sched.runqsize -= n
+
+  // 先直接通过函数返回 一个 gp（pop 从全局运行队列的队列头取）
+	gp := sched.runq.pop()
+	n--
+	for ; n > 0; n-- {
+    // pop 从全局运行队列的队列头取
+		gp1 := sched.runq.pop()
+     // 其它的 goroutines 通过 runqput 放入本地运行队列
+		runqput(_p_, gp1, false)
+	}
+	return gp
+}
+```
+
+#### ③ 从其他线程运行的队列中偷取
 
 `findrunnable`函数源码分析，`runtime/proc.go`。
 
@@ -264,12 +604,13 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 func findrunnable() (gp *g, inheritTime bool) {
 	_g_ := getg()
   ......
-
-	// local runq
+  // ① 先从本地运行的队列中获取 goroutine
+  // local runq
 	if gp, inheritTime := runqget(_p_); gp != nil {
 		return gp, inheritTime
 	}
 
+  // ② 再从全局运行的队列中获取 goroutine
 	// global runq
 	if sched.runqsize != 0 {
 		lock(&sched.lock)
@@ -279,61 +620,15 @@ func findrunnable() (gp *g, inheritTime bool) {
 			return gp, false
 		}
 	}
-
-	// Steal work from other P's.
-	procs := uint32(gomaxprocs)
-	ranTimer := false
   ......
-	for i := 0; i < 4; i++ {
+  for i := 0; i < 4; i++ {
 		for enum := stealOrder.start(fastrand()); !enum.done(); enum.next() {
-			if sched.gcwaiting != 0 {
-				goto top
-			}
-			stealRunNextG := i > 2 // first look for ready queues with more than 1 g
-			p2 := allp[enum.position()]
-			if _p_ == p2 {
-				continue
-			}
+			......
+      // ③ 从其他线程运行的队列中偷取 goroutine
 			if gp := runqsteal(_p_, p2, stealRunNextG); gp != nil {
 				return gp, false
 			}
-
-			// Consider stealing timers from p2.
-			// This call to checkTimers is the only place where
-			// we hold a lock on a different P's timers.
-			// Lock contention can be a problem here, so
-			// initially avoid grabbing the lock if p2 is running
-			// and is not marked for preemption. If p2 is running
-			// and not being preempted we assume it will handle its
-			// own timers.
-			// If we're still looking for work after checking all
-			// the P's, then go ahead and steal from an active P.
-			if i > 2 || (i > 1 && shouldStealTimers(p2)) {
-				tnow, w, ran := checkTimers(p2, now)
-				now = tnow
-				if w != 0 && (pollUntil == 0 || w < pollUntil) {
-					pollUntil = w
-				}
-				if ran {
-					// Running the timers may have
-					// made an arbitrary number of G's
-					// ready and added them to this P's
-					// local run queue. That invalidates
-					// the assumption of runqsteal
-					// that is always has room to add
-					// stolen G's. So check now if there
-					// is a local G to run.
-					if gp, inheritTime := runqget(_p_); gp != nil {
-						return gp, inheritTime
-					}
-					ranTimer = true
-				}
-			}
-		}
-	}
-  ......
-	stopm()
-	goto top
+      ......
 }
 ```
 

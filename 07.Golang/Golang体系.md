@@ -112,27 +112,16 @@ type sudog struct {
 }
 ```
 
-### `make chan` 分析
-
-* 
-
-* 初始化环形队列`buf`
-* 初始化发送和接收的索引。
-
-![image-20211029150550896](Golang体系.assets/image-20211029150550896.png)
-
-
-
 ### 实现源码分析
 
-`channel` 的四大块操作分别是：创建、发送、接收、关闭。接下来从源码角度进行分析。
+`channel` 的四大块操作分别是：创建`chan`、发送数据、接收数据、关闭`chan`。接下来从源码角度进行分析。
 
-#### 创建
+#### 创建`chan`
 
 创建 `channel` 的演示代码：
 
 ```go
-ch := make(chan int , 3)
+ch := make(chan int , 3) // 初始化环形队列 buf，初始化发送和接收的索引
 // 通用创建方法
 func makechan(t *chantype, size int) *hchan
 // 类型为 int64 的进行特殊处理
@@ -198,19 +187,132 @@ func makechan(t *chantype, size int) *hchan {
 
 `makechan` 方法的逻辑比较简单，就是创建 `hchan` 并分配合适的 `buf` 大小的堆上内存空间。
 
+![image-20211029150550896](Golang体系.assets/image-20211029150550896.png)
+
+#### 发送数据
+
+`channel` 发送数据的演示代码：
+
+```go
+go func() {
+    ch <- "wangxiong"
+}()
+```
+
+其在编译器翻译后对应 `runtime/chan.go/chansend1` 方法：
+
+```go
+// entry point for c <- x from compiled code
+// go:nosplit
+func chansend1(c *hchan, elem unsafe.Pointer) {
+	chansend(c, elem, true, getcallerpc())
+}
+```
+
+其作为编译后的入口方法，实则指向真正的实现逻辑，也就是 `chansend` 方法。 `chansend` 方法主要完成以下几个事情。
+
+*  `chan` 发送前的前置判断和处理。
+* 在进入发送数据的处理前，`channel `会进行上锁。
+* 在正式开始发送前，加锁之后，会对 `channel `进行一次状态判断（是否关闭），未关闭直接发送。
+* 非直接发送，判断 channel 缓冲区中是否还有空间，如果有进行缓冲发送，否则进入阻塞发送。
+
+```go
+// src/runtime/chan.go
+func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
+  // ① chan 发送前的前置判断和处理。
+	if c == nil {
+		if !block {
+			return false
+		}
+    // 若为 nil，在逻辑上来讲就是向 nil channel 发送数据。
+    // 就会调用 gopark 方法使得当前 Goroutine 休眠，进而出现死锁崩溃，表象就是出现 panic 事件来快速失败。
+		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
+		throw("unreachable")
+	}
+  ......
+  // 对非阻塞的 channel 进行一个上限判断，看看是否快速失败。
+  // 若非阻塞且未关闭，同时底层数据 dataqsiz 大小为 0（缓冲区无元素），则会返回失败。
+  // 若是 qcount 与 dataqsiz 大小相同（缓冲区已满）时，则会返回失败。
+	if !block && c.closed == 0 && full(c) {
+		return false
+	}
+  ......
+  // ② 在进入发送数据的处理前，channel 会进行上锁，保障并发安全
+	lock(&c.lock)
+
+	if c.closed != 0 {
+		unlock(&c.lock)
+		panic(plainError("send on closed channel"))
+	}
+
+  // ③ 有正在阻塞等待的接收方，则直接发送。
+	if sg := c.recvq.dequeue(); sg != nil {
+		// Found a waiting receiver. We pass the value we want to send
+		// directly to the receiver, bypassing the channel buffer (if any).
+		send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		return true
+	}
+
+  // ④ 对缓冲区进行判定（qcount 和 dataqsiz 字段），以此识别缓冲区的剩余空间。
+	if c.qcount < c.dataqsiz {
+		// Space is available in the channel buffer. Enqueue the element to send.
+    // 调用 chanbuf 方法，以此获得底层缓冲数据中位于 sendx 索引的元素指针值
+		qp := chanbuf(c, c.sendx)
+		if raceenabled {
+			raceacquire(qp)
+			racerelease(qp)
+		}
+    // 调用 typedmemmove 方法，将所需发送的数据拷贝到缓冲区中
+		typedmemmove(c.elemtype, qp, ep)
+    // 数据拷贝后，对 sendx 索引自行自增 1。
+		c.sendx++
+    // 若 sendx 与 dataqsiz 大小一致，则归 0（环形队列）。
+		if c.sendx == c.dataqsiz {
+			c.sendx = 0
+		}
+		c.qcount++ // 自增完成后，队列总数同时自增 1
+		unlock(&c.lock) // 解锁互斥锁
+		return true // 返回结果
+	}
+ // 未走进缓冲区处理的逻辑，判断当前是否阻塞 channel，若为非阻塞，将会解锁并直接返回失败。
+	if !block {
+		unlock(&c.lock)
+		return false
+	}
+
+  // ⑤ 进入阻塞等待发送
+  // 调用 getg 方法获取当前 goroutine 的指针，用于后续发送数据。
+	gp := getg()
+  // 调用 acquireSudog 方法获取 sudog 结构体，并设置当前 sudog 具体的待发送数据信息和状态。
+	mysg := acquireSudog()
+	......
+  // 调用 c.sendq.enqueue 方法将刚刚所获取的 sudog 加入待发送的等待队列。
+	c.sendq.enqueue(mysg)
+  ......
+  // 调用 gopark 方法挂起当前 goroutine（会记录执行位置），状态为 waitReasonChanSend，阻塞等待 channel。
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
+  // 调用 KeepAlive 方法保证待发送的数据值是活跃状态，也就是分配在堆上，避免被 GC 回收。
+	KeepAlive(ep)
+
+	// someone woke us up.
+  // 从这里开始唤醒，并恢复阻塞的发送操作
+	if mysg != gp.waiting {
+		throw("G waiting list is corrupted")
+	}
+	gp.waiting = nil
+	gp.activeStackChans = false
+	......
+	mysg.c = nil
+	releaseSudog(mysg)
+	return true
+}
+```
+
+#### 接收数据
 
 
 
-
-#### 接收
-
-
-
-#### 发送
-
-
-
-#### 关闭
+#### 关闭chan
 
 
 

@@ -2,10 +2,13 @@
 
 # 问题列表
 
-* 了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？
+* [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
+* [`slice` 和`array`的区别是什么？](#slice_array)
+* 请你说说`golang`的`CSP`思想？
+
 * Go是否可以声明一个类？
 * Go是否支持泛型？
 * Go的相关命令？
@@ -17,9 +20,321 @@
 
 # 问题解答
 
+## slice 和 array 的区别
+
+<span id="slice_array">问：`slice` 和`array`的区别是什么？</span>
+
+* 数组的零值是元素类型的零值，切片的零值是 `nil`，`nil` 也是唯一可以和切片类型作比较的值；
+* 数组的长度固定，不能动态变化，而切片是一个可以动态变化的数组。数组是多个相同类型数据的组合，一个数组一旦声明/定义了，其长度是固定的， 不能动态变化，否则会报越界；
+* 数组默认是值传递，而切片是数组的一个引用，因此切片是引用类型，在进行传递时，遵守引用传递的机制。
+
+#### 切片和数组的零值
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    var arr = [2]int{}
+    // invalid operation: arr == nil (mismatched types [2]int and nil)
+    // if arr == nil {
+    //     fmt.Println("arr nil")
+    // }
+    fmt.Println("arr=", arr) // arr = [0 0]
+    var slice []int
+    if slice == nil {
+        fmt.Println("slice nil") // slice= []
+    }
+    fmt.Println("slice=", slice) // slice= []
+}
+```
+
+#### `array` 细节
+
+数组定义的基本语法:：
+
+```go
+var 数组名 [数组大小]数据类型 
+var a [3]int
+```
+
+数组代码演示示例：
+
+```go
+package main
+import (
+	"fmt"
+)
+
+func main() {
+
+	var intArr [3]int // int占8个字节
+	// 当我们定义完数组后，其实数组的各个元素有默认值 0
+	fmt.Println(intArr) // [0 0 0]
+	intArr[0] = 10
+	intArr[1] = 20
+	intArr[2] = 30
+	fmt.Println(intArr) // [10 20 30]
+	// intArr的地址=0xc000016200 intArr[0] 地址0xc000016200 intArr[1] 地址0xc000016208 intArr[2] 地址0xc000016210
+	fmt.Printf("intArr的地址=%p intArr[0] 地址%p intArr[1] 地址%p intArr[2] 地址%p\n", 
+		&intArr, &intArr[0], &intArr[1], &intArr[2]) 
+```
+
+数组的底层结构示意图：
+
+![image-20211031165038469](Golang体系.assets/image-20211031165038469.png)
+
+上图总结：
+
+* 数组的地址可以通过数组名来获取 `&intArr`。
+* 数组的第一个元素的地址，就是数组的首地址。
+* 数组的各个元素的地址间隔是依据数组的类型决定，`int`占8个字节，比如 `int64 -> 8 int32->4...`。
+
+![image-20211031170052024](Golang体系.assets/image-20211031170052024.png)
+
+`Go`的数组属值类型，在默认情况下是值传递，因此会进行值拷贝。数组间不会相互影响：
+
+![image-20211031171223947](Golang体系.assets/image-20211031171223947.png)
+
+如想在其它函数中，去修改原来的数组，可以使用引用传递(指针方式)：
+
+![image-20211031171952476](Golang体系.assets/image-20211031171952476.png)
+
+长度是数组类型的一部分，在传递函数参数时 需要考虑数组的长度：
+
+![image-20211031172034637](Golang体系.assets/image-20211031172034637.png)
+
+#### `slice` 细节
+
+切片定义的基本语法:
+
+```go
+var 切片名 []类型 
+var a [] int
+```
+
+切片示例代码演示：
+
+```go
+package main
+import (
+	"fmt"
+)
+
+func main() {
+
+	// 演示切片的基本使用
+	var intArr [5]int = [...]int{1, 22, 33, 66, 99}
+	// 声明/定义一个切片
+	// slice := intArr[1:3]
+	// 1. slice 就是切片名。
+	// 2. intArr[1:3] 表示 slice 引用到 intArr 这个数组。
+	// 3. 引用intArr数组的起始下标为 1 , 最后的下标为3(但是不包含3)。
+	// 4. 切片是数组的一个引用，因此切片是引用类型，在进行传递时，遵守引用传递的机制。
+	slice := intArr[1:3] 
+	fmt.Println("intArr=", intArr) // [1 22 33 66 99]
+	fmt.Println("slice 的元素是 =", slice) //  22, 33
+	fmt.Println("slice 的元素个数 =", len(slice)) // 2
+	fmt.Println("slice 的容量 =", cap(slice)) // 切片的容量是可以动态变化  
+
+	fmt.Printf("intArr[1]的地址=%p\n", &intArr[1]) // 0xc042060038
+	// 0xc042060038 slice[0==22
+	fmt.Printf("slice[0]的地址=%p slice[0==%v\n", &slice[0], slice[0])
+	slice[1] = 34
+	fmt.Println()
+	fmt.Println("intArr=", intArr) // intArr= [1 22 34 66 99]
+	fmt.Println("slice 的元素是 =", slice) //  slice 的元素是 = [22 34]
+}
+```
+
+切片的底层结构示意图：
+
+![image-20211031173315782](Golang体系.assets/image-20211031173315782.png)
+
+上图总结：
+
+* `slice` 是数组的一个引用，因此切片是引用类型，在进行传递时，遵守引用传递的机制。
+* `slice` 从底层来说，其实就是一个数据结构(`struct` 结构体)。
+
+```go
+type slice struct {
+	array unsafe.Pointer
+	len   int
+	cap   int
+}
+```
+
+##### 基础使用
+
+① 方式一：定义一个切片，然后让切片去引用一个已经创建好的数组。
+
+```go
+var intArr [5]int = [...]int{1, 22, 33, 66, 99}
+slice := intArr[1:3]
+```
+
+② 方式二：通过 `make `来创建切片。基本语法：
+
+```
+var 切片名 []type = make([]type, len, [cap])
+// 参数说明: 
+// type: 数据类型 
+// len : 大小 
+// cap : 指定切片容量，可选，如果分配了 cap，则要求 cap>=len.
+```
+
+案例演示图：
+
+![image-20211031175006465](Golang体系.assets/image-20211031175006465.png)
+
+③ 方式三：定义一个切片，直接就指定具体数组，使用原理类似 make 的方式。
+
+```go
+var slice = []int {1, 2, 3, 4}
+var strSlice = []string{"w","x","i","o","n","g"}
+```
+
+方式一和方式二的区别：方式一直接引用数组，这个数组事先是已经存在的；方式②是通过`make`来创建切片，而`make`也会在底层去创建一个数组。
+
+##### 注意事项
+
+① 切片初始化时 `var slice = arr[startIndex:endIndex]`，从 `arr` 数组下标为 `startIndex`，取到 下标为 `endIndex` 的元素(不含 `arr[endIndex]`)。
+
+② 切片初始化时，仍然不能越界。范围在` [0-len(arr)] `之间，但是可以动态增长。
+
+```go
+var slice = arr[0:end] 等价于 var slice = arr[:end]
+var slice = arr[start:len(arr)] 等价于 var slice = arr[start:]
+var slice = arr[0:len(arr)] 等价于 var slice = arr[:]
+```
+
+③ `cap`是一个内置函数，用于统计切片的容量，即最大可以存放多少个元素。
+
+④ 切片定义完后，还不能使用，因为本身是一个空的，需要让其引用到一个数组，或者 `mak`e 一个空间供切片来使用。
+
+⑤ 切片可以继续切片。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+
+    // 使用常规的for循环遍历切片
+    var arr [5]int = [...]int{10, 20, 30, 40, 50}
+    // slice := arr[1:4] // 20, 30, 40
+    slice := arr[1:4]
+    for i := 0; i < len(slice); i++ {
+        // slice[0]=20 slice[1]=30 slice[2]=40
+        fmt.Printf("slice[%v]=%v ", i, slice[i])
+    }
+
+    fmt.Println()
+    // 使用for--range 方式遍历切片
+    for i, v := range slice {
+        fmt.Printf("i=%v v=%v \n", i, v)
+    }
+
+    slice2 := slice[1:2] //  slice [ 20, 30, 40]    [30]
+    slice2[0] = 100      // 因为arr , slice 和slice2 指向的数据空间是同一个，因此slice2[0]=100，其它的都变化
+
+    fmt.Println("slice2=", slice2) // slice2= [100]
+    fmt.Println("slice=", slice)   // slice= [20 100 40]
+    fmt.Println("arr=", arr)       // arr = [10 20 100 40 50]
+}  
+```
+
+⑥ 用 `append` 内置函数，可以对切片进行动态追加。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    // 用 append 内置函数，可以对切片进行动态追加
+    var slice3 []int = []int{100, 200, 300}
+    // 通过append直接给slice3追加具体的元素
+    slice3 = append(slice3, 400, 500, 600)
+    fmt.Println("slice3", slice3) // 100, 200, 300,400, 500, 600
+
+    // 通过 append 将切片slice3追加给slice3
+    slice3 = append(slice3, slice3...) // 100, 200, 300,400, 500, 600 100, 200, 300,400, 500, 600
+    fmt.Println("slice3", slice3)
+}
+```
+
+![image-20211031210658743](Golang体系.assets/image-20211031210658743.png)
+
+ `append `操作的本质就是对数组扩容：`go` 底层会创建一个新的数组 `newArr`(按照扩容后大小) 将 `slice` 原来包含的元素拷贝到新的数组 `newArr`，` slice` 重新引用到 `newArr`。
+
+⑦ 切片的拷贝操作。下面代码中，`slice4` 和 `slice5` 的数据空间是独立，相互不影响，也就是说 `slice4[0]= 999`，`slice5[0]` 仍然是 1。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    // 切片的拷贝操作
+    // 切片使用copy内置函数完成拷贝
+    fmt.Println()
+    var slice4 []int = []int{1, 2, 3, 4, 5}
+    var slice5 = make([]int, 10)
+    // func copy(dst, src []Type) int
+    copy(slice5, slice4)
+    fmt.Println("slice4=", slice4) // 1, 2, 3, 4, 5
+    fmt.Println("slice5=", slice5) // 1, 2, 3, 4, 5, 0 , 0 ,0,0,0
+}
+```
+
+⑧ 切片是引用类型，所以在传递时，遵守引用传递机制。
+
+![image-20211031180114277](Golang体系.assets/image-20211031180114277.png)
+
+
+
+
+
+
+
+
+
 ## 并发模型 `Actor` & `CSP `
 
 ## Channel 
+
+### `close channel` 读数据
+
+问：从已关闭的`channel`读取数据会怎么样？
+
+① 有缓冲的`channel`：
+
+```go 
+
+```
+
+② 无缓冲的`channel`:
+
+
+
+### 
+
+
+
+
+
+
 
 ### CSP 模型
 
@@ -310,17 +625,260 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 #### 接收数据
 
+`channel` 接收数据的演示代码：
 
+```go
+msg := <-ch
 
-#### 关闭chan
+msg, ok := <-ch
+```
 
+两种方法在编译器翻译后分别对应 `runtime.chanrecv1` 和 `runtime.chanrecv2` 两个入口方法，其再在内部再进一步调用 `runtime.chanrecv` 方法：
 
+```go
+// src/runtime/chan.go
+// entry points for <- c from compiled code
+//go:nosplit
+func chanrecv1(c *hchan, elem unsafe.Pointer) {
+	chanrecv(c, elem, true)
+}
 
+//go:nosplit
+func chanrecv2(c *hchan, elem unsafe.Pointer) (received bool) {
+	_, received = chanrecv(c, elem, true)
+	return
+}
+```
 
+ 最终调用的是`chanrecv`方法：
 
-### 源码分析
+```go
+func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
+	......
+  // ① 若 channel 是非阻塞模式，则直接返回。
+  // ② 若 channel 是 nil channel，且为阻塞接收则调用 gopark 方法挂起当前 goroutine。
+	if c == nil {
+		if !block {
+			return
+		}
+		gopark(nil, nil, waitReasonChanReceiveNilChan, traceEvGoStop, 2)
+		throw("unreachable")
+	}
 
+	// Fast path: check for failed non-blocking operation without acquiring the lock.
+	if !block && empty(c) {
+		// After observing that the channel is not ready for receiving, we observe whether the
+		// channel is closed.
+		//
+		// Reordering of these checks could lead to incorrect behavior when racing with a close.
+		// For example, if the channel was open and not empty, was closed, and then drained,
+		// reordered reads could incorrectly indicate "open and empty". To prevent reordering,
+		// we use atomic loads for both checks, and rely on emptying and closing to happen in
+		// separate critical sections under the same lock.  This assumption fails when closing
+		// an unbuffered channel with a blocked send, but that is an error condition anyway.
+		if atomic.Load(&c.closed) == 0 {
+			// Because a channel cannot be reopened, the later observation of the channel
+			// being not closed implies that it was also not closed at the moment of the
+			// first observation. We behave as if we observed the channel at that moment
+			// and report that the receive cannot proceed.
+			return
+		}
+		// The channel is irreversibly closed. Re-check whether the channel has any pending data
+		// to receive, which could have arrived between the empty and closed checks above.
+		// Sequential consistency is also required here, when racing with such a send.
+		if empty(c) {
+			// The channel is irreversibly closed and empty.
+			if raceenabled {
+				raceacquire(c.raceaddr())
+			}
+			if ep != nil {
+				typedmemclr(c.elemtype, ep)
+			}
+			return true, false
+		}
+	}
 
+	var t0 int64
+	if blockprofilerate > 0 {
+		t0 = cputicks()
+	}
+
+	lock(&c.lock)
+
+	if c.closed != 0 && c.qcount == 0 {
+		if raceenabled {
+			raceacquire(c.raceaddr())
+		}
+		unlock(&c.lock)
+		if ep != nil {
+			typedmemclr(c.elemtype, ep)
+		}
+		return true, false
+	}
+
+  // channel 上有正在阻塞等待的发送方时，则直接进行接收
+	if sg := c.sendq.dequeue(); sg != nil {
+		recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		return true, true
+	}
+
+  // 当发现 channel 的缓冲区中有元素时，将会调用 chanbuf 方法，根据 recvx 的索引位置取出数据，找到要接收的元素进行处理。
+	if c.qcount > 0 {
+		// Receive directly from queue
+		qp := chanbuf(c, c.recvx)
+		if raceenabled {
+			raceacquire(qp)
+			racerelease(qp)
+		}
+    // 若所接收到的数据和所传入的变量均不为空，则会调用 typedmemmove 方法将缓冲区中的数据拷贝到所传入的变量中。
+		if ep != nil {
+			typedmemmove(c.elemtype, ep, qp)
+		}
+		typedmemclr(c.elemtype, qp)
+		c.recvx++
+		if c.recvx == c.dataqsiz {
+			c.recvx = 0
+		}
+		c.qcount--
+		unlock(&c.lock)
+		return true, true
+	}
+
+	if !block {
+		unlock(&c.lock)
+		return false, false
+	}
+
+	// no sender available: block on this channel.
+	gp := getg()
+	mysg := acquireSudog()
+	mysg.releasetime = 0
+	if t0 != 0 {
+		mysg.releasetime = -1
+	}
+	// No stack splits between assigning elem and enqueuing mysg
+	// on gp.waiting where copystack can find it.
+	mysg.elem = ep
+	mysg.waitlink = nil
+	gp.waiting = mysg
+	mysg.g = gp
+	mysg.isSelect = false
+	mysg.c = c
+	gp.param = nil
+	c.recvq.enqueue(mysg)
+	// Signal to anyone trying to shrink our stack that we're about
+	// to park on a channel. The window between when this G's status
+	// changes and when we set gp.activeStackChans is not safe for
+	// stack shrinking.
+	atomic.Store8(&gp.parkingOnChan, 1)
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+
+	// someone woke us up
+	if mysg != gp.waiting {
+		throw("G waiting list is corrupted")
+	}
+	gp.waiting = nil
+	gp.activeStackChans = false
+	if mysg.releasetime > 0 {
+		blockevent(mysg.releasetime-t0, 2)
+	}
+	closed := gp.param == nil
+	gp.param = nil
+	mysg.c = nil
+	releaseSudog(mysg)
+	return true, !closed
+}
+```
+
+#### 关闭 `chan`
+
+关闭 `channel` 主要是涉及到 `close` 关键字：
+
+```go
+close(ch)
+```
+
+其对应的编译器翻译方法为 `closechan` 方法：
+
+```go
+func closechan(c *hchan)
+```
+
+关闭`chan`源码解析：
+
+```go
+func closechan(c *hchan) {
+  // 基本检查和关闭标志设置，保证 channel 不为 nil 和未关闭，保证边界。
+	if c == nil {
+		panic(plainError("close of nil channel"))
+	}
+
+	lock(&c.lock)
+	if c.closed != 0 {
+		unlock(&c.lock)
+		panic(plainError("close of closed channel"))
+	}
+ 
+	if raceenabled {
+		callerpc := getcallerpc()
+		racewritepc(c.raceaddr(), callerpc, funcPC(closechan))
+		racerelease(c.raceaddr())
+	}
+
+	c.closed = 1
+
+	var glist gList
+
+  // 将接受者的 sudog 等待队列（recvq）加入到待清除队列 glist 中。
+	// release all readers
+	for {
+		sg := c.recvq.dequeue()
+		if sg == nil {
+			break
+		}
+		if sg.elem != nil {
+			typedmemclr(c.elemtype, sg.elem)
+			sg.elem = nil
+		}
+		if sg.releasetime != 0 {
+			sg.releasetime = cputicks()
+		}
+		gp := sg.g
+		gp.param = nil
+		if raceenabled {
+			raceacquireg(gp, c.raceaddr())
+		}
+		glist.push(gp)
+	}
+
+  // 将发送方也加入到到待清除队列 glist 中。
+	// release all writers (they will panic)
+	for {
+		sg := c.sendq.dequeue()
+		if sg == nil {
+			break
+		}
+		sg.elem = nil
+		if sg.releasetime != 0 {
+			sg.releasetime = cputicks()
+		}
+		gp := sg.g
+		gp.param = nil
+		if raceenabled {
+			raceacquireg(gp, c.raceaddr())
+		}
+		glist.push(gp)
+	}
+	unlock(&c.lock)
+
+	// Ready all Gs now that we've dropped the channel lock.
+	for !glist.empty() {
+		gp := glist.pop()
+		gp.schedlink = 0
+		goready(gp, 3)
+	}
+}
+```
 
 ### goroutine 和 channel 实现定时任务
 
@@ -740,7 +1298,7 @@ func findrunnable() (gp *g, inheritTime bool) {
 
 ## 内存逃逸
 
-了解`golang`的**内存逃逸**吗？什么情况下会发生内存逃逸？如何避免内存逃逸？
+<span id="escape">了解`golang`的**内存逃逸**吗？什么情况下会发生内存逃逸？如何避免内存逃逸？</span>
 
 ### 什么是内存逃逸？
 

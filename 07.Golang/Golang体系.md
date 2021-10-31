@@ -1,5 +1,9 @@
 
 
+
+
+
+
 # 问题列表
 
 * [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
@@ -7,7 +11,8 @@
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * [`slice` 和`array`的区别是什么？](#slice_array)
-* 请你说说`golang`的`CSP`思想？
+* [是否了解`golang`的`CSP`思想？](#csp)
+* [谈谈你对`goroutine`的理解](#goroutine01)
 
 * Go是否可以声明一个类？
 * Go是否支持泛型？
@@ -19,6 +24,29 @@
 
 
 # 问题解答
+
+## <span id="csp">CSP 模型思想</span>
+
+`CSP(Communicating Sequential Process)` 描述这样一种并发模型：多个`Process` 使用一个 `Channel` 进行通信,  这个 `Channel `连结的 `Process` 通常是匿名的，消息传递通常是同步的（有别于 `Actor Model`）。
+
+`CSP` 最早是由 [Tony Hoare](https://www.cs.ox.ac.uk/people/tony.hoare/) 在 1977 年提出一个理论模型，也是一本书的名字，有兴趣可以查阅电子版本：http://www.usingcsp.com/cspbook.pdf。
+
+ `Golang` 只用到了 `CSP` 的很小一部分，即理论中的 `Process/Channel`（ `goroutine/channel`）：这两个并发原语之间没有从属关系， `Process` 可以订阅任意 `Channel`，`Channel `也并不关心是哪个` Process `在利用它进行通信；`Process` 围绕 `Channel `进行读写，形成一套有序阻塞和可预测的并发模型。
+
+* `CSP` 解耦发送方和接收方，注重消息传递方式。
+* `Actor Model`之间直接通讯，注重处理单元。
+
+![image-20211029121333099](Golang体系.assets/image-20211029121333099.png)
+
+`Channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
+
+> Do not communicate by sharing memory; instead,share memory by communicating.
+
+
+
+![image-20211029152454752](Golang体系.assets/image-20211029152454752.png)
+
+### 
 
 ## slice 和 array 的区别
 
@@ -327,27 +355,6 @@ func main() {
 ② 无缓冲的`channel`:
 
 
-
-### 
-
-
-
-
-
-
-
-### CSP 模型
-
-`Channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
-
-> Do not communicate by sharing memory; instead,share memory by communicating.
-
-* `Actor` 之间直接通讯，注重处理单元。
-* `CSP` 解耦发送方和接收方，注重消息传递方式。
-
-![image-20211029121333099](Golang体系.assets/image-20211029121333099.png)
-
-![image-20211029152454752](Golang体系.assets/image-20211029152454752.png)
 
 ### 有无缓冲 `channel`
 
@@ -1014,7 +1021,7 @@ GM的调度模型：
 
 
 
-## `goroutine `的理解
+## <span id="goroutine01">`goroutine `的理解</span>
 
 `goroutine`是 Go 语言实现的轻量级的**用户态线程**，主要用来解决**操作系统线程**太重的问题，所谓的太重，主要表现在以下两个方面：
 
@@ -1027,6 +1034,24 @@ GM的调度模型：
 * `goroutine`启动时默认栈大小只有2k，这在多数情况下已经够用了，即使不够用，`goroutine`的栈也会自动扩大，同时，如果栈太大了过于浪费它还能自动收缩，这样既没有栈溢出的⻛险，也不会造成栈内存空间的大量浪费。 
 
 正是因为`Go`语言中实现了如此轻量级的线程（逻辑态的），才使得我们在`Go`程序中，可以轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。其他程序如C/JAVA的多线程，往往是内核态的，比较重量级，几千个线程可能就会耗光CPU。
+
+以下是 `Rob Pike` 在 [Google I/O 2012](https://www.youtube.com/watch?v=f6kdp27TYZs) 上对`goroutine`给出的描述：
+
+> What is a goroutine? It’s an independently executing function, launched by a **go** statement.
+> It has its own call stack, which grows and shrinks as required.
+> It’s very cheap. It’s practical to have thousands, even hundreds of thousands of goroutines.
+> It’s not a thread.
+> There might be only one thread in a program with thousands of goroutines.
+> Instead, goroutines are multiplexed dynamically onto threads as needed to keep all the goroutines running.
+> But if you think of it as a very cheap thread, you won’t be far off.
+>
+> **― Rob Pike**
+
+概括下来其实就一句话：
+
+> goroutine 可以视为开销很小的线程（既不是物理线程也不是协程，但它拥有自己的调用栈，并且这个栈的大小是可伸缩的  ~~不是协程，它有自己的栈~~），很好用，需要并发的地方就用 go 起一个 func，goroutine走起 🙂
+
+在 `Golang` 中，任何代码都是运行在 `goroutine`里，即便没有显式的 `go func()`，默认的 `main` 函数也是一个 `goroutine`。但 `goroutine` 不等于操作系统的线程，它与系统线程的对应关系，牵涉到` Golang` 运行时的调度器。
 
 ## `goroutine` 的调度
 

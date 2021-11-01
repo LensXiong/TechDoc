@@ -10,11 +10,16 @@
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
+* [`Golang GC` 有了解吗？`GC ` 时会发生什么?](#gc)
 * [`slice` 和`array`的区别是什么？](#slice_array)
 * [是否了解`golang`的`CSP`并发模型的思想？](#csp)
 * [进程、线程、协程各自的优缺点？](#coroutine)
-* [谈谈你对`goroutine`的理解](#goroutine01)
+* [谈谈你对`goroutine`的理解?](#goroutine01)
+* [`defer`、`recover`和`panic`的问题？](#defer_recover)
+* [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
+* [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
 
+* [`JSON` 标准库对 `nil slice` 和 空 `slice` 的处理是一致的吗？](#nil_slice)
 * Go是否可以声明一个类？
 * Go是否支持泛型？
 * Go的相关命令？
@@ -25,6 +30,160 @@
 
 
 # 问题解答
+
+## `nil slice` 和 空 `slice`
+
+<span id="nil_slice">`JSON` 标准库对 `nil slice` 和 空 `slice` 的处理是一致的吗？</span>
+
+在对切片进行`json.Marshal`编码的时候，`nil`切片会被编码成`null`，而空切片会被编码成空数组:`[]`。如下代码所示：
+
+```go
+func main() {
+    var f1 []string // nil切片
+    json1, _ := json.Marshal(Person{Friends: f1})
+    fmt.Printf("%s\n", json1) // output：{"Friends": null}
+
+    f2 := make([]string, 0) // non-nil空切片
+    json2, _ := json.Marshal(Person{Friends: f2})
+    fmt.Printf("%s\n", json2) // output: {"Friends": []}
+}
+```
+
+空切片的定义：**如果切片的长度是0，那么称该切片是空切片**。
+
+`nil`切片的定义：
+
+> nil is a predeclared identifier representing the zero value for a pointer, channel, func, interface, map, or slice type.
+
+翻译成中文的大致含义是：**`nil`是为`pointer`、`channel`、`func`、`interface`、`map`或`slice`类型预定义的标识符，代表这些类型的零值。**
+
+`nil slice` 和 空 `slice`代码示意：
+
+```go
+// 定义变量
+var s []string
+fmt.Printf("1:nil=%t, len=%d, cap=%d\n", s == nil, len(s), cap(s))
+
+// 组合字面量方式
+s = []string{}
+fmt.Printf("2:nil=%t, len=%d, cap=%d\n", s == nil, len(s), cap(s))
+
+// make方式
+s = make([]string, 0)
+fmt.Printf("3: nil=%t, len=%d, cap=%d\n", s == nil, len(s), cap(s))
+```
+
+运行上面的代码，将会有如下的输出：
+
+```go
+1: nil=true, len=0, cap=0
+2: nil=false, len=0, cap=0
+3: nil=false, len=0, cap=0
+```
+
+`nil`切片和空切片的区别：`nil`切片除了长度和容量都是0之外，还有就是`ptr`指针不指向任何底层数组，这也是和空切片的本质区别。
+
+## 并发编程
+
+#### 安全读写共享变量
+
+<span id="shared_variable">`go` 中除了加 `Mutex` 锁以外还有哪些方式安全读写共享变量？</span>
+
+方式一：加 `RWMutex` ，保证同一时间只能有一个 `goroutine` 来访问变量。
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+
+// 互斥锁，如果要访问一个资源，那么就必须要拿到这个资源的锁，只有拿到锁才有资格访问资源。
+// 其他的 goroutine 想要访问，必须等到当前 goroutine 释放了锁，抢到锁之后再访问。
+var mu sync.RWMutex
+
+var balance int
+
+func Deposit(amount int) {
+    mu.Lock()
+    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
+    defer mu.Unlock()
+    balance = balance + amount
+}
+func Balance() int {
+    mu.Lock()
+    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
+    defer mu.Unlock()
+    return balance
+}
+
+// 问题：向银行账户中存款问题。
+// 解析：如果程序正确，那么最后的输出应该是 200000，但多次运行，结果可能是 198000、199000 或者其他的值。这个程序存在数据竞态。
+// 这个问题的根本原因是 balance = balance + amount 这行代码在 CPU 上的执行操作不是原子的，有可能执行到一半的时候会被打断。
+
+// 结果：200000
+// 解决方案：保证同一时间只能有一个 goroutine 来访问变量。
+// ① 互斥锁。sync.Mutex
+// ② 读写互斥锁。sync.RWMutex
+// ③ once。 &sync.Once{}
+
+func main() {
+    for i := 0; i < 1000; i++ {
+        go func() {
+            Deposit(100)
+        }()
+
+        go func() {
+            Deposit(100)
+        }()
+    }
+    // 休眠一秒，让上面的 goroutine 执行完成
+    time.Sleep(1 * time.Second)
+    fmt.Println(Balance())
+}
+```
+
+方式二：`go` 中 `goroutine` 可以通过 `channel` 进行安全读写共享变量。
+
+
+
+
+
+
+
+
+
+<span id="defer_recover">`defer`、`recover`和`panic`的问题？</span>
+
+`goroutine`、`panic`、`recover`和`defer`这四者在本质上是**互相联动**的关系，**使用细节总结如下：**
+
+- `panic`只能触发当前`goroutine` 的 `defer `调用。在`defer`调用中只要存在`recover` ，就能处理其抛出的`panic`事件。需要注意的是，其他`goroutine`中的`defer`对其不起作用，即不支持跨协程调用。
+- 想要捕获或处理`panic`造成的恐慌事件，`recover`必须与`defer`配套使用，否则无效。
+- 在Go语言中，是存在一些无法恢复的致命错误方法的，如`fatalthrow`方法和`fatalpanic`方法等，它们一般在并发写入`map`等处理时抛出，需要谨慎。
+
+```go
+package main
+
+import "fmt"
+
+// 结果：main func end
+// recover: defer panic
+
+func main() {
+    go func() {
+        defer func() {
+            if e := recover(); e != nil {
+                fmt.Printf("recover: %v", e)
+            }
+        }()
+        panic("defer panic")
+    }()
+
+    fmt.Println("main func end")
+}
+```
 
 ## <span id="csp">CSP 模型思想</span>
 
@@ -349,7 +508,11 @@ func main() {
 - 传递的数据类型？
 - 是否有缓冲区?
 
-### 无缓冲的 `channel`
+### 无缓冲的 `channel`(同步通道)
+
+无缓冲的通道指的是通道的大小为0，也就是说，这种类型的通道在接收前没有能力保存任何值，它要求发送 `goroutin`e 和接收 `goroutine` 同时准备好，才可以完成发送和接收操作。
+
+从上面无缓冲的通道定义来看，发送 `goroutine` 和接收 `gouroutine` 必须是同步的，同时准备后，如果没有同时准备好的话，先执行的操作就会阻塞等待，直到另一个相对应的操作准备好为止。这种无缓冲的通道我们也称之为。
 
 ① 不可以在同一个 `goroutine` 中既读又写，否则将会死锁。
 
@@ -400,7 +563,7 @@ func main1() {
 
 ### 有缓冲的 `channel`
 
-在 make 时传递第二参 capacity，即为有缓冲的 channel：
+在 `make `时传递第二参 `capacity`，即为有缓冲的 `channel`：
 
 ```go
 ch := make(chan int, 1)
@@ -430,14 +593,14 @@ func main() {
 有无缓冲 `channel`的演示代码如下：
 
 ```go
-// 无缓冲
+// 无缓冲的 channel 由于没有缓冲发送和接收需要同步。
 ch1 := make(chan int)
-// 缓冲区为 3
+// 缓冲区为 3， 有缓冲 channel 不要求发送和接收操作同步。
 ch2 := make(chan int, 3)
 ```
 
-* 无缓冲的 `channel（unbuffered channel）`，其缓冲区大小则默认为 0。在功能上其接受者会阻塞等待并阻塞应用程序，直至收到通信和接收到数据。
-* 有缓冲的 `channel（buffered channel）`，其缓存区大小是根据所设置的值来调整。在功能上，若缓冲区未满则不会阻塞，会源源不断的进行传输。当缓冲区满了后，发送者就会阻塞并等待。而当缓冲区为空时，接受者就会阻塞并等待，直至有新的数据。
+* 无缓冲的 `channel（unbuffered channel）`，其缓冲区大小则默认为 0。在功能上其接收者会阻塞等待并阻塞应用程序，直至收到通信和接收到数据。
+* 有缓冲的 `channel（buffered channel）`，其缓存区大小是根据所设置的值来调整。在功能上，若缓冲区未满则不会阻塞，会源源不断的进行传输。当缓冲区满了后，发送者就会阻塞并等待。而当缓冲区为空时，接收者就会阻塞并等待，直至有新的数据。
 
 
 
@@ -1007,6 +1170,7 @@ func closechan(c *hchan) {
 
 > 进程是资源分配的最小单位，线程是资源调度的最小单位。
 
+* 占用内存及创建及切换成本：进程 （内核级）> 线程（内核级） >> 协程（用户级）。
 * 进程有自己的独立空间，多进程程序更健壮，多线程程序只要有一个线程死掉，整个进程也死掉了，而一个进程死掉并不会对另外一个进程造成影响。
 * 创建和维护进程的开销非常昂贵，线程是共享进程中的数据的，使用相同的地址空间，因此`CPU`切换一个线程的花费远比进程要小很多。
 * **线程是被内核所调度**，**协程的调度完全由用户控制**，用户态到内核态转换，开销比较多。协程的开销远小于线程的开销，线程的开销又远小于进程的开销。协程是内存占用最小，且创建开销最小。
@@ -1026,6 +1190,12 @@ func closechan(c *hchan) {
 #### 什么是协程？
 
 协程 `Coroutines` 是一种比线程更加轻量级的微线程。类比一个进程可以拥有多个线程，一个线程也可以拥有多个协程，因此协程又称微线程和纤程。
+
+`Coroutines` 具有以下特点：
+
+- 用户空间避免了内核态和用户态的切换导致的成本。
+- 可以由语言和框架层进行调度。
+- 更小的栈空间允许创建大量的实例。
 
 协程是用户视角的一种抽象，操作系统并没有这个概念，其主要思想是在用户态实现调度算法，用少量线程完成大量任务的调度。
 
@@ -2255,7 +2425,41 @@ not nil
 
 解析：`*Student` 定义后本身没有初始化值，所以 `*Student` 是 `nil`的，但是 `*Student `实现了 `People `接口，接口不为` nil` 。`interface`类型默认是一个指针（引用类型），如果没有对`interface`初始化就使用，那么会输出`nil`。
 
-##  
+
+
+##  `fallthrough` 关键字
+
+<span id="fallthrough">问：用过 `fallthrough` 关键字吗？这个关键字的作用是什么？</span>
+
+`switch` 穿透-`fallthrough` ，如果在 `case` 语句块后增加 `fallthrough` ,则会继续执行下一个 `case`，也 叫 `switch` 穿透。
+
+其他语言中，`switch-case` 结构中一般都需要在每个 `case` 分支结束处显式的调用 `break` 语句以防止 前一个 `case` 分支被贯穿后调用下一个 `case` 分支的逻辑，`go` 编译器从语法层面上消除了这种重复的工作，让开发者更轻松；但有时候我们的场景就是需要贯穿多个` case`，但是编译器默认是不贯穿的，这个时候` fallthrough `就起作用了，让某个 `case `分支再次贯穿到下一个 `case `分支。
+
+```go
+package main
+
+import "fmt"
+
+// ok1
+// ok2
+// ok3
+func main(){
+    // switch 的穿透 fallthrought
+    var num int = 10
+    switch num {
+    case 10:
+        fmt.Println("ok1")
+        fallthrough // 默认只能穿透一层
+    case 20:
+        fmt.Println("ok2")
+        fallthrough
+    case 30:
+        fmt.Println("ok3")
+    default:
+        fmt.Println("没有匹配到..")
+    }
+}
+```
 
 ##  `defer `关键字
 

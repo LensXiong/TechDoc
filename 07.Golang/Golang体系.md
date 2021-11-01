@@ -11,7 +11,7 @@
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * [`slice` 和`array`的区别是什么？](#slice_array)
-* [是否了解`golang`的`CSP`思想？](#csp)
+* [是否了解`golang`的`CSP`并发模型的思想？](#csp)
 * [谈谈你对`goroutine`的理解](#goroutine01)
 
 * Go是否可以声明一个类？
@@ -27,26 +27,30 @@
 
 ## <span id="csp">CSP 模型思想</span>
 
-`CSP(Communicating Sequential Process)` 描述这样一种并发模型：多个`Process` 使用一个 `Channel` 进行通信,  这个 `Channel `连结的 `Process` 通常是匿名的，消息传递通常是同步的（有别于 `Actor Model`）。
+<span id="csp">问：是否了解`golang`的`CSP`并发模型的思想?</span>
 
-`CSP` 最早是由 [Tony Hoare](https://www.cs.ox.ac.uk/people/tony.hoare/) 在 1977 年提出一个理论模型，也是一本书的名字，有兴趣可以查阅电子版本：http://www.usingcsp.com/cspbook.pdf。
+`CSP` 模型是上个世纪七十年代提出的，不同于传统的多线程通过共享内存来通信，`CSP` 讲究的是**以通信的方式来共享内存**。用于描述两个独立的并发实体通过共享的通讯 `channel `(管道)进行通信的并发模型。`CSP `中 `channel `是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的 `channel`。
 
- `Golang` 只用到了 `CSP` 的很小一部分，即理论中的 `Process/Channel`（ `goroutine/channel`）：这两个并发原语之间没有从属关系， `Process` 可以订阅任意 `Channel`，`Channel `也并不关心是哪个` Process `在利用它进行通信；`Process` 围绕 `Channel `进行读写，形成一套有序阻塞和可预测的并发模型。
+`Channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
+
+> Do not communicate by sharing memory; instead,share memory by communicating.
+
+`CSP`与`Actor`之间的区别：
 
 * `CSP` 解耦发送方和接收方，注重消息传递方式。
 * `Actor Model`之间直接通讯，注重处理单元。
 
 ![image-20211029121333099](Golang体系.assets/image-20211029121333099.png)
 
-`Channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
+`go` 中 `channel` 是被单独创建并且可以在进程之间传递，它的通信模式类似于 `boss-worker` 模式的，一个实体通过将消息发送到 `channel` 中，然后又监听这个 `channel `的实体处理，两个实体之间是匿名的，这个就实现实体中间的解耦，其中 `channel `是同步的一个消息被发送到 `channel` 中，最终是一定要被另外的实体消费掉的，在实现原理上其实类似一个阻塞的消息队列。
 
-> Do not communicate by sharing memory; instead,share memory by communicating.
+`CSP(Communicating Sequential Process)` 描述这样一种并发模型：多个`Process` 使用一个 `Channel` 进行通信,  这个 `Channel `连结的 `Process` 通常是匿名的，消息传递通常是同步的（有别于 `Actor Model`）。
 
+`CSP` 最早是由 [Tony Hoare](https://www.cs.ox.ac.uk/people/tony.hoare/) 在 1977 年提出一个理论模型，也是一本书的名字，有兴趣可以查阅电子版本：http://www.usingcsp.com/cspbook.pdf。
 
+ `Golang` 只用到了 `CSP` 的很小一部分，即理论中的 `Process/Channel`（ `goroutine/channel`）：这两个并发之间没有从属关系， `Process` 可以订阅任意 `Channel`，`Channel `也并不关心是哪个` Process `在利用它进行通信；`Process` 围绕 `Channel `进行读写，形成一套有序阻塞和可预测的并发模型。
 
 ![image-20211029152454752](Golang体系.assets/image-20211029152454752.png)
-
-### 
 
 ## slice 和 array 的区别
 
@@ -330,17 +334,111 @@ func main() {
 
 ![image-20211031180114277](Golang体系.assets/image-20211031180114277.png)
 
-
-
-
-
-
-
-
-
-## 并发模型 `Actor` & `CSP `
-
 ## Channel 
+
+### 基本概念
+
+`channel` 是 `goroutine` 之间通信（读写）的通道。因为它的存在，显得 `Golang`（或者说`CSP`）与传统的共享内存型的并发模型截然不同，用 [Effective Go](http://golang.org/doc/effective_go.html) 里的话来说就是：
+
+> *Do not communicate by sharing memory; instead, share memory by communicating.*
+
+在 `Golang` 的并发模型中，我们并不关心是哪个 `goroutine`（匿名性）在用 `channel`，只关心 `channel` 的性质：
+
+- 是只读还是只写？
+- 传递的数据类型？
+- 是否有缓冲区?
+
+### 无缓冲的 `channel`
+
+① 不可以在同一个 `goroutine` 中既读又写，否则将会死锁。
+
+示例：
+
+```go
+package main
+
+import "fmt"
+
+// 结果：fatal error: all goroutines are asleep - deadlock!
+
+// 解析：不可以在同一个 goroutine 中既读又写，否则将会死锁。
+func main() {
+    ch := make(chan int)
+
+    ch <- 2
+    x := <-ch
+    fmt.Println(x)
+}
+```
+
+② 两个`goroutine`中使用无缓冲的`channel`，则读写互为阻塞，即双方代码的执行都会阻塞在` <-ch` 和 `ch <-` 处，直到双方读写完成在 `ch` 中的传递，各自继续向下执行，此处借用`CSP` 图例说明：
+
+![image-20211101112249275](Golang体系.assets/image-20211101112249275.png)
+
+示例代码：
+
+```go
+// 结果：
+// after write
+// after read: 2
+
+// 解析：两个 goroutine 中使用无缓冲的channel，则读写互为阻塞。
+// 即双方代码的执行都会阻塞在 <-ch 和 ch <- 处，直到双方读写完成在 ch 中的传递，各自继续向下执行。
+func main1() {
+    ch := make(chan int)
+
+    go func() {
+        ch <- 2
+        fmt.Println("after write")
+    }()
+
+    x := <-ch
+    fmt.Println("after read:", x)
+}
+```
+
+### 有缓冲的 `channel`
+
+在 make 时传递第二参 capacity，即为有缓冲的 channel：
+
+```go
+ch := make(chan int, 1)
+```
+
+这样的 `channel` 无论是否在同一 `goroutine` 中，均可读写而不致死锁，看看下面的代码输出什么内容：
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    ch := make(chan int, 1)
+    for i := 0; i < 10; i++ {
+        select {
+        case x := <-ch:
+            fmt.Println(x) // 0 2 4 6 8
+        case ch <- i:
+        }
+    }
+}
+```
+
+有无缓冲 `channel`的演示代码如下：
+
+```go
+// 无缓冲
+ch1 := make(chan int)
+// 缓冲区为 3
+ch2 := make(chan int, 3)
+```
+
+* 无缓冲的 `channel（unbuffered channel）`，其缓冲区大小则默认为 0。在功能上其接受者会阻塞等待并阻塞应用程序，直至收到通信和接收到数据。
+* 有缓冲的 `channel（buffered channel）`，其缓存区大小是根据所设置的值来调整。在功能上，若缓冲区未满则不会阻塞，会源源不断的进行传输。当缓冲区满了后，发送者就会阻塞并等待。而当缓冲区为空时，接受者就会阻塞并等待，直至有新的数据。
+
+
 
 ### `close channel` 读数据
 
@@ -355,21 +453,6 @@ func main() {
 ② 无缓冲的`channel`:
 
 
-
-### 有无缓冲 `channel`
-
-演示代码如下：
-
-```go
-// 无缓冲
-ch1 := make(chan int)
-
-// 缓冲区为 3
-ch2 := make(chan int, 3)
-```
-
-* 无缓冲的 `channel（unbuffered channel）`，其缓冲区大小则默认为 0。在功能上其接受者会阻塞等待并阻塞应用程序，直至收到通信和接收到数据。
-* 有缓冲的 `channel（buffered channel）`，其缓存区大小是根据所设置的值来调整。在功能上，若缓冲区未满则不会阻塞，会源源不断的进行传输。当缓冲区满了后，发送者就会阻塞并等待。而当缓冲区为空时，接受者就会阻塞并等待，直至有新的数据
 
 ### 三种表现方式
 
@@ -985,10 +1068,10 @@ func closechan(c *hchan) {
 
 Go 线程模型属于多对多线程模型，主要包含三个概念：内核线程(M)、协程的上下文环境（P）、协程(G)。
 
-* G (`Goroutine`)。本质上属于轻量级的线程，是基于协程建立的用户态线程。
+* G (`Goroutine`)。本质上属于轻量级的线程，是基于协程建立的用户态线程。它拥有自己的栈、指令指针和维护其他调度相关的信息。
 
 * M (`Machine`)，操作系统的主线程（物理线程）。它直接关联一个操作系统内核线程，用于执行 G。
-* P (`Processor`)，协程的上下文环境。P 是处理用户级代码逻辑的处理器，P 里面一般会存当前`goroutine`运行的上下文环境（函数指针，堆栈地址及地址边界），P 会对自己管理的`goroutine`队列做一些调度。P 的数量是由环境变量中的`GOMAXPROCS`决定，默认就是`CPU`核数。
+* P (`Processor`)，协程的上下文环境。P 是处理用户级代码逻辑的处理器，P 里面一般会存当前`goroutine`运行的上下文环境（函数指针，堆栈地址及地址边界），P 会对自己管理的`goroutine`队列做一些调度。P 的数量是由环境变量中的`GOMAXPROCS`决定，默认就是`CPU`核数，它代表了真正的并发能力，即可有多少个 `goroutine` 同时运行。
 
 ![image-20211029105710943](Golang体系.assets/image-20211029105710943.png)
 
@@ -1057,6 +1140,8 @@ GM的调度模型：
 
 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 
+
+
 ### 关于 `goroutine` 调度器
 
 > 什么是 M:N 两级线程模型？什么是`goroutine`调度器？
@@ -1107,6 +1192,8 @@ func schedule() {
 
 
 ### `goroutine` 的调度策略
+
+![image-20211101122357165](Golang体系.assets/image-20211101122357165.png)
 
 ![image-20211028225032397](Golang体系.assets/image-20211028225032397.png)
 

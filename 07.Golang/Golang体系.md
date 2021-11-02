@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 # 问题列表
 
 * [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
@@ -39,9 +31,11 @@
 
 <span id="make_new">`golang`中`make`与`new`有何区别？</span>
 
-* `make` 和`new` 都是用来分配内存用的，他们都是在对空间进行分配。
-* `make`只适用于`chan`、`map`、`slice`的内存创建，无可替代。它返回的类型就是这三个类型本身（因为这三种类型就是引用类型，所以就没有必要返回他们的指针了），而不是他们的指针类型。
+* `make` 和`new` 都是用来分配内存用的，他们都是对堆空间进行分配。
+* `make`只适用于`chan`、`map`、`slice`的内存创建。它返回的类型就是这三个类型本身，而不是他们的指针类型。因为这三种类型就是引用类型，所以就没有必要返回他们的指针了。
 * `new`用于类型内存分配（初始化值为0）。只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
+
+#### `new` 的使用
 
 对指针类型的变量直接赋值使用会报错，使用示例：
 
@@ -72,7 +66,6 @@ panic: runtime error: invalid memory address or nil pointer dereference
 
 ```go
 func main() {
-  
    var i *int
    i = new(int)
    *i = 10
@@ -81,7 +74,7 @@ func main() {
 }
 ```
 
-`new`的使用细节：
+`new`函数声明：
 
 ```go
 // The new built-in function allocates memory. The first argument is a type,
@@ -112,7 +105,7 @@ func main() {
 
     u := new(user) // 默认给u分配到内存全部为0
 
-    u.lock.Lock()  // 可以直接使用，因为lock为0,是开锁状态
+    u.lock.Lock()  // 可以直接使用，因为lock为0，是开锁状态
     u.name = "张三"
     u.lock.Unlock()
 
@@ -128,7 +121,40 @@ func main() {
 
 示例中的`user`类型中的`lock`字段不用初始化，直接可以拿来用，不会有无效内存引用异常，因为它已经被零值了。`new`返回的永远是类型的指针，指向分配类型的内存地址。
 
+#### make 的使用
 
+函数声明：
+
+```go
+// The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make's return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//	Slice: The size specifies the length. The capacity of the slice is
+//	equal to its length. A second integer argument may be provided to
+//	specify a different capacity; it must be no smaller than the
+//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	of size 10 and returns a slice of length 0 and capacity 10 that is
+//	backed by this underlying array.
+//	Map: An empty map is allocated with enough space to hold the
+//	specified number of elements. The size may be omitted, in which case
+//	a small starting size is allocated.
+//	Channel: The channel's buffer is initialized with the specified
+//	buffer capacity. If zero, or the size is omitted, the channel is
+//	unbuffered.
+func make(t Type, size ...IntegerType) Type
+```
+
+![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
+
+像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
+
+```go
+a := make(map[string][string], 10)
+slice := make([]int, 10)
+ch := make(chan int, 3)
+```
 
 ## `GC` 垃圾回收机制
 

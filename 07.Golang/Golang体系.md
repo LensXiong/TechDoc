@@ -4,14 +4,17 @@
 
 
 
+
+
 # 问题列表
 
 * [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
-* [`Golang GC` 有了解吗？`GC ` 时会发生什么?](#gc)
+* [`golang GC` 有了解吗？`GC ` 时会发生什么?](#gc)
 * [`slice` 和`array`的区别是什么？](#slice_array)
+* [`golang` 中 `make` 与 `new` 有何区别？](#make_new)
 * [是否了解`golang`的`CSP`并发模型的思想？](#csp)
 * [进程、线程、协程各自的优缺点？](#coroutine)
 * [谈谈你对`goroutine`的理解?](#goroutine01)
@@ -19,7 +22,8 @@
 * [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
 * [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
 
-* [`JSON` 标准库对 `nil slice` 和 空 `slice` 的处理是一致的吗？](#nil_slice)
+* [`JSON` 标准库对 `nil slice` 和`non-nil`空 `slice` 的处理是一致的吗？](#nil_slice)
+* [了解过选项模式吗？能否写一段代码实现一个函数选项模式？](#option_pattern)
 * Go是否可以声明一个类？
 * Go是否支持泛型？
 * Go的相关命令？
@@ -31,13 +35,238 @@
 
 # 问题解答
 
-## `nil slice` 和 空 `slice`
+## `make` 和 `new`
 
-<span id="nil_slice">`JSON` 标准库对 `nil slice` 和 空 `slice` 的处理是一致的吗？</span>
+<span id="make_new">`golang`中`make`与`new`有何区别？</span>
 
-在对切片进行`json.Marshal`编码的时候，`nil`切片会被编码成`null`，而空切片会被编码成空数组:`[]`。如下代码所示：
+* `make` 和`new` 都是用来分配内存用的，他们都是在对空间进行分配。
+* `make`只适用于`chan`、`map`、`slice`的内存创建，无可替代。它返回的类型就是这三个类型本身（因为这三种类型就是引用类型，所以就没有必要返回他们的指针了），而不是他们的指针类型。
+* `new`用于类型内存分配（初始化值为0）。只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
+
+对指针类型的变量直接赋值使用会报错，使用示例：
 
 ```go
+package main
+
+import (
+ "fmt"
+)
+
+func main() {
+   var i *int
+   *i=10
+   fmt.Println(*i)
+}
+```
+
+运行结果：
+
+```go
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x4849df]
+```
+
+对于引用类型的变量，我们不光要声明它，还要为它分配内容空间，否则我们的值放在哪里去呢？
+
+正确分配内存后的代码示例：
+
+```go
+func main() {
+  
+   var i *int
+   i = new(int)
+   *i = 10
+   fmt.Println(*i)
+  
+}
+```
+
+`new`的使用细节：
+
+```go
+// The new built-in function allocates memory. The first argument is a type,
+// not a value, and the value returned is a pointer to a newly
+// allocated zero value of that type.
+func new(Type) *Type
+```
+
+它只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
+
+示例：
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+type user struct {
+    lock sync.Mutex
+    name string
+    age int
+}
+
+func main() {
+
+    u := new(user) // 默认给u分配到内存全部为0
+
+    u.lock.Lock()  // 可以直接使用，因为lock为0,是开锁状态
+    u.name = "张三"
+    u.lock.Unlock()
+
+    fmt.Println(u)
+}
+```
+
+ 运行结果：
+
+```go
+&{{0 0} 张三 0}
+```
+
+示例中的`user`类型中的`lock`字段不用初始化，直接可以拿来用，不会有无效内存引用异常，因为它已经被零值了。`new`返回的永远是类型的指针，指向分配类型的内存地址。
+
+
+
+## `GC` 垃圾回收机制
+
+<span id="gc">`golang GC` 有了解吗？`GC ` 时会发生什么?</span>
+
+[刘丹冰-Golang三色标记+混合写屏障GC模式全分析](https://www.kancloud.cn/aceld/golang/1958308)
+
+* `GoV1.3`- 普通标记清除法，整体过程需要启动`STW`，效率极低。
+
+* `GoV1.5`- 三色标记法， 堆空间启动写屏障，栈空间不启动，全部扫描之后，需要重新扫描一次栈(需要STW)，效率普通。
+
+* `GoV1.8`-三色标记法，混合写屏障机制， 栈空间不启动，堆空间启动。整个过程几乎不需要`STW`，效率较高。
+
+### V1.3 标记清除 `(mark and sweep)`
+
+`Go V1.3` 之前的标记清除(`mark and sweep`)主要有两个主要的步骤：
+
+- 标记(Mark phase)
+- 清除(Sweep phase)
+
+标记清除的整体流程：
+
+* 第一步，暂停程序业务逻辑， 找出不不可达的对象(5和6)，和可达对象（1-2-3和4-7）。
+
+  ![image-20211102114745493](Golang体系.assets/image-20211102114745493.png)
+
+* 第⼆步，开始标记，程序找出它所有可达的对象（1-2-3和4-7），并做上标记。
+
+  ![image-20211102114850117](Golang体系.assets/image-20211102114850117.png)
+
+* 第三步，标记完了之后，然后开始清除未标记的对象（5和6）。
+
+  ![image-20211102114927570](Golang体系.assets/image-20211102114927570.png)
+
+> 注：`mark and sweep`算法在执行的时候，需要程序暂停。即 `STW(stop the world)`，`STW`的过程中，`CPU`不执行用户代码，全部用于垃圾回收，这个过程的影响很大，所以`STW`也是一些回收机制最大的难题和希望优化的点。所以在执行第三步的这段时间，程序会暂定停止任何工作，卡在那等待回收执行完毕。
+
+* 第四步，停⽌暂停，让程序继续跑。然后循环重复这个过程，直到`process`程序⽣生命周期结束。
+
+`Go V1.3`版本之前就是按照以上来实施的, 在执行GC的基本流程就是首先启动`STW`暂停，然后执行标记，再执行数据回收，最后停止`STW`，如图所示。
+
+![image-20211102155242319](Golang体系.assets/image-20211102155242319.png)
+
+`Go V1.3` 做了简单的优化，将`STW`的步骤提前，减少`STW`暂停的时间范围。如下所示：
+
+![image-20211102155448530](Golang体系.assets/image-20211102155448530.png)
+
+无论怎么优化，`Go V1.3`都面临这个一个重要问题，就是`mark-and-sweep` 算法会暂停整个程序 。
+
+标记-清除(`mark and sweep`)的缺点：
+
+- `STW`，`stop the world`；让程序暂停，程序出现卡顿 **(重要问题)**；
+- 标记需要扫描整个`heap`；
+- 清除数据会产生`heap`碎片。
+
+`Go V1.3`都面临这个一个重要问题，就是`mark-and-sweep` 算法会暂停整个程序。`Go`是如何面对并这个问题的呢？接下来`Go V1.5`版本就用**三色并发标记法**来优化这个问题。
+
+### V1.5 三⾊标记法
+
+所谓三色标记法实际上就是通过三个阶段的标记来确定需要清除的对象都有哪些。
+
+* 第一步 ，每次新创建的对象，默认的颜色都是标记为**白色**，如图所示。
+
+  ![image-20211102160206143](Golang体系.assets/image-20211102160206143.png)
+
+* 第二步，每次`GC`回收开始，会从根节点开始遍历所有对象，把遍历到的对象从白色集合放入**灰色**集合如图所示。
+
+![image-20211102160309275](Golang体系.assets/image-20211102160309275.png)
+
+* 遍历灰色集合，将灰色对象引用的对象从白色集合放入灰色集合，之后将此灰色对象放入黑色集合，如图所示。
+
+![image-20211102160409273](Golang体系.assets/image-20211102160409273.png)
+
+* **第四步**, 重复**第三步**, 直到灰色中无任何对象，如图所示。
+
+  ![image-20211102160510907](Golang体系.assets/image-20211102160510907.png)
+
+* **第五步**: 回收所有的白色标记表的对象，也就是回收垃圾，如图所示。
+
+![image-20211102160549314](Golang体系.assets/image-20211102160549314.png)
+
+以上我们将全部的白色对象进行删除回收，剩下的就是全部依赖的黑色对象。
+
+以上便是`三色并发标记法`，不难看出，我们上面已经清楚的体现`三色`的特性。但是这里面可能会有很多并发流程均会被扫描，执行并发流程的内存可能相互依赖，为了在`GC`过程中保证数据的安全，我们在开始三色标记之前就会加上`STW`，在扫描确定黑白对象之后再放开`STW`。但是很明显这样的`GC`扫描的性能实在是太低了。
+
+在三色标记法中，出现对象丢失现象是不希望被发生的：
+
+- 条件1： 一个白色对象被黑色对象引用**(白色被挂在黑色下)**
+- 条件2： 灰色对象与它之间的可达关系的白色对象遭到破坏**(灰色同时丢了该白色)**
+
+如果当以上两个条件同时满足时，就会出现对象丢失现象！如果三色标记过程不启动`STW`，那么在`GC`扫描过程中，任意的对象均可能发生读写操作，如图所示，在还没有扫描到对象2的时候，已经标记为黑色的对象4，此时创建指针q，并且指向白色的对象3。
+
+![image-20211102162254314](Golang体系.assets/image-20211102162254314.png)
+
+
+
+#### 强三色不变式
+
+>  强三色不变式，不存在黑色对象引用到白色对象的指针。
+
+强三色不变色实际上是强制性的不允许黑色对象引用白色对象，这样就不会出现有白色对象被误删的情况。
+
+![image-20211102164352237](Golang体系.assets/image-20211102164352237.png)
+
+#### 弱三色不变式
+
+> 弱三色不变式，所有被黑色对象引用的白色对象都处于灰色保护状态。
+
+弱三色不变式强调，黑色对象可以引用白色对象，但是这个白色对象必须存在其他灰色对象对它的引用，或者可达它的链路上游存在灰色对象。 这样实则是黑色对象引用白色对象，白色对象处于一个危险被删除的状态，但是上游灰色对象的引用，可以保护该白色对象，使其安全。
+
+![image-20211102164410280](Golang体系.assets/image-20211102164410280.png)
+
+
+
+#### 插入屏障
+
+
+
+#### 删除屏障
+
+
+
+### V1.8 混合写屏障机制
+
+
+
+
+
+## `nil slice` 和 `non-nil` 空`slice`
+
+<span id="nil_slice">`JSON` 标准库对 `nil slice` 和 `non-nil`空 `slice` 的处理是一致的吗？</span>
+
+在对切片进行`json.Marshal`编码的时候，`nil`切片会被编码成`null`，而`non-nil`空切片会被编码成空数组`[]`。如下代码所示：
+
+```go
+type Person {
+ Friends []string
+}
+
 func main() {
     var f1 []string // nil切片
     json1, _ := json.Marshal(Person{Friends: f1})
@@ -49,15 +278,17 @@ func main() {
 }
 ```
 
+`nil`切片和`non-nil`空切片的区别：`nil`切片除了长度和容量都是0之外，还有就是`ptr`指针不指向任何底层数组，这也是`nil`切片和`non-nil`空切片的本质区别。
+
 空切片的定义：**如果切片的长度是0，那么称该切片是空切片**。
 
-`nil`切片的定义：
+`nil`的定义：
 
 > nil is a predeclared identifier representing the zero value for a pointer, channel, func, interface, map, or slice type.
 
 翻译成中文的大致含义是：**`nil`是为`pointer`、`channel`、`func`、`interface`、`map`或`slice`类型预定义的标识符，代表这些类型的零值。**
 
-`nil slice` 和 空 `slice`代码示意：
+`nil slice` 和`non-nil`空 `slice`代码示意：
 
 ```go
 // 定义变量
@@ -80,8 +311,6 @@ fmt.Printf("3: nil=%t, len=%d, cap=%d\n", s == nil, len(s), cap(s))
 2: nil=false, len=0, cap=0
 3: nil=false, len=0, cap=0
 ```
-
-`nil`切片和空切片的区别：`nil`切片除了长度和容量都是0之外，还有就是`ptr`指针不指向任何底层数组，这也是和空切片的本质区别。
 
 ## 并发编程
 
@@ -2431,7 +2660,7 @@ not nil
 
 <span id="fallthrough">问：用过 `fallthrough` 关键字吗？这个关键字的作用是什么？</span>
 
-`switch` 穿透-`fallthrough` ，如果在 `case` 语句块后增加 `fallthrough` ,则会继续执行下一个 `case`，也 叫 `switch` 穿透。
+作用：让某个 `case `分支再次贯穿到下一个 `case `分支。`switch` 穿透-`fallthrough` ，如果在 `case` 语句块后增加 `fallthrough` ，则会继续执行下一个 `case`，也 叫 `switch` 穿透。
 
 其他语言中，`switch-case` 结构中一般都需要在每个 `case` 分支结束处显式的调用 `break` 语句以防止 前一个 `case` 分支被贯穿后调用下一个 `case` 分支的逻辑，`go` 编译器从语法层面上消除了这种重复的工作，让开发者更轻松；但有时候我们的场景就是需要贯穿多个` case`，但是编译器默认是不贯穿的，这个时候` fallthrough `就起作用了，让某个 `case `分支再次贯穿到下一个 `case `分支。
 

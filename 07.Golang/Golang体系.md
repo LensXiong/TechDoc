@@ -24,6 +24,8 @@
 * [关于`map`的遍历赋值，下面的代码输出什么内容？](#map_for)
 * [关于`map`的`value` 赋值，下面的代码输出什么内容？](#map_value)
 * [值类型和引用类型的理解](#value_quote)
+* [关于非空接口`iface`情况，以下代码打印出来什么内容，说出为什么？](#non_empty)
+* [关于`interface`的赋值问题，以下代码能编译过去吗？为什么？](#interface)
 * [Go是否可以声明一个类？]()
 * Go是否支持泛型？
 * Go的相关命令？
@@ -35,14 +37,213 @@
 
 # 问题解答
 
+## interface 接口
+
+### `interface `的赋值问题
+
+<span id="interface">关于`interface`的赋值问题，以下代码能编译过去吗？为什么？</span>
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+type People interface {
+    Speak(string) string
+}
+type Student struct{}
+
+func (stu *Student) Speak(think string) (talk string) {
+    if think == "good" {
+        talk = "You are a good boy"
+    } else {
+        talk = "hi"
+    }
+    return
+}
+func main() {
+    // cannot use Student literal (type Student) as type People in assignment:
+    // Student does not implement People (Speak method has pointer receiver)
+    var peo People = Student{}
+    // var peo People = &Student{}
+    think := "good"
+    fmt.Println(peo.Speak(think))
+}
+```
+
+结果：不能，会出现以下错误:
+
+```go
+cannot use Student literal (type Student) as type People in assignment:
+Student does not implement People (Speak method has pointer receiver)
+```
+
+发生多态的几个要素：
+
+* 有`interface`接口，并且有接口定义的方法（`Speak`）。
+* 有子类`Student{}`去重写`interface`的接口。
+
+* 有父类`People{}`指针指向子类的具体对象。
+
+那么，满足上述3个条件，就可以产生多态效果，就是，父类指针可以调用子类的具体方法。
+
+所以上述代码报错的地方在`var peo People = Stduent{}`这条语句， `Student{}`已经重写了父类`People{}`中的`Speak(string) string`方法，那么只需要用父类指针指向子类对象即可。
+
+所以应该改成`var peo People = &Student{}` 即可编译通过。（`People`为`interface`类型，就是指针类型）。
+
+### `interface` 的内部结构
+
+<span id="non_empty">关于非空接口`iface`情况，以下代码打印出来什么内容，说出为什么？</span>
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+type People interface {
+    Show()
+}
+
+type Student struct{}
+
+func (stu *Student) Show() {}
+
+func live() People {
+    var stu *Student // <nil>
+    fmt.Println(stu)
+    return stu
+}
+func main() {
+    if live() == nil {
+        fmt.Println("AAAAAAAAAAA")
+    } else {
+        fmt.Println("BBBBBBBBBBB")
+    }
+}
+```
+
+结果：打印`BBBBBBBBBBB`。
+
+解析：这是一个关于`interface`内部结构的问题。
+
+`interface`在使用的过程中，共有两种表现形式一种为**空接口(`empty interface`)**，定义如下：
+
+```
+var MyInterface interface{}
+```
+
+另一种为**非空接口(`non-empty interface`)**，定义如下：
+
+```
+type MyInterface interface {
+		function()
+}
+```
+
+这两种`interface`类型分别用两种`struct`表示，空接口为`eface`, 非空接口为`iface`.
+
+![image-20211104160833281](Golang体系.assets/image-20211104160833281.png)
+
+#### **空接口`eface`**
+
+空接口`eface`结构，由两个属性构成，一个是类型信息`_type`，一个是数据信息。其数据结构声明如下：
+
+```
+type eface struct {      //空接口
+    _type *_type         //类型信息
+    data  unsafe.Pointer //指向数据的指针(go语言中特殊的指针类型unsafe.Pointer类似于c语言中的void*)
+}
+```
+
+**_type属性**：是GO语言中所有类型的公共描述，Go语言几乎所有的数据结构都可以抽象成 `_type`，是所有类型的公共描述，**type负责决定data应该如何解释和操作，**type的结构代码如下:
+
+```
+type _type struct {
+    size       uintptr  //类型大小
+    ptrdata    uintptr  //前缀持有所有指针的内存大小
+    hash       uint32   //数据hash值
+    tflag      tflag
+    align      uint8    //对齐
+    fieldalign uint8    //嵌入结构体时的对齐
+    kind       uint8    //kind 有些枚举值kind等于0是无效的
+    alg        *typeAlg //函数指针数组，类型实现的所有方法
+    gcdata    *byte
+    str       nameOff
+    ptrToThis typeOff
+}
+```
+
+**data属性:** 表示指向具体的实例数据的指针，他是一个`unsafe.Pointer`类型，相当于一个C的万能指针`void*`。
+
+![image-20211104160817781](Golang体系.assets/image-20211104160817781.png)
+
+#### 非空接口iface
+
+iface 表示 non-empty interface 的数据结构，非空接口初始化的过程就是初始化一个iface类型的结构，其中`data`的作用同`eface`的相同，这里不再多加描述。
+
+```
+type iface struct {
+  tab  *itab
+  data unsafe.Pointer
+}
+```
+
+iface结构中最重要的是itab结构（结构如下），每一个 `itab` 都占 32 字节的空间。itab可以理解为`pair<interface type, concrete type>` 。itab里面包含了interface的一些关键信息，比如method的具体实现。
+
+```
+type itab struct {
+  inter  *interfacetype   // 接口自身的元信息
+  _type  *_type           // 具体类型的元信息
+  link   *itab
+  bad    int32
+  hash   int32            // _type里也有一个同样的hash，此处多放一个是为了方便运行接口断言
+  fun    [1]uintptr       // 函数指针，指向具体类型所实现的方法
+}
+```
+
+其中值得注意的字段：
+
+1. `interface type`包含了一些关于interface本身的信息，比如`package path`，包含的`method`。这里的interfacetype是定义interface的一种抽象表示。
+2. `type`表示具体化的类型，与eface的 *type类型相同。*
+3. `hash`字段其实是对`_type.hash`的拷贝，它会在`interface`的实例化时，用于快速判断目标类型和接口中的类型是否一致。另，Go的`interface`的`Duck-typing`机制也是依赖这个字段来实现。
+4. `fun`字段其实是一个动态大小的数组，虽然声明时是固定大小为1，但在使用时会直接通过fun指针获取其中的数据，并且不会检查数组的边界，所以该数组中保存的元素数量是不确定的。
+
+![image-20211104160754573](Golang体系.assets/image-20211104160754573.png)
+
+关于上述代码的，`People`拥有一个`Show`方法的，属于非空接口，`People`的内部定义应该是一个`iface`结构体。
+
+```go
+type People interface {
+    Show()  
+}  
+```
+
+![image-20211104160635647](Golang体系.assets/image-20211104160635647.png)
+
+```
+func live() People {
+    var stu *Student
+    return stu      
+}     
+```
+
+![image-20211104160608037](Golang体系.assets/image-20211104160608037.png)
+
+`stu`是一个指向`nil`的空指针，但是最后`return stu` 会触发`匿名变量 People = stu`值拷贝动作，所以最后`live()`放回给上层的是一个`People insterface{}`类型，也就是一个`iface struct{}`类型。 stu为nil，只是`iface`中的data 为nil而已。 但是`iface struct{}`本身并不为nil。
+
 ## 值类型和引用类型
 
 <span id="value_quote">关于值类型和引用类型的理解？</span>
 
-* 值类型：基本数据类型 `int` 系列，`float` 系列，`bool`，`string` 、数组和结构体 `struct`。
-* 引用类型：指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
-* 值类型：变量直接存储值，内存通常在栈中分配。
-* 引用类型：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
+* 值类型定义：变量直接存储值，内存通常在栈中分配。
+* 引用类型定义：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
+
+* 值类型包括：基本数据类型 `int` 系列，`float` 系列，`bool`类型，`string`类型 、数组`array`和结构体 `struct`。
+* 引用类型包括：指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
 
 ## 指针
 
@@ -189,8 +390,6 @@ func main() {
     fmt.Println(list["student"]) // &{wwxiong}
 }
 ```
-
-
 
 #### `map` 的遍历赋值
 

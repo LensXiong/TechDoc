@@ -26,6 +26,7 @@
 * [值类型和引用类型的理解](#value_quote)
 * [关于非空接口`iface`情况，以下代码打印出来什么内容，说出为什么？](#non_empty)
 * [关于`interface`的赋值问题，以下代码能编译过去吗？为什么？](#interface)
+* [关于`inteface{}`与`*interface{}`，ABCD中哪一行存在错误？](#interface02)
 * [Go是否可以声明一个类？]()
 * Go是否支持泛型？
 * Go的相关命令？
@@ -39,7 +40,7 @@
 
 ## interface 接口
 
-### `interface `的赋值问题
+### `interface ` 的赋值问题
 
 <span id="interface">关于`interface`的赋值问题，以下代码能编译过去吗？为什么？</span>
 
@@ -92,6 +93,41 @@ Student does not implement People (Speak method has pointer receiver)
 所以上述代码报错的地方在`var peo People = Stduent{}`这条语句， `Student{}`已经重写了父类`People{}`中的`Speak(string) string`方法，那么只需要用父类指针指向子类对象即可。
 
 所以应该改成`var peo People = &Student{}` 即可编译通过。（`People`为`interface`类型，就是指针类型）。
+
+### `inteface{}`与`*interface{}`
+
+<span id="interface02">关于`inteface{}`与`*interface{}`，ABCD中哪一行存在错误？</span>
+
+```go
+package main
+
+type S struct {
+}
+
+func f(x interface{}) {
+}
+
+func g(x *interface{}) {
+}
+
+// cannot use s (type S) as type *interface {} in argument to g:
+//	*interface {} is pointer to interface, not interface
+
+// cannot use p (type *S) as type *interface {} in argument to g:
+//	*interface {} is pointer to interface, not interface
+func main() {
+    s := S{}
+    p := &s
+    f(s) //A
+    g(s) //B
+    f(p) //C
+    g(p) //D
+}
+```
+
+解析：`interface`是所有`golang`类型的父类。函数中`func f(x interface{})`的`interface{}`可以支持传入`golang`的任何类型，包括指针，但是函数`func g(x *interface{})`只能接受`*interface{}`。
+
+
 
 ### `interface` 的内部结构
 

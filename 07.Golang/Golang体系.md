@@ -17,7 +17,14 @@
 * [`JSON` 标准库对 `nil slice` 和`non-nil`空 `slice` 的处理是一致的吗？](#nil_slice)
 * [了解过选项模式吗？能否写一段代码实现一个函数选项模式？](#option_pattern)
 * [是否可以获取常量的地址，什么是内存的四区？](#const)
-* Go是否可以声明一个类？
+* [关于函数的返回值类型，下面代码是否能够编译通过？为什么？](#string_nil)
+* [关于结构体比较，下面代码是否可以编译通过？为什么？](#struct_compare)
+* [关于函数返回值命名问题，下面代码是否可以编译通过？](#return_value)
+* [关于`slice`的追加和拼接问题，分析下面两段代码。](#slice_append)
+* [关于`map`的遍历赋值，下面的代码输出什么内容？](#map_for)
+* [关于`map`的`value` 赋值，下面的代码输出什么内容？](#map_value)
+* [值类型和引用类型的理解](#value_quote)
+* [Go是否可以声明一个类？]()
 * Go是否支持泛型？
 * Go的相关命令？
 * `defer`关键字的使用，写出下面代码的输出内容。
@@ -28,9 +35,464 @@
 
 # 问题解答
 
+## 值类型和引用类型
+
+<span id="value_quote">关于值类型和引用类型的理解？</span>
+
+* 值类型：基本数据类型 `int` 系列，`float` 系列，`bool`，`string` 、数组和结构体 `struct`。
+* 引用类型：指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
+* 值类型：变量直接存储值，内存通常在栈中分配。
+* 引用类型：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
+
+## 指针
+
+* 基本数据类型，变量存的就是值，也叫值类型。
+
+* 获取变量的地址，用&，比如:` var num int,` 获取 `num` 的地址：`&num`。
+
+* 指针类型，指针变量存的是一个地址，这个地址指向的空间存的才是值。
+
+* 获取指针类型所指向的值，使用：*。
+
+  ```go
+  var ptr *int // 使用*ptr 获取 ptr 指向的值
+  ```
+
+  代码示意：
+
+  ```go
+  package main
+  
+  import (
+      "fmt"
+  )
+  
+  func main() {
+  
+      // 基本数据类型在内存布局
+      var i int = 10
+      // i 的地址是什么,&i
+      fmt.Println("i的地址=", &i)  // i的地址= 0xc04204e080
+  
+      // 下面的 var ptr *int = &i
+      // 1. ptr 是一个指针变量
+      // 2. ptr 的类型 *int
+      // 3. ptr 本身的值&i
+      var ptr *int = &i
+      fmt.Printf("ptr=%v\n", ptr) // ptr=0xc04204e080
+      fmt.Printf("ptr 的地址=%v\n", &ptr) // ptr=0xc04206c020
+      fmt.Printf("ptr 指向的值=%v", *ptr) // ptr 指向的值=10
+  
+  }
+  ```
+
+  内存布局示意图：
+
+  ![image-20211104111320734](Golang体系.assets/image-20211104111320734.png)
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+
+// 结果：
+// i的地址= 0xc000096008
+// ptr=0xc000096008
+// ptr 的地址=0xc00008c020
+// ptr 指向的值=10
+
+func main() {
+
+    // 基本数据类型在内存布局
+    var i int = 10
+    // i 的地址是什么,&i
+    fmt.Println("i的地址=", &i)
+
+    // 下面的 var ptr *int = &i
+    // 1. ptr 是一个指针变量
+    // 2. ptr 的类型 *int
+    // 3. ptr 本身的值&i
+    var ptr *int = &i
+    fmt.Printf("ptr=%v\n", ptr)
+    fmt.Printf("ptr 的地址=%v\n", &ptr)
+    fmt.Printf("ptr 指向的值=%v", *ptr)
+
+}
+```
+
+## `map` 相关
+
+#### `map` 的 `value` 赋值
+
+<span id="map_value">关于`map`的`value` 赋值，下面的代码输出什么内容？</span>
+
+```go
+package main
+
+import "fmt"
+
+type Student struct {
+    Name string
+}
+
+var list map[string]Student
+
+func main() {
+
+    list = make(map[string]Student)
+    fmt.Println(list)            // map[] 返回引用类型本身
+    fmt.Println(list["student"]) // {}
+
+    student := Student{"wangxiong"}
+
+    list["student"] = student
+    list["student"].Name = "wwxiong"
+
+    fmt.Println(list["student"]) // {wangxiong}
+}
+
+```
+
+结果：编译失败。
+
+```go
+cannot assign to struct field list["student"].Name in map
+```
+
+解析：`map[string]Student` 的`value`是一个`Student`结构值，所以当`list["student"] = student，`是一个值拷贝过程。而`list["student"]`则是一个值引用。那么值引用的特点是`只读`。所以对`list["student"].Name = "wwxiong"`的修改是不允许。
+
+正确使用：
+
+```go
+package main
+
+import "fmt"
+
+type Student struct {
+    Name string
+}
+
+var list map[string]*Student
+
+func main() {
+
+    list = make(map[string]*Student)
+
+    student := Student{"wangxiong"}
+
+    list["student"] = &student
+    list["student"].Name = "wwxiong"
+
+    fmt.Println(list["student"]) // &{wwxiong}
+}
+```
+
+
+
+#### `map` 的遍历赋值
+
+<span id="map_for">关于`map`的遍历赋值，下面的代码输出什么内容？</span>
+
+```go
+package main
+
+import "fmt"
+
+type student struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    // 定义map
+    m := make(map[string]*student)
+
+    // 定义student数组
+    stus := []student{
+        {Name: "zhou", Age: 24},
+        {Name: "li", Age: 23},
+        {Name: "wang", Age: 22},
+    }
+
+    // 将数组依次添加到map中
+    for _, stu := range stus {
+        fmt.Println(&stu)
+        m[stu.Name] = &stu
+    }
+
+    // 打印map
+    for k, v := range m {
+        fmt.Println(k, "=>", v.Name)
+    }
+}
+```
+
+结果：
+
+```go
+// 结果：
+// li => wang
+// wang => wang
+// zhou => wang
+```
+
+解析：`m`是一个`make`初始化后的`map`，属于引用类型。`stu`是结构体的一个拷贝副本，所以`m[stu.Name]`=`&stu`实际上一致指向同一个指针， 最终该指针的值为遍历的最后一个`struct`的值拷贝。
+
+![image-20211104095535602](Golang体系.assets/image-20211104095535602.png)
+
+正确写法：
+
+```go
+package main
+
+import "fmt"
+
+
+type student struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    // 定义map
+    m := make(map[string]*student)
+
+    // 定义student数组
+    stus := []student{
+        {Name: "zhou", Age: 24},
+        {Name: "li", Age: 23},
+        {Name: "wang", Age: 22},
+    }
+    
+    // 遍历结构体数组，依次赋值给map
+    for i := 0; i < len(stus); i++  {
+        m[stus[i].Name] = &stus[i]
+    }
+
+
+    // 打印map
+    for k, v := range m {
+        fmt.Println(k, "=>", v.Name)
+    }
+}
+```
+
+运行结果：
+
+```go
+zhou => zhou
+li => li
+wang => wang
+```
+
+解析：
+
+![image-20211104100402125](Golang体系.assets/image-20211104100402125.png)
+
+## `slice `追加和拼接
+
+<span id="slice_append">关于`slice`的追加和拼接问题，分析下面两段代码。</span>
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+// 结果：[0 0 0 0 0 0 0 0 0 0 1 2 3]
+// 解析：make 初始化均为0；
+// append 操作的本质就是对数组扩容；
+// go 底层会创建一个新的数组 newArr(按照扩容后大小) 将 slice原来包含的元素拷贝到新的数组 newArr， slice 重新引用到 newArr。
+func main() {
+    s := make([]int, 10)
+
+    s = append(s, 1, 2, 3)
+
+    fmt.Println(s)
+}
+```
+
+ 解析：`make` 初始化均为0；`make` 在初始化切片时指定了⻓度，所以追加数据时会从` len(s) `位置开始填充数据，append` 操作的本质就是对数组扩容。
+
+```go
+package main
+
+import "fmt"
+
+// 结果：cannot use s2 (type []int) as type int in append
+
+// 解析：func append(slice []Type, elems ...Type) []Type
+// The append built-in function appends elements to the end of a slice. If
+// it has sufficient capacity, the destination is resliced to accommodate the
+// new elements. If it does not, a new underlying array will be allocated.
+// Append returns the updated slice. It is therefore necessary to store the
+// result of append, often in the variable holding the slice itself:
+//	slice = append(slice, elem1, elem2)
+//	slice = append(slice, anotherSlice...)
+// As a special case, it is legal to append a string to a byte slice, like this:
+//	slice = append([]byte("hello "), "world"...)
+
+func main() {
+    s1 := []int{1, 2, 3}
+    s2 := []int{4, 5}
+    s1 = append(s1, s2)
+    // s1 = append(s1, s2...)
+    fmt.Println(s1)
+}
+```
+
+结果：`cannot use s2 (type []int) as type int in append`。
+
+解析：
+
+```go
+slice = append(slice, elem1, elem2)
+slice = append(slice, anotherSlice...)
+```
+
+## 函数返回值命名
+
+<span id="return_value">关于函数返回值命名问题，下面代码是否可以编译通过？</span>
+
+```go
+package main
+
+import "fmt"
+
+/*
+   下面代码是否编译通过?
+*/
+
+// 结果：syntax error: mixed named and unnamed function parameters
+
+// 解析：在函数有多个返回值时，只要有一个返回值有指定命名，其他的也必须有命名。
+// 如果返回值有有多个返回值必须加上括号；
+// 如果只有一个返回值并且有命名也需要加上括号；
+// 此处函数第一个返回值有 sum 名称，第二个未命名，所以错误。
+
+func myFunc(x, y int) (sum int, error) {
+    return x + y, nil
+}
+
+func main() {
+    num, _ := myFunc(1, 2)
+    fmt.Println("num = ", num)
+}
+
+```
+
+在函数有多个返回值时，只要有一个返回值有指定命名，其他的也必须有命名。 如果返回值有有多个返回值必须加上括号； 如果只有一个返回值并且有命名也需要加上括号； 此处函数第一个返回值有`sum`名称，第二个未命名，所以错误。
+
+## `string `与 `nil` 类型
+
+<span id="string_nil">关于函数的返回值类型，下面代码是否能够编译通过？为什么？</span>
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func GetValue(m map[int]string, id int) (string, bool) {
+	if _, exist := m[id]; exist {
+		return "存在数据", true
+	}
+	return nil, false
+}
+
+func main()  {
+	intmap:=map[int]string{
+		1:"a",
+		2:"bb",
+		3:"ccc",
+	}
+
+	v,err:=GetValue(intmap,3)
+	fmt.Println(v,err)
+}
+```
+
+`nil` 可以用作 `interface`、`function`、`pointer`、`map`、`slice` 和 `channel` 的“空值”。但是如果不特别指定的话，Go 语言不能识别类型，所以会报错。通常编译的时候不会报错，但是运行的时候会报:`cannot use nil as type string in return argument`。
+
+## 结构体比较
+
+<span id="struct_compare">关于结构体比较，下面代码是否可以编译通过？为什么？</span>
+
+```go
+package main
+
+import (
+    "fmt"
+    "reflect"
+)
+
+// 结果：invalid operation: sn1 == sn3 (mismatched types struct { age int; name string } and struct { name string; age int })
+// invalid operation: sm1 == sm2 (struct containing map[string]string cannot be compared)
+
+// 解析：结构体比较规则
+// ① 只有相同类型的结构体才可以比较，结构体是否相同不但与属性类型个数有关，还与属性顺序相关。
+// ② 结构体是相同的，但是结构体属性中有不可以比较的类型，如map,slice，则结构体不能用 == 比较，可以使用 reflect.DeepEqual 进行比较。
+func main() {
+
+    sn1 := struct {
+        age  int
+        name string
+    }{age: 11, name: "qq"}
+
+    sn2 := struct {
+        age  int
+        name string
+    }{age: 11, name: "qq"}
+
+    sn3 := struct {
+        name string
+        age  int
+    }{age: 11, name: "qq"}
+
+    if sn1 == sn2 {
+        fmt.Println("sn1 == sn2")
+    }
+
+    // 结构体比较与属性的顺序有关
+    if sn1 == sn3 {
+        fmt.Println("sn1 == sn3")
+    }
+
+    sm1 := struct {
+        age int
+        m   map[string]string
+    }{age: 11, m: map[string]string{"a": "1"}}
+
+    sm2 := struct {
+        age int
+        m   map[string]string
+    }{age: 11, m: map[string]string{"a": "1"}}
+
+    // 结构体中的 map 需要使用 reflect.DeepEqual 进行比较
+    if sm1 == sm2 {
+        fmt.Println("sm1 == sm2")
+    }
+
+    if reflect.DeepEqual(sm1, sm2) {
+        fmt.Println("sm1 == sm2")
+    } else {
+        fmt.Println("sm1 != sm2")
+    }
+}
+```
+
+解析：① 只有相同类型的结构体才可以比较，结构体是否相同不但与属性类型个数有关，还与属性顺序相关。
+
+② 结构体是相同的，但是结构体属性中有不可以比较的类型，如`map`,`slice`，则结构体不能用 == 比较，可以使用`reflect.DeepEqual`进行比较。
+
 ##  常量地址 & 内存四区
 
-<span id="const">下面的函数有什么问题，是否可以获取常量的地址，什么是内存的四区？</span>
+<span id="const">下面的函数有什么问题，是否可以获取常量的地址？什么是内存的四区？</span>
 
 ```go
 package main
@@ -65,7 +527,7 @@ cannot take the address of cl
 
 <span id="make_new">`golang`中`make`与`new`有何区别？</span>
 
->  `make` 返回类型是引用类型，`new` 返回类型是指针类型。`make`只适用于`chan`、`map`、`slice`的内存创建，new` 可用于初始化任意类型。
+>  `make` 返回类型是引用类型本身，`new` 返回的是指向指针的类型。`make`只适用于`chan`、`map`、`slice`的内存创建，`new` 可用于初始化任意类型。
 
 * `make` 仅用于初始化 `slice`，`map` 和 `chan`，`new` 可用于初始化任意类型。
 * `make` 返回值是引用类型，`new` 返回值是指针类型。
@@ -157,6 +619,34 @@ func main() {
 ```
 
 示例中的`user`类型中的`lock`字段不用初始化，直接可以拿来用，不会有无效内存引用异常，因为它已经被零值了。`new`返回的永远是类型的指针，指向分配类型的内存地址。
+
+下面的代码是关于切片指针的解引用的问题：
+
+```go
+package main
+
+import "fmt"
+
+// first argument to append must be slice; have *[]int
+// 解析： 可以使用 list := make([]int,0) list类型为切片
+// 或使用 *list = append(*list, 1) list类型为指针
+func main() {
+
+    // new 和 make 的区别： 
+    // 二者都是内存的分配（堆上），但是make只用于slice、map以及channel的初始化（非零值）；
+    // 而new用于类型的内存分配，并且内存置为零。
+    // make返回的还是这三个引用类型本身；而new返回的是指向类型的指针
+    // list := make([]int,0)
+    list := new([]int)
+    fmt.Println(list)  // &[]
+    fmt.Println(*list) // []
+
+    // *list = append(*list, 1)
+    list = append(list, 1)
+
+    fmt.Println(list)
+}
+```
 
 #### make 的使用
 
@@ -3164,62 +3654,6 @@ fatal error: all goroutines are asleep - deadlock!
 ```
 
 解析：所有的协程（`goroutines`）都处于休眠（阻塞）状态。当所有协程都处于阻塞状态的时候，那所有的协程都等不来解锁的那一天了，出现死锁，所以`golang`调度直接把这个给`kill`掉了。主线程在阻塞，但是其他协程由于各种原因也阻塞了。
-
-## 切片 `append` 操作
-
-10、请写出以下输入内容。
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    s := make([]int, 5)
-    s = append(s, 1, 2, 3)
-    fmt.Println(s)
-}
-```
-
-结果：
-
-```
-[0 0 0 0 0 1 2 3]
-```
-
-解析：
-
-`make` 在初始化切片时指定了⻓度，所以追加数据时会从` len(s) `位置开始填充数据。
-
-
-
-案例二：用 `append` 内置函数，对切片进行动态追加的原理。
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    // 用 append 内置函数，可以对切片进行动态追加
-    var slice3 []int = []int{100, 200, 300}
-    // 通过 append 直接给 slice3 追加具体的元素
-    slice3 = append(slice3, 400, 500, 600)
-    fmt.Println("slice3", slice3) // slice3 [100 200 300 400 500 600]
-
-    //通过 append 将切片 slice3 追加给 slice3
-    slice3 = append(slice3, slice3...) // slice3 [100 200 300 400 500 600 100 200 300 400 500 600]
-    fmt.Println("slice3", slice3)
-}
-
-```
-
-![image-20211025181856336](Golang体系.assets/image-20211025181856336.png)
-
-
- 切片 `append` 操作的本质就是对数组扩容，`go` 底层会创建一下新的数组 `newArr`(按照扩容后大小) 将 `slice` 原来包含的元素拷贝到新的数组 `newArr`，原来的`slice` 重新引用到 `newArr`。
-
-
 
 ## Go相关命令
 

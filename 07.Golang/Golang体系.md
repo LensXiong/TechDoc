@@ -1,18 +1,23 @@
 # 问题列表
 
-* 
-* 
+## GMP 模型
+
 * [了解`go`中的协程与线程的之间的映射关系？什么是`m:n`两级线程模型？](#gmp01)
 * [什么是GMP模型？与GM模型有什么区别？](#gmp02)
 * [关于GMP模型的限制是什么？P和M何时会被创建？](#gmp03)
 * [谈谈调度器的生命周期？](#gmp04)
-* 
+
+## Goroutine
+
+* [谈谈你对`goroutine`的理解?](#goroutine01)
+* [什么是 M:N 两级线程模型？什么是`goroutine`调度器？](#goroutine02)
+
+
+
 * [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 * [进程、线程、协程各自的优缺点？](#coroutine)
-* [谈谈你对`goroutine`的理解?](#goroutine01)
-* [什么是 M:N 两级线程模型？什么是`goroutine`调度器？](#goroutine02)
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * [`golang GC` 有了解吗？`GC ` 时会发生什么?](#gc)
 * [`slice` 和`array`的区别是什么？](#slice_array)
@@ -2536,8 +2541,6 @@ Go中，协程被称为`goroutine`，它非常轻量，一个`goroutine`只占�
 > goroutine 可以视为开销很小的线程（既不是物理线程也不是协程，但它拥有自己的调用栈，并且这个栈的大小是可伸缩的  ~~不是协程，它有自己的栈~~），很好用，需要并发的地方就用 go 起一个 func。
 
 在 `Golang` 中，任何代码都是运行在 `goroutine`里，即便没有显式的 `go func()`，默认的 `main` 函数也是一个 `goroutine`。但 `goroutine` 不等于操作系统的线程，它与系统线程的对应关系，牵涉到` Golang` 运行时的调度器。
-
-
 
 ###  `goroutine` 调度器
 

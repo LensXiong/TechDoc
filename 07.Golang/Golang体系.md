@@ -3,13 +3,14 @@
 * [了解`golang`的**内存逃逸**吗？什么情况下会发生**内存逃逸**？如何避免**内存逃逸**？](#escape)
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * 了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
+* [进程、线程、协程各自的优缺点？](#coroutine)
+* [谈谈你对`goroutine`的理解?](#goroutine01)
+* [什么是 M:N 两级线程模型？什么是`goroutine`调度器？](#goroutine02)
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * [`golang GC` 有了解吗？`GC ` 时会发生什么?](#gc)
 * [`slice` 和`array`的区别是什么？](#slice_array)
 * [`golang` 中 `make` 与 `new` 有何区别？](#make_new)
 * [是否了解`golang`的`CSP`并发模型的思想？](#csp)
-* [进程、线程、协程各自的优缺点？](#coroutine)
-* [谈谈你对`goroutine`的理解?](#goroutine01)
 * [`defer`、`recover`和`panic`的问题？](#defer_recover)
 * [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
 * [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
@@ -2427,7 +2428,7 @@ Go 线程模型属于M:N模型，主要包含三个概念：内核线程(M)、�
 >
 > 而协程是从主线程开启的，是轻量级的线程，是逻辑态，对资源消耗相对小。
 
-`GM`调度模型与`GMP`调度模型的优势：
+`GMP`调度模型 VS`GM`调度模型的优势：
 
 * 每个 P 都有自己的本地队列，减少锁竞争。
 * 线程复用：实现`hand-off`机制，将阻塞的 G 转移给其他空闲的 M 执行，提高资源的利用效率。
@@ -2441,6 +2442,12 @@ Go 线程模型属于M:N模型，主要包含三个概念：内核线程(M)、�
 * P：由程序启动时环境变量`$GOMAXPROCS`或者是由`runtime`的方法`GOMAXPROCS()`决定。这意味着在程序执行的任意时刻都只有`$GOMAXPROCS`个`goroutine`在同时运行。
 
 M与P的数量没有绝对关系，一个M阻塞，P就会去创建或者切换另一个M，所以，即使P的默认数量是1，也有可能会创建很多个M出来。
+
+```
+func GOMAXPROCS(n int) int
+```
+
+`GOMAXPROCS`设置可同时执行的最大CPU数，并返回先前的设置。 若 n < 1，它就不会更改当前设置。本地机器的逻辑CPU数可通过 `NumCPU` 查询。本函数在调度程序优化后会去掉。
 
 > #### P和M何时会被创建？
 
@@ -2481,9 +2488,15 @@ func main() {
 
 调度器的生命周期几乎占满了一个Go程序的一生，`runtime.main`的`goroutine`执行之前都是为调度器做准备工作，`runtime.main`的`goroutine`运行，才是调度器的真正开始，直到`runtime.main`结束而结束。
 
-## <span id="goroutine01">`goroutine `的理解</span>
+##  goroutine
 
-**Go为了提供更容易使用的并发方法，使用了`goroutine`和`channel`**。`goroutine`来自协程的概念，让一组可复用的函数运行在一组线程之上，即使有协程阻塞，该线程的其他协程也可以被`runtime`调度，转移到其他可运行的线程上。最关键的是，程序员看不到这些底层的细节，这就降低了编程的难度，提供了更容易的并发。
+### `goroutine `的理解
+
+<span id="goroutine01">谈谈你对`goroutine `的理解？</span>
+
+> `goroutine`是来自协程`coroutine`的概念，它属于**用户态的线程**，主要解决操作（内核）系统线程占用内存太大和创建、切换开销性能消耗较大的问题。用户态线程`goroutine`是一个非常轻量级的，其创建和切换都在用户代码中完成而无需进入操作系统内核，所以其开销要远远小于系统线程的创建和切换；另外一个优势在于`goroutine`只占2-4KB内存空间，可以在程序轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。其他程序如C/JAVA的多线程，往往是内核态的，比较重量级，几千个线程可能就会耗光`CPU`。
+
+Go为了提供更容易使用的并发方法，使用了`goroutine`和`channel`。`goroutine`来自协程的概念，让一组可复用的函数运行在一组线程之上，即使有协程阻塞，该线程的其他协程也可以被`runtime`调度，转移到其他可运行的线程上（`hand off`机制）。
 
 Go中，协程被称为`goroutine`，它非常轻量，一个`goroutine`只占几KB，并且这几KB就足够`goroutine`运行完，这就能在有限的内存空间内支持大量`goroutine`，支持了更多的并发。虽然一个`goroutine`的栈只占几KB，但实际是可伸缩的，如果需要更多内容，`runtime`会自动为`goroutine`分配。
 
@@ -2522,15 +2535,19 @@ Go中，协程被称为`goroutine`，它非常轻量，一个`goroutine`只占�
 
 在 `Golang` 中，任何代码都是运行在 `goroutine`里，即便没有显式的 `go func()`，默认的 `main` 函数也是一个 `goroutine`。但 `goroutine` 不等于操作系统的线程，它与系统线程的对应关系，牵涉到` Golang` 运行时的调度器。
 
-## `goroutine` 的调度
 
-了解`goroutine`调度器？它的调度时机、调度策略和切换机制是什么？
 
-### 关于 `goroutine` 调度器
+###  `goroutine` 调度器
 
-> 什么是 M:N 两级线程模型？什么是`goroutine`调度器？
+<span id="goroutine02">什么是 M:N 两级线程模型？什么是`goroutine`调度器？</span>
 
-`goroutine`是建立在操作系统线程基础之上，它与操作系统线程之间实现了一个多对多(M:N)的两级线程模型。
+> M:N 两级线程模型其实是用户态线程（`goroutine`）和操作系统线程之间的映射关系。
+>
+> 具体理解为，M个`goroutine`运行在N个操作系统线程之上，内核负责对这N个操作系统线程进行调度，而这N个系统线程又负责对这M个`goroutine`进行调度和运行。
+>
+> 所谓的`goroutine`调度器，其实可以理解为GMP模型中的P。它是指程序代码按照一定的算法在适当的时候挑选出合适的`goroutine`并放到`CPU`上去运行的过程，这些负责对`goroutine`进行调度的程序代码我们称之为`goroutine`调度器。
+
+`goroutine`是建立在操作系统线程基础之上的用户态线程，它与操作系统线程之间实现了一个多对多(M:N)的两级线程模型。
 
 ![image-20211028222830640](Golang体系.assets/image-20211028222830640.png)
 

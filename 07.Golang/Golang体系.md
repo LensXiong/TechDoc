@@ -557,7 +557,7 @@ func findrunnable() (gp *g, inheritTime bool) {
 * 给一个 `nil channel` 发送数据，造成永远阻塞。
 * 从一个 `nil channel` 接收数据，造成永远阻塞。
 * 给一个已经关闭的 `channel` 发送数据，引起 `panic`。
-* 从一个已 mm,mnbhv,vhgggjk关闭的 `channel` 接收数据，如果缓冲区中为空，则返回一个零值。
+* 从一个关闭的 `channel` 接收数据，如果缓冲区中为空，则返回一个零值。
 * 无缓冲的`channel`是同步的，而有缓冲的`channel`是非同步的。
 
 执行下面的代码发生什么？
@@ -586,7 +586,7 @@ func main() {
     }(ch)
     // panic: close of nil channel
     // panic: send on closed channel
-    //close(ch)
+    // close(ch)
     c := time.Tick(1 * time.Second)
     for range c {
         fmt.Printf("#goroutines: %d\n", runtime.NumGoroutine())

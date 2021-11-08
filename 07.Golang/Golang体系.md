@@ -902,7 +902,9 @@ func main() {
 }
 ```
 
-`fooVal3`的地址`0xc000110000`依然与其他的不是连续的，依然具备逃逸行为。
+`fooVal3`的地址`0xc000110000`与其他的不是连续的，依然具备逃逸行为。
+
+
 
 ### 逃逸的几种场景
 
@@ -1074,6 +1076,157 @@ func main() {
     var f foo
     f = foo1{}
     f.fooFunc() // 调用方法时，f发生逃逸，因为方法是动态分配的
+}
+```
+
+### 逃逸范例
+
+范例一：`[]interface{}`数据类型，通过`[]`赋值必定会出现逃逸。
+
+```go
+package main
+
+//  go build -gcflags '-m -l' ./main.go
+//  #command-line-arguments
+// ./main.go:4:26: []interface {} literal does not escape
+// ./main.go:4:27: 100 does not escape
+// ./main.go:4:32: 200 does not escape
+// ./main.go:5:13: 100 escapes to heap
+func main() {
+    data := []interface{}{100, 200}
+    data[0] = 100
+}
+```
+
+范例二：`map[string]interface{}`类型尝试通过赋值，必定会出现逃逸。
+
+```go
+package main
+
+// go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:4:17: make(map[string]interface {}) does not escape
+// ./main.go:5:17: 200 escapes to heap
+func main() {
+    data := make(map[string]interface{})
+    data["key"] = 200
+}
+```
+
+范例三：`map[interface{}]interface{}`类型尝试通过赋值，会导致`key`和`value`的赋值，出现逃逸。
+
+```go
+package main
+
+//  go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:4:17: make(map[interface {}]interface {}) does not escape
+// ./main.go:5:9: 100 escapes to heap
+// ./main.go:5:15: 200 escapes to heap
+func main() {
+    data := make(map[interface{}]interface{})
+    data[100] = 200
+}
+```
+
+范例四：`map[string][]string`数据类型，赋值会发生`[]string`发生逃逸。
+
+```go
+package main
+
+// go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:4:17: make(map[string][]string) does not escape
+// ./main.go:5:27: []string literal escapes to heap
+func main() {
+    data := make(map[string][]string)
+    data["key"] = []string{"value"}
+}
+```
+
+范例五：`[]*int`数据类型，赋值的右值会发生逃逸现象。
+
+```go
+package main
+
+//  go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:4:5: moved to heap: a
+// ./main.go:5:19: []*int literal does not escape
+func main() {
+    a := 10
+    data := []*int{nil}
+    data[0] = &a
+}
+```
+
+范例六：`func(*int)`函数类型，进行函数赋值，会使传递的形参出现逃逸现象。
+
+```go
+package main
+
+import "fmt"
+
+//  go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:5:10: a does not escape
+// ./main.go:10:5: moved to heap: data
+// ./main.go:13:16: ... argument does not escape
+// ./main.go:13:16: data escapes to heap
+func foo(a *int) {
+    return
+}
+
+func main() {
+    data := 10
+    f := foo
+    f(&data)
+    fmt.Println(data)
+}
+```
+
+范例七：`func([]string)`: 函数类型，进行`[]string{"value"}`赋值，会使传递的参数出现逃逸现象。
+
+```go
+package main
+
+import "fmt"
+
+// go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:5:10: a does not escape
+// ./main.go:10:18: []string literal escapes to heap
+// ./main.go:12:16: ... argument does not escape
+// ./main.go:12:16: s escapes to heap
+func foo(a []string) {
+    return
+}
+
+func main() {
+    s := []string{"wx"}
+    foo(s)
+    fmt.Println(s)
+}
+
+```
+
+范例八：`chan []string`数据类型，在当前`channel`中传输`[]string{"value"}`会发生逃逸现象。
+
+```go
+package main
+
+// go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:6:18: []string literal escapes to heap
+// ./main.go:8:8: func literal escapes to heap
+func main() {
+    ch := make(chan []string)
+
+    s := []string{"wx"}
+
+    go func() {
+        ch <- s
+    }()
 }
 ```
 

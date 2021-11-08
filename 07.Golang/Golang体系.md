@@ -38,6 +38,16 @@
 
 
 
+## 函数相关
+
+#### make && new
+
+* [`golang` 中 `make` 与 `new` 有何区别？](#make_new)
+
+
+
+
+
 
 
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
@@ -64,8 +74,6 @@
 * [关于非空接口`iface`情况，以下代码打印出来什么内容，说出为什么？](#non_empty)
 * [关于`interface`的赋值问题，以下代码能编译过去吗？为什么？](#interface)
 * [关于`inteface{}`与`*interface{}`，ABCD中哪一行存在错误？](#interface02)
-* 
-* 
 * [Go是否可以声明一个类？]()
 * Go是否支持泛型？
 * Go的相关命令？
@@ -810,6 +818,24 @@ func findrunnable() (gp *g, inheritTime bool) {
 
 <span id="escape">了解`golang`的**内存逃逸**吗？什么情况下会发生内存逃逸？如何避免内存逃逸？</span>
 
+>本该分配到栈上的变量，跑到了堆上，这就导致了内存逃逸。栈上的变量随着函数的结束回收，不会有额外的性能开销，而堆上的空间，需要GC，会带来额外的性能开销。
+>
+>对一个引用类对象中的引用类成员进行赋值，可能出现逃逸现象。典型的场景如下：
+>
+>**场景一：方法内返回局部变量指针**。
+>
+>**场景二：向 channel 发送指针数据。**
+>
+>**场景三：在闭包中引用包外的值**。
+>
+>**场景四：在 slice 或 map 中存储指针。**
+>
+>**场景五：切片（扩容后）长度太大**。
+>
+>**场景六：在 `interface` 类型上调用方法。**
+>
+>如何避免内存逃逸：① 对于小型的数据，使用传值而不是传指针（减少外部引用，如指针），避免内存逃逸。② 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。③ 热点代码，谨慎使用`interface`接口类型。
+
 ### 什么是内存逃逸？
 
 <span id="escape01">什么是内存逃逸？如果变量从栈逃逸到堆，会怎样？</span>
@@ -917,6 +943,10 @@ func main() {
 ### 逃逸的几种场景
 
 <span id = "escape03">什么情况下会发生内存逃逸？典型的场景有哪些？</span>
+
+> 对一个引用类对象中的引用类成员进行赋值，可能出现逃逸现象。可以理解为访问一个引用对象实际上底层就是通过一个指针来间接的访问了，但如果再访问里面的引用成员就会有第二次间接访问，这样操作这部分对象的话，极大可能会出现逃逸的现象。
+>
+> Go语言中的引用类型有func（函数类型），interface（接口类型），slice（切片类型），map（字典类型），channel（管道类型），*（指针类型）等。
 
 以下为引起变量逃逸到堆上的典型场景：
 
@@ -1245,8 +1275,176 @@ func main() {
 <span id="escape04">如何避免内存逃逸？</span>
 
 * 对于小型的数据，使用传值而不是传指针（减少外部引用，如指针），避免内存逃逸。
-* 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。由于切片一般都是使用在函数传递的场景下，而且切片在 `append` 的时候可能会涉及到重新分配内存，如果切片在编译期间的大小不能够确认或者大小超出栈的限制，多数情况下都会分配到堆上
+* 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。由于切片一般都是使用在函数传递的场景下，而且切片在 `append` 的时候可能会涉及到重新分配内存，如果切片在编译期间的大小不能够确认或者大小超出栈的限制，多数情况下都会分配到堆上。
 * `interface`调用方法会发生内存逃逸，在热点代码片段，谨慎使用。`go` 中的接口类型的方法调用是动态调度，因此不能够在编译阶段确定，所有类型结构转换成接口的过程会涉及到内存逃逸的情况发生。如果对于性能要求比较高且访问频次比较高的函数调用，应该尽量避免使用接口类型。
+
+## 函数相关
+
+#### `make` && `new`
+
+<span id="make_new">`golang`中`make`与`new`有何区别？</span>
+
+>  `make` 返回类型是引用类型本身，`new` 返回的是指向指针的类型。`make`只适用于`chan`、`map`、`slice`的内存创建，`new` 可用于初始化任意类型。
+
+* `make` 仅用于初始化 `slice`，`map` 和 `chan`，`new` 可用于初始化任意类型。
+* `make` 返回值是引用类型，`new` 返回值是指针类型。
+
+内置函数 `make` 是必用的，因为 `slice`，`map` 和 `chan`，必须使用内置函数 `make` 初始化，才可以使用；而内置函数`new `并不常用，通常使用场景是需要显式返回指针。
+
+`new` 的使用：对指针类型的变量直接赋值使用会报错，使用示例：
+
+```go
+package main
+
+import (
+ "fmt"
+)
+
+func main() {
+   var i *int
+   *i=10
+   fmt.Println(*i)
+}
+```
+
+运行结果：
+
+```go
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x4849df]
+```
+
+对于引用类型的变量，我们不光要声明它，还要为它分配内容空间，否则我们的值放在哪里去呢？
+
+正确分配内存后的代码示例：
+
+```go
+func main() {
+   var i *int
+   i = new(int)
+   *i = 10
+   fmt.Println(*i)
+  
+}
+```
+
+`new`函数声明：
+
+```go
+// The new built-in function allocates memory. The first argument is a type,
+// not a value, and the value returned is a pointer to a newly
+// allocated zero value of that type.
+func new(Type) *Type
+```
+
+它只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
+
+示例：
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+type user struct {
+    lock sync.Mutex
+    name string
+    age int
+}
+
+func main() {
+
+    u := new(user) // 默认给u分配到内存全部为0
+
+    u.lock.Lock()  // 可以直接使用，因为lock为0，是开锁状态
+    u.name = "张三"
+    u.lock.Unlock()
+
+    fmt.Println(u)
+}
+```
+
+ 运行结果：
+
+```go
+&{{0 0} 张三 0}
+```
+
+示例中的`user`类型中的`lock`字段不用初始化，直接可以拿来用，不会有无效内存引用异常，因为它已经被零值了。`new`返回的永远是类型的指针，指向分配类型的内存地址。
+
+下面的代码是关于切片指针的解引用的问题：
+
+```go
+package main
+
+import "fmt"
+
+// first argument to append must be slice; have *[]int
+// 解析： 可以使用 list := make([]int,0) list类型为切片
+// 或使用 *list = append(*list, 1) list类型为指针
+func main() {
+
+    // new 和 make 的区别： 
+    // 二者都是内存的分配（堆上），但是make只用于slice、map以及channel的初始化（非零值）；
+    // 而new用于类型的内存分配，并且内存置为零。
+    // make返回的还是这三个引用类型本身；而new返回的是指向类型的指针
+    // list := make([]int,0)
+    list := new([]int)
+    fmt.Println(list)  // &[]
+    fmt.Println(*list) // []
+
+    // *list = append(*list, 1)
+    list = append(list, 1)
+
+    fmt.Println(list)
+}
+```
+
+`make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
+
+函数声明：
+
+```go
+// The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make's return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//	Slice: The size specifies the length. The capacity of the slice is
+//	equal to its length. A second integer argument may be provided to
+//	specify a different capacity; it must be no smaller than the
+//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	of size 10 and returns a slice of length 0 and capacity 10 that is
+//	backed by this underlying array.
+//	Map: An empty map is allocated with enough space to hold the
+//	specified number of elements. The size may be omitted, in which case
+//	a small starting size is allocated.
+//	Channel: The channel's buffer is initialized with the specified
+//	buffer capacity. If zero, or the size is omitted, the channel is
+//	unbuffered.
+func make(t Type, size ...IntegerType) Type
+```
+
+像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
+
+```go
+// 使用内置函数 make 初始化 map，传入的参数是类型，map 没有容量限制，初始化时无需指定容量的大小。
+m := make(map[T]T)
+
+// 分配一个长度为 10 的底层数组，返回一个长度为 0，容量为 10 的切片。
+// 使用内置函数 make 初始化 slice，第一个参数是类型，第二个参数是 slice 的长度，第三个参数是可选参数，它代表 slice 的容量，如果不传入第三个参数，slice 的容量与长度相同，但是如果传入第三个参数，它的值（容量）比如大于或等于传入的第二个参数（长度）。
+s := make([]T, 0, 10)
+
+// 给 channel 分配的内存空间大小（缓冲容量）为 10。
+// channel 的缓冲区使用指定的值初始化缓冲容量。
+// 如果为零或忽略大小(不传入第二个参数)，则 channel 为无缓冲的。
+c := make(chan T, 10)
+```
+
+![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
 
 ## interface 接口
 
@@ -1965,178 +2163,6 @@ cannot take the address of cl
 * **全局区-常量区**：常量区也归属于全局区，常量为存放数值字面值单位，即不可修改。或者说的有的常量是直接挂钩字面值的。
 
 ![image-20211102232749486](Golang体系.assets/image-20211102232749486.png)
-
-
-
-## `make` 和 `new`
-
-<span id="make_new">`golang`中`make`与`new`有何区别？</span>
-
->  `make` 返回类型是引用类型本身，`new` 返回的是指向指针的类型。`make`只适用于`chan`、`map`、`slice`的内存创建，`new` 可用于初始化任意类型。
-
-* `make` 仅用于初始化 `slice`，`map` 和 `chan`，`new` 可用于初始化任意类型。
-* `make` 返回值是引用类型，`new` 返回值是指针类型。
-
-内置函数 `make` 是必用的，因为 `slice`，`map` 和 `chan`，必须使用内置函数 `make` 初始化，才可以使用；而内置函数`new `并不常用，通常使用场景是需要显式返回指针。
-
-#### `new` 的使用
-
-对指针类型的变量直接赋值使用会报错，使用示例：
-
-```go
-package main
-
-import (
- "fmt"
-)
-
-func main() {
-   var i *int
-   *i=10
-   fmt.Println(*i)
-}
-```
-
-运行结果：
-
-```go
-panic: runtime error: invalid memory address or nil pointer dereference
-[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x4849df]
-```
-
-对于引用类型的变量，我们不光要声明它，还要为它分配内容空间，否则我们的值放在哪里去呢？
-
-正确分配内存后的代码示例：
-
-```go
-func main() {
-   var i *int
-   i = new(int)
-   *i = 10
-   fmt.Println(*i)
-  
-}
-```
-
-`new`函数声明：
-
-```go
-// The new built-in function allocates memory. The first argument is a type,
-// not a value, and the value returned is a pointer to a newly
-// allocated zero value of that type.
-func new(Type) *Type
-```
-
-它只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
-
-示例：
-
-```go
-package main
-
-import (
-    "fmt"
-    "sync"
-)
-
-type user struct {
-    lock sync.Mutex
-    name string
-    age int
-}
-
-func main() {
-
-    u := new(user) // 默认给u分配到内存全部为0
-
-    u.lock.Lock()  // 可以直接使用，因为lock为0，是开锁状态
-    u.name = "张三"
-    u.lock.Unlock()
-
-    fmt.Println(u)
-}
-```
-
- 运行结果：
-
-```go
-&{{0 0} 张三 0}
-```
-
-示例中的`user`类型中的`lock`字段不用初始化，直接可以拿来用，不会有无效内存引用异常，因为它已经被零值了。`new`返回的永远是类型的指针，指向分配类型的内存地址。
-
-下面的代码是关于切片指针的解引用的问题：
-
-```go
-package main
-
-import "fmt"
-
-// first argument to append must be slice; have *[]int
-// 解析： 可以使用 list := make([]int,0) list类型为切片
-// 或使用 *list = append(*list, 1) list类型为指针
-func main() {
-
-    // new 和 make 的区别： 
-    // 二者都是内存的分配（堆上），但是make只用于slice、map以及channel的初始化（非零值）；
-    // 而new用于类型的内存分配，并且内存置为零。
-    // make返回的还是这三个引用类型本身；而new返回的是指向类型的指针
-    // list := make([]int,0)
-    list := new([]int)
-    fmt.Println(list)  // &[]
-    fmt.Println(*list) // []
-
-    // *list = append(*list, 1)
-    list = append(list, 1)
-
-    fmt.Println(list)
-}
-```
-
-#### make 的使用
-
-`make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
-
-函数声明：
-
-```go
-// The make built-in function allocates and initializes an object of type
-// slice, map, or chan (only). Like new, the first argument is a type, not a
-// value. Unlike new, make's return type is the same as the type of its
-// argument, not a pointer to it. The specification of the result depends on
-// the type:
-//	Slice: The size specifies the length. The capacity of the slice is
-//	equal to its length. A second integer argument may be provided to
-//	specify a different capacity; it must be no smaller than the
-//	length. For example, make([]int, 0, 10) allocates an underlying array
-//	of size 10 and returns a slice of length 0 and capacity 10 that is
-//	backed by this underlying array.
-//	Map: An empty map is allocated with enough space to hold the
-//	specified number of elements. The size may be omitted, in which case
-//	a small starting size is allocated.
-//	Channel: The channel's buffer is initialized with the specified
-//	buffer capacity. If zero, or the size is omitted, the channel is
-//	unbuffered.
-func make(t Type, size ...IntegerType) Type
-```
-
-像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
-
-```go
-// 使用内置函数 make 初始化 map，传入的参数是类型，map 没有容量限制，初始化时无需指定容量的大小。
-m := make(map[T]T)
-
-// 分配一个长度为 10 的底层数组，返回一个长度为 0，容量为 10 的切片。
-// 使用内置函数 make 初始化 slice，第一个参数是类型，第二个参数是 slice 的长度，第三个参数是可选参数，它代表 slice 的容量，如果不传入第三个参数，slice 的容量与长度相同，但是如果传入第三个参数，它的值（容量）比如大于或等于传入的第二个参数（长度）。
-s := make([]T, 0, 10)
-
-// 给 channel 分配的内存空间大小（缓冲容量）为 10。
-// channel 的缓冲区使用指定的值初始化缓冲容量。
-// 如果为零或忽略大小(不传入第二个参数)，则 channel 为无缓冲的。
-c := make(chan T, 10)
-```
-
-![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
 
 
 

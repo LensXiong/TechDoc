@@ -802,6 +802,287 @@ func findrunnable() (gp *g, inheritTime bool) {
 
  `Golang`中的混合写屏障满足`弱三色不变式`，结合了删除写屏障和插入写屏障的优点，只需要在开始时并发扫描各个`goroutine`的栈，使其变黑并一直保持，这个过程不需要`STW`，而标记结束后，因为栈在扫描后始终是黑色的，也无需再进行`re-scan`操作了，避免了对栈`re-scan`的过程，极大的减少了`STW`的时间。
 
+## 内存逃逸
+
+<span id="escape">了解`golang`的**内存逃逸**吗？什么情况下会发生内存逃逸？如何避免内存逃逸？</span>
+
+### 什么是内存逃逸？
+
+* 什么是内存逃逸？如果变量从栈逃逸到堆，会怎样？
+
+> 本该分配到栈上的变量，跑到了堆上，这就导致了内存逃逸。
+>
+> 栈是高地址到低地址，栈上的变量，函数结束后变量会跟着回收掉，不会有额外性能的开销。
+>
+> 变量从栈逃逸到堆上，如果要回收掉，需要进行 `gc`，那么` gc` 一定会带来额外的性能开销。 编程语言不断优化 `gc` 算法，主要目的都是为了减少 `gc `带来的额外性能开销，变量一旦逃逸会导致性能开销变大。
+
+关于外部函数使用了子函数的局部变量，理论来说，子函数的`fooVal` 的声明周期早就销毁了才对。但是如下代码发现子函数的局部变量跑到了堆上，发生了内存逃逸。
+
+```go
+package main
+
+// 结果：go build -gcflags '-m -l' ./main.go
+// moved to heap: fooVal3
+
+// 0xc00002e758 0xc00002e738 0xc00002e730 0xc00008e000 0xc00002e728 0xc00002e720
+// 0xc00002e758 0xc00002e738 0xc00002e730 0xc00008e000 0xc00002e728 0xc00002e720
+// 0xc00002e758 0xc00002e738 0xc00002e730 0xc00008e000 0xc00002e728 0xc00002e720
+// 0xc00002e758 0xc00002e738 0xc00002e730 0xc00008e000 0xc00002e728 0xc00002e720
+// 0xc00002e758 0xc00002e738 0xc00002e730 0xc00008e000 0xc00002e728 0xc00002e720
+// 13 0xc00008e000
+
+func foo(argVal int) *int {
+
+    var fooVal1 int = 11
+    var fooVal2 int = 12
+    var fooVal3 int = 13
+    var fooVal4 int = 14
+    var fooVal5 int = 15
+
+    // 此处循环是防止go编译器将foo优化成inline(内联函数)
+    // 如果是内联函数，main调用foo将是原地展开，所以fooVal1-5相当于main作用域的变量
+    // 即使fooVal3发生逃逸，地址与其他也是连续的
+    for i := 0; i < 5; i++ {
+        println(&argVal, &fooVal1, &fooVal2, &fooVal3, &fooVal4, &fooVal5)
+    }
+
+    // 返回fooVal3给main函数
+    return &fooVal3
+}
+
+func main() {
+    mainVal := foo(666)
+
+    println(*mainVal, mainVal)
+}
+```
+
+ `fooVal3`是被`runtime.newobject()`在堆空间开辟的，而不是像其他几个是基于地址偏移的开辟的栈空间。
+
+### `new` 的变量在栈还是堆?
+
+对于`new`出来的变量，不一定是在`heap`中开辟的。将`fooVal1-5`全部用`new`的方式来开辟， 编译运行看结果：
+
+```go
+package main
+
+// 结果：go build -gcflags '-m -l' ./main.go
+// moved to heap: fooVal3
+
+// 666 0xc00002e728 0xc00002e720 0xc000110000 0xc00002e738 0xc00002e730
+// 666 0xc00002e728 0xc00002e720 0xc000110000 0xc00002e738 0xc00002e730
+// 666 0xc00002e728 0xc00002e720 0xc000110000 0xc00002e738 0xc00002e730
+// 666 0xc00002e728 0xc00002e720 0xc000110000 0xc00002e738 0xc00002e730
+// 666 0xc00002e728 0xc00002e720 0xc000110000 0xc00002e738 0xc00002e730
+// 0 0xc000110000
+
+func foo(argVal int) *int {
+
+    var fooVal1 *int = new(int)
+    var fooVal2 *int = new(int)
+    var fooVal3 *int = new(int)
+    var fooVal4 *int = new(int)
+    var fooVal5 *int = new(int)
+
+    // 此处循环是防止go编译器将foo优化成inline(内联函数)
+    // 如果是内联函数，main调用foo将是原地展开，所以fooVal1-5相当于main作用域的变量
+    // 即使fooVal3发生逃逸，地址与其他也是连续的
+    for i := 0; i < 5; i++ {
+        println(argVal, fooVal1, fooVal2, fooVal3, fooVal4, fooVal5)
+    }
+
+    // 返回fooVal3给main函数
+    return fooVal3
+}
+
+func main() {
+    mainVal := foo(666)
+
+    println(*mainVal, mainVal)
+}
+```
+
+`fooVal3`的地址`0xc000110000`依然与其他的不是连续的，依然具备逃逸行为。
+
+### 逃逸的几种场景
+
+什么情况下会发生内存逃逸？以下为引起变量逃逸到堆上的典型场景：
+
+- **场景一：方法内返回局部变量指针**。 局部变量原本应该在栈中分配，在栈中回收。但是由于返回时被外部引用，因此其生命周期大于栈，则溢出。
+- **场景二：向 channel 发送指针数据。** 在编译时没有办法知道哪个 `goroutine` 会在 `channel` 上接收数据，所以编译器没法知道变量什么时候才会被释放。
+- **场景三：在闭包中引用包外的值**。因为变量的生命周期可能会超过函数周期，因此只能放入堆中。
+- **场景四：在 slice 或 map 中存储指针。** 一个典型的例子就是 `[]*string` 。这会导致切片的内容逃逸。尽管其后面的数组可能是在栈上分配的，但其引用的值一定是在堆上。
+- **场景五：切片（扩容后）长度太大**。 `slice` 的背后数组被重新分配了，因为 `append` 时可能会超出其容量( `cap` )。 `slice` 初始化的地方在编译时是可以知道的，它最开始会在栈上分配。如果切片背后的存储要基于运行时的数据进行扩充，就会在堆上分配。
+- **场景六：在 `interface` 类型上调用方法。** 在 `interface` 类型上调用方法都是动态调度的 —— 方法的真正实现只能在运行时知道。想像一个 `io.Reader` 类型的变量 r , 调用 `r.Read(b)` 会使得 r 的值和切片b 的背后存储都逃逸掉，所以会在堆上分配。
+
+通过以下具体案例加深理解，接下来尝试下怎么通过 `go build -gcflags '-m -l'` 查看逃逸的情况。
+
+#### 场景一：方法内返回局部变量指针
+
+```go
+package main
+
+import "fmt"
+
+type A struct {
+    s string
+}
+
+// 发生内存逃逸的场景一： 方法内返回局部变量指针。
+// 局部变量原本应该在栈中分配，在栈中回收。但是由于返回时被外部引用，因此其生命周期大于栈，则溢出。
+
+// 结果： go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:10:10: leaking param: s
+// ./main.go:11:13: new(A) escapes to heap
+// ./main.go:17:14: a.s + " world" does not escape
+// ./main.go:18:12: b + "!" escapes to heap
+// ./main.go:19:16: ... argument does not escape
+// ./main.go:19:16: c escapes to heap
+
+func foo(s string) *A {
+    // new(A) escapes to heap
+    a := new(A)
+    a.s = s
+    return a // 返回局部变量a
+}
+func main() {
+    // new(A) escapes to heap
+    a := foo("hello")
+    // a.s + " world" does not escape
+    // b 变量没有逃逸，因为它只在方法内存在，会在方法结束时被回收。
+    b := a.s + " world"
+    // b + "!" escapes to heap
+    c := b + "!"
+    // c escapes to heap
+    // c 变量逃逸，通过fmt.Println(a ...interface{})打印的变量，都会发生逃逸
+    fmt.Println(c) // hello world!
+}
+```
+
+#### 场景二：向 `channel` 发送指针数据
+
+```go
+package main
+
+// 逃逸发生场景二：向 channel 发送指针数据。
+// 因为在编译时，不知道 channel 中的数据会被哪个 goroutine 接收，因此编译器没法知道变量什么时候才会被释放，因此只能放入堆中。
+
+// 结果：go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:12:5: moved to heap: y
+func main() {
+    ch := make(chan int, 1)
+    x := 5
+    ch <- x // x 不发生逃逸，因为只是复制的值
+    ch1 := make(chan *int, 1)
+    y := 5
+    py := &y
+    ch1 <- py // y 逃逸，因为 y 地址传入了 chan 中，编译时无法确定什么时候会被接收，所以也无法在函数返回后回收y
+}
+```
+
+#### 场景三：在闭包中引用包外的值
+
+```go
+package main
+
+// 场景三：局部变量在函数调用结束后还被其他地方（闭包中引用包外的值或者函数返回局部变量指针）使用。
+// 因为变量的生命周期可能会超过函数周期，因此只能放入堆中。
+
+// 结果：# command-line-arguments
+// ./main.go:7:5: moved to heap: x
+// ./main.go:8:12: func literal escapes to heap
+func Foo() func() {
+    x := 5 // x 发生逃逸，因为在 Foo 调用完成后，被闭包函数用到，还不能回收，只能放到堆上存放
+    return func() {
+        x += 1
+    }
+}
+func main() {
+    inner := Foo()
+    inner()
+}
+```
+
+#### 场景四：在 slice 或 map 中存储指针
+
+```go
+package main
+
+// 逃逸发生场景四：在 slice 或 map 中存储指针。
+// 比如 []*int，其后面的数组可能是在栈上分配的，但其引用的值还是在堆上。
+
+// 结果： go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:6:9: moved to heap: x
+
+func main() {
+    var x int
+    x = 10
+    var ls []*int
+    ls = append(ls, &x) // x发生逃逸，ls存储的是指针，所以ls底层的数组虽然在栈存储，但x本身却是逃逸到堆上
+}
+
+```
+
+####  场景五：切片（扩容后）长度太大
+
+```go
+package main
+
+// 逃逸场景五：切片扩容后长度太大
+// 解析：实际上当栈空间不足以存放当前对象时或无法判断当前切片长度时会将对象分配到堆中。
+// 结果： go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:8:14: make([]int, 10000, 10000) escapes to heap
+
+func main() {
+    Slice() // 这种情况会发生逃逸吗？
+}
+
+func Slice() {
+    s := make([]int, 10000, 10000)
+
+    for index, _ := range s {
+        s[index] = index
+    }
+}
+```
+
+#### 场景六：在 `interface` 类型上调用方法
+
+```go
+package main
+
+// 逃逸场景六：在 interface 类型上调用方法。
+// 在 interface 类型上调用方法时会把 interface 变量使用堆分配， 因为方法的真正实现只能在运行时知道。
+
+// 结果： go build -gcflags '-m -l' ./main.go
+// # command-line-arguments
+// ./main.go:15:7: foo1 literal escapes to heap
+// <autogenerated>:1: leaking param: .this
+// <autogenerated>:1: .this does not escape
+
+type foo interface {
+    fooFunc()
+}
+type foo1 struct{}
+
+func (f1 foo1) fooFunc() {}
+func main() {
+    var f foo
+    f = foo1{}
+    f.fooFunc() // 调用方法时，f发生逃逸，因为方法是动态分配的
+}
+```
+
+### 如何避免内存逃逸
+
+* 对于小型的数据，使用传值而不是传指针（减少外部引用，如指针），避免内存逃逸。
+* 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。由于切片一般都是使用在函数传递的场景下，而且切片在 `append` 的时候可能会涉及到重新分配内存，如果切片在编译期间的大小不能够确认或者大小超出栈的限制，多数情况下都会分配到堆上
+* `interface`调用方法会发生内存逃逸，在热点代码片段，谨慎使用。`go` 中的接口类型的方法调用是动态调度，因此不能够在编译阶段确定，所有类型结构转换成接口的过程会涉及到内存逃逸的情况发生。如果对于性能要求比较高且访问频次比较高的函数调用，应该尽量避免使用接口类型。
+
 ## interface 接口
 
 ### `interface ` 的赋值问题
@@ -2996,201 +3277,6 @@ func closechan(c *hchan) {
 **线程是被内核所调度**，线程被调度切换到另一个线程上下文的时候，需要保存一个用户线程的状态到内存，恢复另一个线程状态到寄存器，然后更新调度器的数据结构，这几步操作设计用户态到内核态转换，开销比较多。
 
 **协程的调度完全由用户控制**，协程拥有自己的寄存器上下文和栈，协程调度切换时，将寄存器上下文和栈保存到其他地方，在切回来的时候，恢复先前保存的寄存器上下文和栈，直接操作用户空间栈，完全没有内核切换的开销。
-
-## 内存逃逸
-
-<span id="escape">了解`golang`的**内存逃逸**吗？什么情况下会发生内存逃逸？如何避免内存逃逸？</span>
-
-### 什么是内存逃逸？
-
-* 什么是内存逃逸？如果变量从栈逃逸到堆，会怎样？
-
-> 本该分配到栈上的变量，跑到了堆上，这就导致了内存逃逸。
->
-> 栈是高地址到低地址，栈上的变量，函数结束后变量会跟着回收掉，不会有额外性能的开销。
->
-> 变量从栈逃逸到堆上，如果要回收掉，需要进行 gc，那么 gc 一定会带来额外的性能开销。 编程语言不断优化 gc 算法，主要目的都是为了减少 gc 带来的额外性能开销，变量一旦逃逸会导致性能开销变大。
-
-### 逃逸的几种场景
-
-什么情况下会发生内存逃逸？以下为引起变量逃逸到堆上的典型场景：
-
-- **场景一：方法内返回局部变量指针**。 局部变量原本应该在栈中分配，在栈中回收。但是由于返回时被外部引用，因此其生命周期大于栈，则溢出。
-- **场景二：向 channel 发送指针数据。** 在编译时没有办法知道哪个 `goroutine` 会在 `channel` 上接收数据，所以编译器没法知道变量什么时候才会被释放。
-- **场景三：在闭包中引用包外的值**。因为变量的生命周期可能会超过函数周期，因此只能放入堆中。
-- **场景四：在 slice 或 map 中存储指针。** 一个典型的例子就是 `[]*string` 。这会导致切片的内容逃逸。尽管其后面的数组可能是在栈上分配的，但其引用的值一定是在堆上。
-- **场景五：切片（扩容后）长度太大**。 `slice` 的背后数组被重新分配了，因为 `append` 时可能会超出其容量( `cap` )。 `slice` 初始化的地方在编译时是可以知道的，它最开始会在栈上分配。如果切片背后的存储要基于运行时的数据进行扩充，就会在堆上分配。
-- **场景六：在 `interface` 类型上调用方法。** 在 `interface` 类型上调用方法都是动态调度的 —— 方法的真正实现只能在运行时知道。想像一个 `io.Reader` 类型的变量 r , 调用 `r.Read(b)` 会使得 r 的值和切片b 的背后存储都逃逸掉，所以会在堆上分配。
-
-通过以下具体案例加深理解，接下来尝试下怎么通过 `go build -gcflags '-m -l'` 查看逃逸的情况。
-
-#### 场景一：方法内返回局部变量指针
-
-```go
-package main
-
-import "fmt"
-
-type A struct {
-    s string
-}
-
-// 发生内存逃逸的场景一： 方法内返回局部变量指针。
-// 局部变量原本应该在栈中分配，在栈中回收。但是由于返回时被外部引用，因此其生命周期大于栈，则溢出。
-
-// 结果： go build -gcflags '-m -l' ./main.go
-// # command-line-arguments
-// ./main.go:10:10: leaking param: s
-// ./main.go:11:13: new(A) escapes to heap
-// ./main.go:17:14: a.s + " world" does not escape
-// ./main.go:18:12: b + "!" escapes to heap
-// ./main.go:19:16: ... argument does not escape
-// ./main.go:19:16: c escapes to heap
-
-func foo(s string) *A {
-    // new(A) escapes to heap
-    a := new(A)
-    a.s = s
-    return a // 返回局部变量a
-}
-func main() {
-    // new(A) escapes to heap
-    a := foo("hello")
-    // a.s + " world" does not escape
-    // b 变量没有逃逸，因为它只在方法内存在，会在方法结束时被回收。
-    b := a.s + " world"
-    // b + "!" escapes to heap
-    c := b + "!"
-    // c escapes to heap
-    // c 变量逃逸，通过fmt.Println(a ...interface{})打印的变量，都会发生逃逸
-    fmt.Println(c) // hello world!
-}
-```
-
-#### 场景二：向 `channel` 发送指针数据
-
-```go
-package main
-
-// 逃逸发生场景二：向 channel 发送指针数据。
-// 因为在编译时，不知道 channel 中的数据会被哪个 goroutine 接收，因此编译器没法知道变量什么时候才会被释放，因此只能放入堆中。
-
-// 结果：go build -gcflags '-m -l' ./main.go
-// # command-line-arguments
-// ./main.go:12:5: moved to heap: y
-func main() {
-    ch := make(chan int, 1)
-    x := 5
-    ch <- x // x 不发生逃逸，因为只是复制的值
-    ch1 := make(chan *int, 1)
-    y := 5
-    py := &y
-    ch1 <- py // y 逃逸，因为 y 地址传入了 chan 中，编译时无法确定什么时候会被接收，所以也无法在函数返回后回收y
-}
-```
-
-#### 场景三：在闭包中引用包外的值
-
-```go
-package main
-
-// 场景三：局部变量在函数调用结束后还被其他地方（闭包中引用包外的值或者函数返回局部变量指针）使用。
-// 因为变量的生命周期可能会超过函数周期，因此只能放入堆中。
-
-// 结果：# command-line-arguments
-// ./main.go:7:5: moved to heap: x
-// ./main.go:8:12: func literal escapes to heap
-func Foo() func() {
-    x := 5 // x 发生逃逸，因为在 Foo 调用完成后，被闭包函数用到，还不能回收，只能放到堆上存放
-    return func() {
-        x += 1
-    }
-}
-func main() {
-    inner := Foo()
-    inner()
-}
-```
-
-#### 场景四：在 slice 或 map 中存储指针
-
-```go
-package main
-
-// 逃逸发生场景四：在 slice 或 map 中存储指针。
-// 比如 []*int，其后面的数组可能是在栈上分配的，但其引用的值还是在堆上。
-
-// 结果： go build -gcflags '-m -l' ./main.go
-// # command-line-arguments
-// ./main.go:6:9: moved to heap: x
-
-func main() {
-    var x int
-    x = 10
-    var ls []*int
-    ls = append(ls, &x) // x发生逃逸，ls存储的是指针，所以ls底层的数组虽然在栈存储，但x本身却是逃逸到堆上
-}
-
-```
-
-####  场景五：切片（扩容后）长度太大
-
-```go
-package main
-
-// 逃逸场景五：切片扩容后长度太大
-// 解析：实际上当栈空间不足以存放当前对象时或无法判断当前切片长度时会将对象分配到堆中。
-// 结果： go build -gcflags '-m -l' ./main.go
-// # command-line-arguments
-// ./main.go:8:14: make([]int, 10000, 10000) escapes to heap
-
-func main() {
-    Slice() // 这种情况会发生逃逸吗？
-}
-
-func Slice() {
-    s := make([]int, 10000, 10000)
-
-    for index, _ := range s {
-        s[index] = index
-    }
-}
-```
-
-#### 场景六：在 `interface` 类型上调用方法
-
-```go
-package main
-
-// 逃逸场景六：在 interface 类型上调用方法。
-// 在 interface 类型上调用方法时会把 interface 变量使用堆分配， 因为方法的真正实现只能在运行时知道。
-
-// 结果： go build -gcflags '-m -l' ./main.go
-// # command-line-arguments
-// ./main.go:15:7: foo1 literal escapes to heap
-// <autogenerated>:1: leaking param: .this
-// <autogenerated>:1: .this does not escape
-
-type foo interface {
-    fooFunc()
-}
-type foo1 struct{}
-
-func (f1 foo1) fooFunc() {}
-func main() {
-    var f foo
-    f = foo1{}
-    f.fooFunc() // 调用方法时，f发生逃逸，因为方法是动态分配的
-}
-```
-
-### 如何避免内存逃逸
-
-* 对于小型的数据，使用传值而不是传指针（减少外部引用，如指针），避免内存逃逸。
-* 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。由于切片一般都是使用在函数传递的场景下，而且切片在 `append` 的时候可能会涉及到重新分配内存，如果切片在编译期间的大小不能够确认或者大小超出栈的限制，多数情况下都会分配到堆上
-* `interface`调用方法会发生内存逃逸，在热点代码片段，谨慎使用。`go` 中的接口类型的方法调用是动态调度，因此不能够在编译阶段确定，所有类型结构转换成接口的过程会涉及到内存逃逸的情况发生。如果对于性能要求比较高且访问频次比较高的函数调用，应该尽量避免使用接口类型。
-
-
 
 ##  `string` 和 `[]byte` 的转换原理
 

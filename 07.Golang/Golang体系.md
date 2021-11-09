@@ -2297,6 +2297,56 @@ func main() {
 
 
 
+### 基本并发原语
+
+##### Mutex
+
+<span id="conc01">目前` Mutex` 的 `state` 字段有几个意义，这几个意义分别是由哪些字段表示的？</span>
+
+> 目前` Mutex` 的 `state` 字段
+
+![image-20211109210349905](Golang体系.assets/image-20211109210349905.png)
+
+```go
+type Mutex struct {
+	state int32
+	sema  uint32
+}
+
+// A Locker represents an object that can be locked and unlocked.
+type Locker interface {
+	Lock()
+	Unlock()
+}
+
+const (
+  // 持有锁的标记
+	mutexLocked = 1 << iota // mutex is locked
+  // 唤醒标记
+	mutexWoken
+  // 饥饿标记
+	mutexStarving
+  // 阻塞等待waiter数量
+	mutexWaiterShift = iota
+  // 饥饿模式的最大等待时间阈值 1ms
+	starvationThresholdNs = 1e6
+)
+```
+
+
+
+<span id="conc02">等待一个 `Mutex` 的 `goroutine` 数最大是多少？是否能满足现实的需求？</span>
+
+>
+>
+>
+
+
+
+##### Mutex 常见的错误场景
+
+
+
 ### Happens Before 原则
 
  如下代码变量b是一个全局变量，初始化为0值，下面开启了两个`goroutine`，假设`goroutine B`有机会输出值时候，那么它可能输出的值是多少？

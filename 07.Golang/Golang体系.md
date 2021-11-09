@@ -41,6 +41,10 @@
 
 
 
+## 并发编程
+
+* [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
+
 ## 函数相关
 
 #### make && new
@@ -61,7 +65,7 @@
 * 
 * [`defer`、`recover`和`panic`的问题？](#defer_recover)
 * [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
-* [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
+* 
 
 * [`JSON` 标准库对 `nil slice` 和`non-nil`空 `slice` 的处理是一致的吗？](#nil_slice)
 * [了解过选项模式吗？能否写一段代码实现一个函数选项模式？](#option_pattern)
@@ -95,7 +99,7 @@
 
 轻量级进程（`Light Weight Process，LWP`）：是指我们通常意义上所讲的线程，由于每个轻量级进程都由一个内核线程支持，因此只有先支持内核线程，才能有轻量级进程。
 
-### 协程与线程的映射关系
+### 线程模型
 
 <span id="gmp01">了解`go`中的协程与线程的之间的映射关系？什么是`m:n`两级线程模型？</span>
 
@@ -586,7 +590,7 @@ func main() {
     }(ch)
     // panic: close of nil channel
     // panic: send on closed channel
-    // close(ch)
+    //close(ch)
     c := time.Tick(1 * time.Second)
     for range c {
         fmt.Printf("#goroutines: %d\n", runtime.NumGoroutine())
@@ -637,7 +641,7 @@ func main() {
 
 `CSP` 模型是上个世纪七十年代提出的，不同于传统的多线程通过共享内存来通信，`CSP` 讲究的是**以通信的方式来共享内存**。用于描述两个独立的并发实体通过共享的通讯 `channel `(管道)进行通信的并发模型。`CSP `中 `channel `是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的 `channel`。
 
-`channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。
+`channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。`JAVA/C++`等语言倡导共享内存来通信，而`Go`倡导以通信的方式来共享内存。
 
 > Do not communicate by sharing memory; instead,share memory by communicating.
 
@@ -670,11 +674,11 @@ func main() {
 
 ### 无缓冲的 `channel`(同步通道)
 
-<span id="chan02">什么是无缓冲的`channel`？什么是有缓冲的`channel`？它们之间有什么区别？</span>
+<span id="chan02">什么是无缓冲的`channel`？什么是有缓冲的`channel`？无缓冲`channel`的发送和接收是否同步？它们之间有什么区别？</span>
 
-> **无缓冲的`channel`**：无缓冲的通道指的是通道大小为0，发送和接收方需要同时准备好，才可以完成发送和接收操作。
+> **无缓冲的`channel`**：无缓冲的通道指的是通道大小为0，发送和接收方需要同时准备好，才可以完成发送和接收操作。（无缓冲的`channel`由于没有缓冲发送和接收需要同步。）
 >
-> **有缓冲的`channel`**：有缓冲的通道指的是有缓冲大小，不需要发送方和接收方同时准备好，都可以进行发送和接收操作。
+> **有缓冲的`channel`**：有缓冲的通道指的是有缓冲大小大于1，不需要发送方和接收方同时准备好，都可以进行发送和接收操作。（有缓冲`channel`不要求发送和接收操作同步。）
 >
 > **区别**：无缓冲的通道保证进行发送和接收的 `goroutine `会在同一时间进行数据交换；而有缓冲的通道只有在通道中没有要接收的值时，接收动作才会阻塞，只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
 
@@ -1779,6 +1783,8 @@ func main() {
 
 `fooVal3`的地址`0xc000110000`与其他的不是连续的，依然具备逃逸行为。`golang`中一个函数内局部变量，不管是不是动态`new`出来的，它会被分配在堆还是栈，是由编译器做逃逸分析之后做出的决定。
 
+变量的存储位置确实会影响程序执行的效率，如果可能的话，`go`编译器会把在函数内创建的本地变量分配到该函数所在的栈帧上，但是如果编译器无法知道当前函数执行完毕后，其他地方是否还有对该变量的引用，编译器就会把该变量分配到堆上，以避免空指针异常，另外如果本地变量占用空间比较大，将他分配到堆上可能显得比分配到栈上更有意义。
+
 ### 逃逸的几种场景
 
 <span id = "escape03">什么情况下会发生内存逃逸？典型的场景有哪些？</span>
@@ -2116,6 +2122,271 @@ func main() {
 * 对于小型的数据，使用传值而不是传指针（减少外部引用，如指针），避免内存逃逸。
 * 避免使用长度不固定的`slice`切片，在编译期无法确定切片长度，只能将切片使用堆分配。由于切片一般都是使用在函数传递的场景下，而且切片在 `append` 的时候可能会涉及到重新分配内存，如果切片在编译期间的大小不能够确认或者大小超出栈的限制，多数情况下都会分配到堆上。
 * `interface`调用方法会发生内存逃逸，在热点代码片段，谨慎使用。`go` 中的接口类型的方法调用是动态调度，因此不能够在编译阶段确定，所有类型结构转换成接口的过程会涉及到内存逃逸的情况发生。如果对于性能要求比较高且访问频次比较高的函数调用，应该尽量避免使用接口类型。
+
+## 并发编程
+
+传统的线程模型，比如经常使用`Java`、`C++`、`Python`编程的时候，需要多个线程之间通过共享内存（比如在堆上创建的共享变量）来通信。这时候为保证线程安全，多线程共享的数据结构需要使用锁来保护，多线程访问共享数据结构时候需要竞争获取锁，只有获取到锁的线程才可以存取共享数据。
+
+`go`鼓励使用通道在`goroutine`之间传递对共享数据的引用，而不是明确地使用锁来保护对共享数据的访问。这种方法确保在给定时间只有一个`goroutine`可以访问共享数据。这个理念被总结为：
+
+> 不要通过共享内存来通信，而要通过通信来共享内存。
+
+### 常见的并发问题
+
+#### 数据竞争状态
+
+当两个或者多个线程（`goroutine`）在没有任何同步措施的情况下同时读写同一个共享资源时候，这多个线程（`goroutine`）就处于数据竞争状态，数据竞争会导致程序的运行结果超出写代码的人的期望。下面我们来看个例子：
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+var a int
+
+// goroutine1
+func main() {
+
+    // 1 goroutine2
+    go func() {
+        a = 1 // 1.1
+    }()
+
+    // 2 goroutine1
+    if 0 == a { // 2.1
+        fmt.Println(a) //2.2
+    }
+}
+```
+
+运行`main`函数后，启动的进程里面存在两个并发运行的线程，分别是开启的新`goroutine`(起名为`goroutine2`)和`main`函数所在的`goroutine`(起名为`goroutine1`)，前者试图修改共享变量a，后者试图读取共享变量a，也就是存在两个线程在没有任何同步的情况下对同一个共享变量进行读写访问，这就出现了数据竞争，由于数据竞争存在，导致上面程序可能会有下面三种输出：
+
+- 输出0。由于运行时调度系统的随机性，会存在`goroutine1`的2.2代码比`goroutine2`的代码1.1先执行。
+- 输出1。当存在`goroutine1`先执行代码2.1,然后`goroutine2`在执行代码1.1，最后`goroutine1`在执行代码2.2的时候，输出已被改写过的变量值1。
+- 什么都不输出。当`goroutine2`执行先于`goroutine1`的2.1代码时候。
+
+不要受单线程模型的影响认为代码1.1会先于代码2.1执行，当发现输出不符合预期时候，或许会在代码2.1前面让`goroutine1` 休眠一会确保`goroutine2`执行完毕1.1后在让`goroutine1`执行2.1，这看起来或许有效，但是这是非常低效，并且并不是所有情况下都可以解决的。
+
+由于数据竞争的存在，上面一段很短的代码会有三种可能的输出，究其原因是`goroutine1`和`groutine2`的运行时序是不确定的，也就是没有对他们的操作做同步，以便让这些内存操作变为可以预知的顺序执行。
+
+正确的做法可以使用信号量等同步措施，保证`goroutine2`执行完毕再让`goroutine1`执行代码2.1。
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var a int
+var wg sync.WaitGroup
+
+// goroutine1
+func main() {
+
+    wg.Add(1)
+    // 1 goroutine2
+    go func() {
+        a = 1 // 1.1
+        defer wg.Done()
+    }()
+
+    wg.Wait()
+    // 2 goroutine1
+    if 0 == a { // 2.1
+        fmt.Println(a) //2.2
+    } else {
+        fmt.Println(a)
+    }
+}
+```
+
+#### 操作的原子性
+
+所谓原子性操作是指当执行一系列操作时候，这些操作那么全部被执行，那么全部不被执行，不存在只执行其中一部分的情况。
+
+在设计计数器时候一般都是先读取当前值，然后+1，然后更新，这个过程是读-改-写的过程，如果不能保证这个过程是原子性，那么就会出现线程安全问题。如下代码是线程不安全的，因为不能保证a++是原子性操作：
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var count int32
+var wg sync.WaitGroup //信号量
+const ThreadNum = 1000
+
+// goroutine1
+func main() {
+    // 1.信号
+    wg.Add(ThreadNum)
+
+    // 2. goroutine
+    for i := 0; i < ThreadNum; i++ {
+        go func() {
+            count++   // 2.1
+            // atomic.AddInt32(&count, 1) // 2.1
+            wg.Done() // 2.2
+        }()
+    }
+
+    wg.Wait() // 3. 等待goroutine运行结束
+
+    fmt.Println(count) // 4输出计数
+}
+```
+
+上面程序的运行结果不是1000，而是每次运行这个数都在变化。究其原因是因为a++操作本身不是原子性的，其等价于`b := count; b = b+1; count = b;`是三步操作，所以可能导致导致计数不准确。
+
+![image-20211109104912277](Golang体系.assets/image-20211109104912277.png)
+
+假如当前`count=0`那么t1时刻线程A读取了`count`值到变量`countA`,然后t2时刻递增`countA`值为1，同时线程B读取`count`的值0放到内存`countB`值为0（因为`countA`还没有写入主内存），t3时刻线程A才把`countA`为1的值写入主内存，至此线程A一次计数完毕，同时线程B递增`countB`值为1，t4时候线程B把`countB`值1写入内存，至此线程B一次计数完毕。明明是两次计数，最后结果是1而不是2。
+
+可以利用`sync/atomic`包的一些原子性函数或者锁来保证`count++`的原子性：
+
+```go
+atomic.AddInt32(&count, 1) // 2.1
+```
+
+#### 内存访问同步
+
+除了操作的原子性，多个`goroutine`同时执行时也并不是顺序执行的，而且可能是交叉访问执行的，如果能对内存变量的访问添加同步访问措施就可以避免多个`goroutine`同时交叉执行：
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var count int32
+var wg sync.WaitGroup // 信号量
+var lock sync.Mutex   // 互斥锁
+const ThreadNum = 1000
+
+// goroutine1
+func main() {
+    // 1.信号
+    wg.Add(ThreadNum)
+
+    // 2.goroutine
+    for i := 0; i < ThreadNum; i++ {
+        go func() {
+            lock.Lock()   // 2.1
+            count++       // 2.2
+            lock.Unlock() // 2.3
+            wg.Done()     // 2.4
+        }()
+    }
+
+    wg.Wait() // 3.等待goroutine运行结束
+
+    fmt.Println(count) // 4.输出计数
+}
+```
+
+- 如上代码创建了一个互斥锁`lock`，然后`goroutine`内在执行`count++`前先获取锁，执行完毕后在释放锁。
+- 当1000个`goroutine`同时执行到代码2.1时候只有一个线程可以获取到锁，其他的线程被阻塞，直到获取到锁的`goroutine`释放了锁。也就是这1000个线程的并发行使用锁转换为了串行执行，也就是对共享内存变量的访问施加了同步措施。
+
+
+
+### Happens Before 原则
+
+ 如下代码变量b是一个全局变量，初始化为0值，下面开启了两个`goroutine`，假设`goroutine B`有机会输出值时候，那么它可能输出的值是多少？
+
+```go
+// 变量b初始化为0
+var b int
+
+// goroutine A
+go func() {
+  a := 1     // 1
+  b := 2     // 2
+  c := a + b // 3
+}()
+
+// goroutine B
+go func() {
+  if 2 == b { // 4
+    fmt.Println(a) // 5
+  }
+}()
+```
+
+答案可能是1，也可能是0，输出1很好理解，输出0是什么原因呢？
+
+这是因为编译器或者`CPU`可能会对`goroutine A`中的指令做重排序，可能先执行了代码2，然后在执行了代码1。假设当`goroutine A`执行代码2后，调度器调度了`goroutine B`执行代码4和5，然后在执行了`goroutineA`的代码1，则`goroutine B`这时候会输出0。
+
+### 安全读写共享变量
+
+<span id="shared_variable">`go` 中除了加 `Mutex` 锁以外还有哪些方式安全读写共享变量？</span>
+
+方式一：加 `RWMutex` ，保证同一时间只能有一个 `goroutine` 来访问变量。
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+
+// 互斥锁，如果要访问一个资源，那么就必须要拿到这个资源的锁，只有拿到锁才有资格访问资源。
+// 其他的 goroutine 想要访问，必须等到当前 goroutine 释放了锁，抢到锁之后再访问。
+var mu sync.RWMutex
+
+var balance int
+
+func Deposit(amount int) {
+    mu.Lock()
+    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
+    defer mu.Unlock()
+    balance = balance + amount
+}
+func Balance() int {
+    mu.Lock()
+    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
+    defer mu.Unlock()
+    return balance
+}
+
+// 问题：向银行账户中存款问题。
+// 解析：如果程序正确，那么最后的输出应该是 200000，但多次运行，结果可能是 198000、199000 或者其他的值。这个程序存在数据竞态。
+// 这个问题的根本原因是 balance = balance + amount 这行代码在 CPU 上的执行操作不是原子的，有可能执行到一半的时候会被打断。
+
+// 结果：200000
+// 解决方案：保证同一时间只能有一个 goroutine 来访问变量。
+// ① 互斥锁。sync.Mutex
+// ② 读写互斥锁。sync.RWMutex
+// ③ once。 &sync.Once{}
+
+func main() {
+    for i := 0; i < 1000; i++ {
+        go func() {
+            Deposit(100)
+        }()
+
+        go func() {
+            Deposit(100)
+        }()
+    }
+    // 休眠一秒，让上面的 goroutine 执行完成
+    time.Sleep(1 * time.Second)
+    fmt.Println(Balance())
+}
+```
+
+方式二：`go` 中 `goroutine` 可以通过 `channel` 进行安全读写共享变量。
+
+
 
 ## 函数相关
 
@@ -3062,70 +3333,6 @@ fmt.Printf("3: nil=%t, len=%d, cap=%d\n", s == nil, len(s), cap(s))
 2: nil=false, len=0, cap=0
 3: nil=false, len=0, cap=0
 ```
-
-## 并发编程
-
-#### 安全读写共享变量
-
-<span id="shared_variable">`go` 中除了加 `Mutex` 锁以外还有哪些方式安全读写共享变量？</span>
-
-方式一：加 `RWMutex` ，保证同一时间只能有一个 `goroutine` 来访问变量。
-
-```go
-package main
-
-import (
-    "fmt"
-    "sync"
-    "time"
-)
-
-// 互斥锁，如果要访问一个资源，那么就必须要拿到这个资源的锁，只有拿到锁才有资格访问资源。
-// 其他的 goroutine 想要访问，必须等到当前 goroutine 释放了锁，抢到锁之后再访问。
-var mu sync.RWMutex
-
-var balance int
-
-func Deposit(amount int) {
-    mu.Lock()
-    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
-    defer mu.Unlock()
-    balance = balance + amount
-}
-func Balance() int {
-    mu.Lock()
-    // defer 来保证最终会释放锁（保证在对变量的访问结束之后，把锁释放掉，即使发生在异常情况，也需要释放）
-    defer mu.Unlock()
-    return balance
-}
-
-// 问题：向银行账户中存款问题。
-// 解析：如果程序正确，那么最后的输出应该是 200000，但多次运行，结果可能是 198000、199000 或者其他的值。这个程序存在数据竞态。
-// 这个问题的根本原因是 balance = balance + amount 这行代码在 CPU 上的执行操作不是原子的，有可能执行到一半的时候会被打断。
-
-// 结果：200000
-// 解决方案：保证同一时间只能有一个 goroutine 来访问变量。
-// ① 互斥锁。sync.Mutex
-// ② 读写互斥锁。sync.RWMutex
-// ③ once。 &sync.Once{}
-
-func main() {
-    for i := 0; i < 1000; i++ {
-        go func() {
-            Deposit(100)
-        }()
-
-        go func() {
-            Deposit(100)
-        }()
-    }
-    // 休眠一秒，让上面的 goroutine 执行完成
-    time.Sleep(1 * time.Second)
-    fmt.Println(Balance())
-}
-```
-
-方式二：`go` 中 `goroutine` 可以通过 `channel` 进行安全读写共享变量。
 
 
 

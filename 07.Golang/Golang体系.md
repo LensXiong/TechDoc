@@ -47,7 +47,7 @@
 * [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
 * [如何避免错误使用 `WaitGroup` 的情况？至少五点。](#wg01)
 * [如何实现线程安全的`Map`类型？](#map01)
-* [关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？](#conc01)
+* [关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？](#conc03)
 * 
 
 ## 函数相关
@@ -560,6 +560,8 @@ func findrunnable() (gp *g, inheritTime bool) {
 ### `Channel` 的读写特性
 
 <span id="channel_read">`channel`的读写特性是什么？会发生`painc`的情况是有几种，分别是什么？下面的代码输出什么？</span>
+
+![image-20211112231007294](Golang体系.assets/image-20211112231007294.png)
 
 `channel`的读写特性（空读写阻塞，写关闭异常，读关闭空零）：
 
@@ -2596,11 +2598,11 @@ func (m ConcurrentMap) Get(key string) (interface{}, bool) {
 
 ##### Channel
 
-<span id="conc01">关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？</span>
+<span id="conc03">关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？</span>
 
 * 共享资源的并发访问使用传统并发原语；
 * 复杂的任务编排和消息传递使用 `Channel`；
-* 消息通知机使用 `Channel`，除非只想 `signal` 一个 `goroutine`，才使用 `Cond`；
+* 消息通知使用 `Channel`，除非只想 `signal` 一个 `goroutine`，才使用 `Cond`；
 * 简单等待所有任务的完成用 `WaitGroup`，也有 `Channel` 的推崇者用 `Channel`，都可 以；
 *  需要和 `Select` 语句结合，使用 `Channel`；
 *  需要和超时配合时，使用 `Channel` 和 `Context`。

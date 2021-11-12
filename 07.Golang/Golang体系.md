@@ -15,7 +15,7 @@
 
 ## Channel
 
-* [关于`channel`的读写特性，下面的代码输出什么？](#channel_read)
+* [`channel`的读写特性是什么？会发生`painc`的情况是有几种，分别是什么？下面的代码输出什么？](#channel_read)
 * [是否了解`golang`的`CSP`并发模型的思想？](#csp)
 * [什么是无缓冲的`channel`？什么是有缓冲的`channel`？它们之间有什么区别？](#chan02)
 * [对已经关闭的`chan`进行读写会怎么样？为什么？](#chan03)
@@ -45,6 +45,7 @@
 
 * [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
 * [如何避免错误使用 `WaitGroup` 的情况？至少五点。](#wg01)
+* [如何实现线程安全的`map`类型？](#map01)
 
 ## 函数相关
 
@@ -555,15 +556,23 @@ func findrunnable() (gp *g, inheritTime bool) {
 
 ### `Channel` 的读写特性
 
-<span id="channel_read">关于`channel`的读写特性，下面的代码输出什么？</span>
+<span id="channel_read">`channel`的读写特性是什么？会发生`painc`的情况是有几种，分别是什么？下面的代码输出什么？</span>
 
 `channel`的读写特性（空读写阻塞，写关闭异常，读关闭空零）：
 
 * 给一个 `nil channel` 发送数据，造成永远阻塞。
 * 从一个 `nil channel` 接收数据，造成永远阻塞。
+* 给一个`nil channel`关闭，引起`painc`。
 * 给一个已经关闭的 `channel` 发送数据，引起 `panic`。
+* 关闭一个已经关闭的`channel`，引起`painc`。
 * 从一个关闭的 `channel` 接收数据，如果缓冲区中为空，则返回一个零值。
 * 无缓冲的`channel`是同步的，而有缓冲的`channel`是非同步的。
+
+会 `panic` 的情况，总共有 3 种:
+
+* `close` 为 `nil` 的 `chan`;
+*  `send` 已经 `close` 的 `chan`; 
+* `close` 已经 `close `的 `chan`。
 
 执行下面的代码发生什么？
 
@@ -2348,7 +2357,13 @@ const (
 
 
 
+##### RWMutex
+
+<img src="Golang体系.assets/image-20211111093132286.png" alt="image-20211111093132286" style="zoom:45%;" />
+
 ##### WaitGroup
+
+<img src="Golang体系.assets/image-20211111092623684.png" alt="image-20211111092623684" style="zoom:45%;" />
 
 <span id="wg01">如何避免错误使用 `WaitGroup` 的情况？至少五点。</span>
 
@@ -2358,6 +2373,184 @@ const (
 * 不传递负数给 `Add` 方法，只通过 `Done` 来给计数值减 1。
 * 不做多余的 `Done` 方法调用，保证 `Add` 的计数值和 `Done` 方法调用的数量是一样的。 
 * 不遗漏 `Done` 方法的调用，否则会导致 `Wait hang` 无法返回。
+
+
+
+
+
+##### Cond
+
+`WaitGroup` 和 `Cond` 的区别：`WaitGroup` 是主 `goroutine` 等待确定数量的子 `goroutine` 完成任务；而 `Cond` 是等待某个条件满足，这个条件的修改可以被任意多的 `goroutine` 更新，而且 `Cond` 的 `Wait` 不关心也不知道其他 `goroutine `的数量，只关心等待条件。而且 `Cond` 还有单个通知的机制，也就是 `Signal `方法。
+
+
+
+
+
+
+
+
+
+![image-20211111154241887](Golang体系.assets/image-20211111154241887.png)
+
+##### Once
+
+![image-20211112085611729](Golang体系.assets/image-20211112085611729.png)
+
+##### Map
+
+![](Golang体系.assets/image-20211111120516557.png)
+
+<span id="map01"> 如何实现线程安全的`map`类型？</span>
+
+> 方案①：**加读写锁，扩展 map，支持并发读写**。并发性能要求不是那么高的场景，简单加锁方式更简单。
+>
+> 方案②：**分片加锁（更高效的并发`map`）**。追求更高的性能，显然是分片加锁更好，因为它可以降低锁的粒度，进而提高访问此 map 对象的 吞吐。
+>
+> 方案③：应对特殊场景的 **sync.Map**。
+
+方式①：避免 `map` 并发读写 `panic` 的方式之一就是加锁，考虑到读写性能，可以使用读写锁提供性能。
+
+```go
+package main
+
+import "sync"
+
+// 问题：如何实现线程安全的 map 类型?
+
+// 两种方案：
+// 方案①：加读写锁，扩展 map，支持并发读写。
+// 方案②：分片加锁（更高效的并发`map`）。
+
+// 方案一解析：避免 map 并发读写 panic 的方式之一就是加锁，考虑到读写性能，可以使用读写锁提供性能。
+// 对 map 对象的操作，无非就是增删改查和遍历等几种常见操作。
+// 可以把这些操作分为读和写两类，其中，查询和遍历可以看做读操作，增加、修改和删除可以看做写操作。
+// 通过读写锁对相应的操作进行保护。
+
+// 读写锁的缺点。虽然使用读写锁可以提供线程安全的 map，但是在大量并发读写的情况下，锁的竞争会非
+// 常激烈，毕竟锁是性能下降的万恶之源之一。因此，需要尽量减少锁的粒度和锁的持有时间。
+
+type RWMap struct { // 一个读写锁保护的线程安全的map
+    sync.RWMutex // 读写锁保护下面的map字段
+    m            map[int]int
+}
+
+func (m *RWMap) Get(k int) (int, bool) { //从map中读取一个值
+    m.RLock()
+    defer m.RUnlock()
+    v, existed := m.m[k] // 在锁的保护下从map中读取
+    return v, existed
+}
+
+func (m *RWMap) Set(k int, v int) { // 设置一个键值对
+    m.Lock() // 锁保护
+    defer m.Unlock()
+    m.m[k] = v
+}
+
+func (m *RWMap) Delete(k int) { //删除一个键
+    m.Lock() // 锁保护
+    defer m.Unlock()
+    delete(m.m, k)
+}
+
+func (m *RWMap) Len() int { // map的长度
+    m.RLock() // 锁保护
+    defer m.RUnlock()
+    return len(m.m)
+}
+
+func (m *RWMap) Each(f func(k, v int) bool) { // 遍历map
+    m.RLock() //遍历期间一直持有读锁
+    defer m.RUnlock()
+    for k, v := range m.m {
+        if !f(k, v) {
+            return
+        }
+    }
+}
+```
+
+方案②：**分片加锁，更高效的并发** `map`，减少锁的粒度常用的方法就是分片(`Shard`)，将一把锁分成几把锁，每个锁控制一个分片。
+
+```go
+package main
+
+import (
+    _ "hash/fnv"
+    "sync"
+)
+// 问题：如何实现线程安全的 map 类型?
+
+// 三种方案：
+// 方案①：加读写锁，扩展 map，支持并发读写。
+// 方案②：分片加锁（更高效的并发`map`）。
+// 方案③：应对特殊场景的 sync.Map。
+
+// 减少锁的粒度常用的方法就是分片(Shard)，将一把锁分成几把锁，每个锁控制一个分片。
+
+var shardCount = 32
+
+// 分成shardCount个分片的map
+type ConcurrentMap []*ConcurrentMapShared
+
+// 通过RWMutex保护的线程安全的分片，包含一个map
+type ConcurrentMapShared struct {
+    items        map[string]interface{}
+    sync.RWMutex // Read Write mutex, guards access to internal map.
+}
+
+// 创建并发map
+func New() ConcurrentMap {
+    m := make(ConcurrentMap, shardCount)
+    for i := 0; i < shardCount; i++ {
+        m[i] = &ConcurrentMapShared{items: make(map[string]interface{})}
+    }
+    return m
+}
+
+// 根据key计算分片索引
+func (m ConcurrentMap) GetShard(key string) *ConcurrentMapShared {
+    return m[uint(fnv(key))%uint(shardCount)]
+}
+
+func (m ConcurrentMap) Set(key string, value interface{}) {
+    // 根据key计算出对应的分片
+    shard := m.GetShard(key)
+    shard.Lock() //对这个分片加锁，执行业务操作
+    shard.items[key] = value
+    shard.Unlock()
+}
+
+func (m ConcurrentMap) Get(key string) (interface{}, bool) {
+    // 根据key计算出对应的分片
+    shard := m.GetShard(key)
+    shard.RLock()
+    // 从这个分片读取key的值
+    val, ok := shard.items[key]
+    shard.RUnlock()
+    return val, ok
+}
+```
+
+方案三：**应对特殊场景的** **sync.Map**，Go 官方线程安全 map 的标准实现。
+
+
+
+##### Pool
+
+![image-20211112105849360](Golang体系.assets/image-20211112105849360.png)
+
+##### Context
+
+
+
+##### Atomic
+
+
+
+
+
+##### Channel
 
 
 

@@ -19,6 +19,7 @@
 * [是否了解`golang`的`CSP`并发模型的思想？](#csp)
 * [什么是无缓冲的`channel`？什么是有缓冲的`channel`？它们之间有什么区别？](#chan02)
 * [对已经关闭的`chan`进行读写会怎么样？为什么？](#chan03)
+* [关于`goroutine`泄露，下面的代码有什么问题？](#chan04)
 
 
 
@@ -45,7 +46,9 @@
 
 * [`go` 中除了加 `mutex` 锁以外还有哪些方式安全读写共享变量？](#shared_variable)
 * [如何避免错误使用 `WaitGroup` 的情况？至少五点。](#wg01)
-* [如何实现线程安全的`map`类型？](#map01)
+* [如何实现线程安全的`Map`类型？](#map01)
+* [关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？](#conc01)
+* 
 
 ## 函数相关
 
@@ -865,6 +868,49 @@ func main() {
 第一次读chan的协程结束，struct={ha}， ok=true
 第二次读chan的协程结束，struct={}， ok=false
 第三次读chan的协程结束，struct={}， ok=false
+```
+
+### goroutine 泄露
+
+<span id="chan04">关于`goroutine`泄露，下面的代码有什么问题？</span>
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+// 知识点：关于 goroutine 泄漏，下面代码有什么问题？
+// process 函数会启动一个 goroutine，去处理需要长时间处理的业务，处理完之后，会发送 true 到 chan 中，
+// 目的是通知其它等待的 goroutine，可以继续处理了。主 goroutine 接收到任务处理完成的通知，或者超时后就返回了。这段代码有问题吗?
+// 如果发生超时，process 函数就返回了，这就会导致 unbuffered 的 chan 从来就没有被读取。
+// unbuffered chan 必须等 reader 和 writer 都准备好了才能交流，否则就会阻塞。
+// 超时导致未读，结果就是子 goroutine 就阻塞在写永远结束不了，进而导致 goroutine 泄漏。
+// 解决这个 Bug 的办法就是将 unbuffered chan 改成容量为 1 的 chan，这样写就不会被阻塞了。
+
+func process(timeout time.Duration) bool {
+    // ch := make(chan bool, 1)
+    ch := make(chan bool)
+    go func() {
+        // 模拟处理耗时的业务
+        // time.Sleep((timeout + time.Second))
+        ch <- true // block
+        fmt.Println("exit goroutine")
+    }()
+    select {
+    case result := <-ch:
+        return result
+    case <-time.After(timeout):
+        return false
+    }
+}
+
+func main() {
+    res := process(1 * time.Second)
+    fmt.Println(res)
+}
 ```
 
 
@@ -2305,8 +2351,6 @@ func main() {
 - 如上代码创建了一个互斥锁`lock`，然后`goroutine`内在执行`count++`前先获取锁，执行完毕后在释放锁。
 - 当1000个`goroutine`同时执行到代码2.1时候只有一个线程可以获取到锁，其他的线程被阻塞，直到获取到锁的`goroutine`释放了锁。也就是这1000个线程的并发行使用锁转换为了串行执行，也就是对共享内存变量的访问施加了同步措施。
 
-
-
 ### 基本并发原语
 
 ##### Mutex
@@ -2552,7 +2596,14 @@ func (m ConcurrentMap) Get(key string) (interface{}, bool) {
 
 ##### Channel
 
+<span id="conc01">关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？</span>
 
+* 共享资源的并发访问使用传统并发原语；
+* 复杂的任务编排和消息传递使用 `Channel`；
+* 消息通知机使用 `Channel`，除非只想 `signal` 一个 `goroutine`，才使用 `Cond`；
+* 简单等待所有任务的完成用 `WaitGroup`，也有 `Channel` 的推崇者用 `Channel`，都可 以；
+*  需要和 `Select` 语句结合，使用 `Channel`；
+*  需要和超时配合时，使用 `Channel` 和 `Context`。
 
 ### Happens Before 原则
 

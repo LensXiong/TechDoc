@@ -2609,7 +2609,9 @@ func (m ConcurrentMap) Get(key string) (interface{}, bool) {
 
 ### Happens Before 原则
 
- 如下代码变量b是一个全局变量，初始化为0值，下面开启了两个`goroutine`，假设`goroutine B`有机会输出值时候，那么它可能输出的值是多少？
+> 在一个 `goroutine` 内部，程序的执行顺序和它们的代码指定的顺序是一样的，即使编译器 或者 `CPU` 重排了读写顺序，从行为上来看，也和代码指定的顺序一样。
+
+如下代码变量b是一个全局变量，初始化为0值，下面开启了两个`goroutine`，假设`goroutine B`有机会输出值时候，那么它可能输出的值是多少？
 
 ```go
 // 变量b初始化为0
@@ -2632,7 +2634,7 @@ go func() {
 
 答案可能是1，也可能是0，输出1很好理解，输出0是什么原因呢？
 
-这是因为编译器或者`CPU`可能会对`goroutine A`中的指令做重排序，可能先执行了代码2，然后在执行了代码1。假设当`goroutine A`执行代码2后，调度器调度了`goroutine B`执行代码4和5，然后在执行了`goroutineA`的代码1，则`goroutine B`这时候会输出0。
+这是因为编译器或者`CPU`可能会对`goroutine A`中的指令做重排序，可能先执行了代码2，然后在执行了代码1。假设当`goroutine A`执行代码2后，调度器调度了`goroutine B`执行代码4和5，此时a的值仍然为0，最后再执行了`goroutineA`的代码1，则`goroutine B`这时候会输出0。
 
 ### 安全读写共享变量
 

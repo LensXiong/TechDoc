@@ -67,8 +67,8 @@
 * [03、Go 程序中的包是什么?](#geek_base_03)
 * [04、Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
 * [05、什么是 goroutine？你如何停止它？](#geek_base_05)
-* [**如何在运行时检查变量类型?**](#geek_base_06)
-* [Go 两个接口之间可以存在什么关系?](#geek_base_07)
+* [06、如何在运行时检查变量类型？](#geek_base_06)
+* [07、两个接口之间可以存在什么关系？`Go`中接口有什么特点？](#geek_base_07)
 * [Go 当中同步锁有什么特点?作用是什么?](#geek_base_08)
 * [Go 语言当中 Channel(通道)有什么特点，需要注意什么?](#geek_base_09)
 * [Go 语言当中 Channel 缓冲有什么特点?](#geek_base_10)
@@ -3073,7 +3073,166 @@ func main() {
 
 
 
+<span id="geek_base_06">如何在运行时检查变量类型？</span>
 
+`Type Switch`:`switch` 语句被用于 `type-switch` 来判断某个 `interface` 变量中实际指向的变量类型。
+
+ ![image-20211114224637724](Golang体系.assets/image-20211114224637724.png)
+
+
+
+<span id="geek_base_07">两个接口之间可以存在什么关系？`Go`中接口有什么特点？</span>
+
+> 如果两个接口有相同的方法列表，那么他们就是等价的，可以相互赋值。如果 接口 A 的方法列表是接口 B 的方法列表的自己，那么接口 B 可以赋值给接口 A。接口查询是否成功，要在运行期才能够确定。
+
+接口特点：
+
+* 接口里的所有方法都没有方法体，即接口的方法都是没有实现的方法。接口体现了程序设计的多态和高内聚低偶合的思想。
+
+* `golang` 中的接口，不需要显式的实现。只要一个变量，含有接口类型中的所有方法，那么这个
+  变量就实现这个接口。因此，`golang` 中没有 `implement` 这样的关键字。
+
+* 接口本身不能创建实例，但是可以指向一个实现了该接口的自定义类型的变量（实例）。
+
+  ```go
+  package main
+  import (
+  	"fmt"
+  )
+  
+  type AInterface interface {
+  	Say()
+  }
+  
+  
+  type Stu struct {
+  	Name string
+  }
+  
+  func (stu Stu) Say() {
+  	fmt.Println("Stu Say()")
+  }
+  
+  
+  func main() {
+  	var stu Stu // 结构体变量，实现了 Say() 实现了 AInterface
+   	var a AInterface = stu
+  	a.Say()
+  }
+  ```
+
+* 接口中所有的方法都没有方法，即都是没有实现的方法。
+
+* 一个自定义类型需要将某个接口的所有方法都实现，我们说这个自定义类型实现 了该接口。
+
+*  一个自定义类型只有实现了某个接口，才能将该自定义类型的实例（变量）赋给接口类型 
+
+* 只要是自定义数据类型，就可以实现接口，不仅仅是结构体类型。
+
+  ```go
+  type integer int
+  
+  func (i integer) Say() {
+  	fmt.Println("integer Say i =" ,i )
+  }
+  
+  var i integer = 10
+  var b AInterface = i
+  b.Say() // integer Say i = 10
+  ```
+
+* 一个自定义类型可以实现多个接口。
+
+  ```go
+  type Monster struct {
+  
+  }
+  func (m Monster) Hello() {
+  	fmt.Println("Monster Hello()~~")
+  }
+  
+  func (m Monster) Say() {
+  	fmt.Println("Monster Say()~~")
+  }
+  
+  func main() {
+  	// Monster实现了AInterface 和 BInterface
+  	var monster Monster
+  	var a2 AInterface = monster
+  	var b2 BInterface = monster
+  	a2.Say()
+  	b2.Hello()
+  }
+  ```
+
+* golang 接口中不能有任何变量。
+
+  ```go
+  type AInterface interface {
+  	Say()
+  	Name string
+  }
+  ```
+
+* 一个接口(比如 A 接口)可以继承多个别的接口(比如 B，C 接口)，这时如果要实现 A 接口，也必 须将 B，C 接口的方法也全部实现。
+
+  ```go
+  package main
+  import (
+  	"fmt"
+  )
+  
+  type BInterface interface {
+  	test01()
+  }
+  
+  type CInterface interface {
+  	test02()
+  }
+  
+  type AInterface interface {
+  	BInterface
+  	CInterface
+  	test03()
+  }
+  
+  //如果需要实现AInterface,就需要将BInterface CInterface的方法都实现
+  type Stu struct {
+  }
+  func (stu Stu) test01() {
+  
+  }
+  func (stu Stu) test02() {
+  	
+  }
+  func (stu Stu) test03() {
+  	
+  }
+  
+  type T  interface{
+  
+  }
+  
+  func main() {
+  	var stu Stu
+  	var a AInterface = stu
+  	a.test01()
+  
+  	var t T = stu //ok
+  	fmt.Println(t)
+  	var t2 interface{}  = stu
+  	var num1 float64 = 8.8
+  	t2 = num1
+  	t = num1
+  	fmt.Println(t2, t)
+  }
+  ```
+
+*  `interface` 类型默认是一个指针(引用类型)，如果没有对 `interface `初始化就使用，那么会输出 `nil`。
+
+* 空接口` interface{} `没有任何方法，所以所有类型都实现了空接口，即我们可以把任何一个变量赋给空接口。
+
+  
 
 
 

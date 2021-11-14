@@ -65,8 +65,8 @@
 * [01、与其他语言相比，使用 Go 有什么好处?](#geek-base-01)
 * [02、Golang 使用什么数据类型?](#geek_base_02)
 * [03、Go 程序中的包是什么?](#geek_base_03)
-* [04、**Go** **支持什么形式的类型转换?将整数转换为浮点数。**](#geek_base_04)
-* [05、什么是 Goroutine?你如何停止它?](#geek_base_05)
+* [04、Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
+* [05、什么是 goroutine？你如何停止它？](#geek_base_05)
 * [**如何在运行时检查变量类型?**](#geek_base_06)
 * [Go 两个接口之间可以存在什么关系?](#geek_base_07)
 * [Go 当中同步锁有什么特点?作用是什么?](#geek_base_08)
@@ -79,6 +79,10 @@
 * [Printf(),Sprintf(),FprintF() 都是格式化输出，有什么不同?](#geek_base_15)
 
 
+
+## 应用场景
+
+* [保存用户作品的浏览量方案设计?](#scene01)
 
 
 
@@ -2906,7 +2910,7 @@ c := make(chan T, 10)
 
 ![image-20211113225207136](Golang体系.assets/image-20211113225207136.png)			
 
-<span id="geek_base_03" style="color:red">03、Go 程序中的包是什么?</span>
+<span id="geek_base_03">03、Go 程序中的包是什么?</span>
 
 Go 程序中包的本质实际上就是创建不同的文件夹，来存放程序文件。go 的每一个文件都是属于一个包的，它是以包的形式来管理文件和项目目录结构的。包的主要作用：
 
@@ -2914,7 +2918,7 @@ Go 程序中包的本质实际上就是创建不同的文件夹，来存放程�
 * 当程序文件很多时，可以很好的管理项目。
 *  控制函数、变量等访问范围，即作用域。
 
-打包的基本语法：
+ 打包的基本语法：
 
 ```go
 package 包名
@@ -2936,6 +2940,208 @@ import "包的路径"
 * 如果包名较长，Go 支持给包取别名， 注意细节:取别名后，原来的包名就不能使用了。
 * 在同一包下，不能有相同的函数名(也不能有相同的全局变量名)，否则报重复定义。
 * 如果你要编译成一个可执行程序文件，就需要将这个包声明为 main , 即 `package main` 。这个就是一个语法规范，如果你是写一个库 ，包名可以自定义。
+
+<span id="geek_base_04">04、Go 支持什么形式的类型转换？将整数转换为浮点数。</span>
+
+`Go` 和 `java / c` 不同，`Go` 在不同类型的变量之间赋值时需要显式转换。`Go`中数据类型不能自动转换。
+
+基本语法：表达式 `T(v)` 将值 v 转换为类型 T。
+
+![image-20211114145451795](Golang体系.assets/image-20211114145451795.png)
+
+基本数据类型相互转换的注意事项：
+
+* Go 中，数据类型的转换可以是从表示范围小-->表示范围大，也可以从范围大--->范围小。
+
+* 被转换的是变量存储的数据(即值)，变量本身的数据类型并没有变化!
+
+  ![image-20211114145836489](Golang体系.assets/image-20211114145836489.png)
+
+* 在转换中，比如将 int64 转成 int8 【-128---127】 ，编译时不会报错，只是转换的结果是按溢出处理，和我们希望的结果不一样， 因此在转换时，需要考虑范围。
+
+  ![image-20211114145925220](Golang体系.assets/image-20211114145925220.png)
+
+<span id="geek_base_05">什么是`goroutine`？你如何停止它？</span>
+
+> `goroutine`是来自协程`coroutine`的概念，它属于**用户态的线程**，主要解决操作（内核）系统线程占用内存太大和创建、切换开销性能消耗较大的问题。用户态线程`goroutine`是一个非常轻量级的，其创建和切换都在用户代码中完成而无需进入操作系统内核，所以其开销要远远小于系统线程的创建和切换；另外一个优势在于`goroutine`只占2-4KB内存空间，可以在程序轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。其他程序如C/JAVA的多线程，往往是内核态的，比较重量级，几千个线程可能就会耗光`CPU`。
+
+方案一：定期轮询 `channel`。向 `goroutine` 发送一个信号通道来停止它。
+
+```go
+func watchTopicViewNum()  {
+    var slice []topic_view_history.TopicViewHistory
+    var ticker = time.NewTicker(time.Second * time.Duration(conf.App.TopicViewNumSyncEvery))
+    for {
+        select {
+        case h := <- topicViewNumChan:
+            slice = append(slice, h)
+        case <-ticker.C:
+            cp := make([]topic_view_history.TopicViewHistory, len(slice))
+            copy(cp, slice)
+            slice = slice[:0]
+            go saveTopicHistory(cp)
+        }
+    }
+}
+```
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+// 解析：
+// 结果：
+// 接收到的值:  Hello
+// 接收到的值:  Hello
+// 接收到的值:  Hello
+// 结束
+func main() {
+    ch := make(chan string, 6)
+    done := make(chan struct{})
+    go func() {
+        for {
+            select {
+            case ch <- "Hello":
+            case <-done:
+                close(ch)
+                return
+            }
+            time.Sleep(1 * time.Second)
+        }
+    }()
+
+    go func() {
+        time.Sleep(3 * time.Second)
+        done <- struct{}{}
+    }()
+
+    for i := range ch {
+        fmt.Println("接收到的值: ", i)
+    }
+
+    fmt.Println("结束")
+}
+```
+
+
+
+方案二：使用 `context`。
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+)
+
+// Go语言context标准库的Context类型提供了一个Done()方法，该方法返回一个类型为<-chan struct{}的channel。
+// 每次context收到取消事件后这个channel都会接收到一个struct{}类型的值。
+// 所以在Go语言里监听取消事件就是等待接收<-ctx.Done()。
+
+func main() {
+    ch := make(chan struct{})
+    ctx, cancel := context.WithCancel(context.Background())
+
+    go func(ctx context.Context) {
+        for {
+            select {
+            case <-ctx.Done():
+                ch <- struct{}{}
+                return
+            default:
+                fmt.Println("Hello...")
+            }
+
+            time.Sleep(500 * time.Millisecond)
+        }
+    }(ctx)
+
+    go func() {
+        time.Sleep(3 * time.Second)
+        cancel()
+    }()
+
+    <-ch
+    fmt.Println("结束")
+}
+```
+
+
+
+
+
+
+
+## 应用场景
+
+<span id="scene01">保存用户作品浏览量方案设计?</span>
+
+```go
+type TopicViewHistory struct {
+    ID        int64 `gorm:"column:id" json:"id"`
+    TopicID   int64 `gorm:"column:xxx_id" json:"xxxx_id"`
+    StudentID int64 `gorm:"column:xxx_id" json:"xxxx_id"`
+    Status    uint8 `gorm:"column:status" json:"status"`
+    UpdatedAt int64 `gorm:"column:updated_at" json:"updated_at"`
+    CreatedAt int64 `gorm:"column:created_at" json:"created_at"`
+}
+// [app]
+// TopicViewNumChanSize = 1000
+// TopicViewNumSyncEvery = 2
+
+type app struct {
+    TopicViewNumChanSize             int
+    TopicViewNumSyncEvery            int
+}
+
+var topicViewNumChan = make(chan topic_view_history.TopicViewHistory, conf.App.TopicViewNumChanSize)
+
+//  A Ticker holds a channel that delivers `ticks' of a clock
+// at intervals.
+// type Ticker struct {
+// 	C <-chan Time // The channel on which the ticks are delivered.
+//	r runtimeTimer
+// }
+
+func init()  {
+    go watchTopicViewNum()
+}
+
+func watchTopicViewNum()  {
+    var slice []topic_view_history.TopicViewHistory
+    var ticker = time.NewTicker(time.Second * time.Duration(conf.App.TopicViewNumSyncEvery))
+    for {
+        select {
+        case h := <- topicViewNumChan:
+            slice = append(slice, h)
+        case <-ticker.C:
+            cp := make([]topic_view_history.TopicViewHistory, len(slice))
+            copy(cp, slice)
+            slice = slice[:0]
+            go saveTopicHistory(cp)
+        }
+    }
+}
+
+func saveTopicHistory(slice []topic_view_history.TopicViewHistory)  {
+    if len(slice) > 0 {
+        if err := xxxx.SaveTopicViewHistory(slice); err != nil {
+            lg.Debugf("SaveTopicViewHistory err %s", err.Error())
+        } else {
+            lg.Debugf("SaveTopicViewHistory total %d", len(slice))
+        }
+    }
+}
+
+func SaveTopicViewHistory(slice []topic_view_history.TopicViewHistory) error {
+    return models.Conn.Table("xxx_xxx_view_history").Create(&slice).Error
+}
+```
 
 
 

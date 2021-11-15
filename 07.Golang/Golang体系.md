@@ -60,21 +60,21 @@
 
 
 
-## GO基础类
+## GO 基础类
 
 * [01、与其他语言相比，使用 Go 有什么好处?](#geek-base-01)
 * [02、Golang 使用什么数据类型?](#geek_base_02)
 * [03、Go 程序中的包是什么?](#geek_base_03)
 * [04、Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
-* [05、什么是 goroutine？你如何停止它？](#geek_base_05)
+* [05、什么是 Goroutine？你如何停止它？](#geek_base_05)
 * [06、如何在运行时检查变量类型？](#geek_base_06)
 * [07、两个接口之间可以存在什么关系？Go中接口有什么特点？](#geek_base_07)
-* [08、Go 当中同步锁有什么特点?作用是什么?](#geek_base_08)
+* [08、Go 当中同步锁有什么特点？作用是什么?](#geek_base_08)
 * [09、Go 语言当中 Channel（通道）有什么特点，会 panic 的情况有几种？会  block 的情况有几种？需要注意什么？](#geek_base_09)
-* [Go 语言当中 Channel 缓冲有什么特点?](#geek_base_10)
-* [Go 语言中 cap 函数可以作用于那些内容?](#geek_base_11)
-* [**go convey** **是什么?一般用来做什么?**](#geek_base_12)
-* [Go 语言当中 new 和 make 有什么区别吗?](#geek_base_13)
+* [10、Go 语言当中 Channel 缓冲有什么特点？](#geek_base_10)
+* [11、Go 语言中 cap 函数可以作用于那些内容？](#geek_base_11)
+* [12、go convey是什么？一般用来做什么？](#geek_base_12)
+* [13、Go 语言当中 new 和 make 有什么区别吗?](#geek_base_13)
 * [**Go** **语言中** **make** **的作用是什么?**](#geek_base_14)
 * [Printf(),Sprintf(),FprintF() 都是格式化输出，有什么不同?](#geek_base_15)
 
@@ -789,7 +789,7 @@ func main1() {
 
 带缓冲的` channel`(`buffered channel`) 是一种在被接收前能存储一个或者多个值的通道。这种类型的通道并不强制要求 `goroutine `之间必须同时完成发送和接收。通道会阻塞发送和接收动作的条件也会不同。只有在通道中没有要接收的值时，接收动作才会阻塞。只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
 
-这导致有缓冲的通道和无缓冲的通道之间的一个很大的不同：**无缓冲的通道保证进行发送和接收的 `goroutine `会在同一时间进行数据交换；有缓冲的通道没有这种保证**
+这导致有缓冲的通道和无缓冲的通道之间的一个很大的不同：**无缓冲的通道保证进行发送和接收的 `goroutine `会在同一时间进行数据交换；有缓冲的通道没有这种保证。**
 
 ![image-20211108204813244](Golang体系.assets/image-20211108204813244.png)
 
@@ -2741,7 +2741,11 @@ func main() {
 
 <span id="make_new">`golang`中`make`与`new`有何区别？</span>
 
->  `make` 返回类型是引用类型本身，`new` 返回的是指向指针的类型。`make`只适用于`chan`、`map`、`slice`的内存创建，`new` 可用于初始化任意类型。
+>  二者都是内存的分配（堆上），但是`make`只用于`slice`、`map`以及`channel`的初始化（非零值）；而`new`用于任意类型的内存分配，并且内存置为零。
+>
+>  `make`返回的还是这三个引用类型本身；而`new`返回的是指向类型的指针。
+>
+>  `make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
 
 * `make` 仅用于初始化 `slice`，`map` 和 `chan`，`new` 可用于初始化任意类型。
 * `make` 返回值是引用类型，`new` 返回值是指针类型。
@@ -2771,7 +2775,7 @@ panic: runtime error: invalid memory address or nil pointer dereference
 [signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x4849df]
 ```
 
-对于引用类型的变量，我们不光要声明它，还要为它分配内容空间，否则我们的值放在哪里去呢？
+对于引用类型的变量，我们不光要声明它，还要为它分配内存空间，否则我们的值放在哪里去呢？
 
 正确分配内存后的代码示例：
 
@@ -2781,7 +2785,6 @@ func main() {
    i = new(int)
    *i = 10
    fmt.Println(*i)
-  
 }
 ```
 
@@ -3245,8 +3248,6 @@ func main() {
 
 * 空接口` interface{} `没有任何方法，所以所有类型都实现了空接口，即我们可以把任何一个变量赋给空接口。
 
-  
-
 <span id="geek_base_08">08、`Go` 当中同步锁有什么特点？作用是什么？</span>
 
 > 同步锁主要包括互斥锁 `Mutex`、读写锁 `RWMutex`，主要解决资源竞争的问题，保证读写共享资源的安全性（同步锁的作用是保证资源在使用时的独有性，不会因为并发而导致数据错乱， 保证系统的稳定性。）。
@@ -3262,8 +3263,6 @@ func main() {
 * 共享资源。并发地读写共享资源，会出现数据竞争(`data race`)的问题，所以需要 `Mutex`、`RWMutex` 这样的并发原语来保护。
 * 任务编排。需要 `goroutine` 按照一定的规律执行，而 `goroutine` 之间有相互等待或者依 赖的顺序关系，我们常常使用 `WaitGroup` 或者 `Channel` 来实现。
 * 消息传递。信息交流以及不同的 `goroutine` 之间的线程安全的数据交流，常常使用 `Channel` 来实现。
-
-
 
 <span id="geek_base_09">09、`Go` 语言当中 `Channel`（通道）有什么特点，会 `panic` 的情况有几种？会 `block` 的情况有几种？需要注意什么？</span>
 
@@ -3293,6 +3292,177 @@ func main() {
 * 给一个 `nil channel` 发送数据，造成永远阻塞。
 * 从一个`empty channel`接收数据，会造成阻塞。
 * 给一个`full channel`发送数据，会造成阻塞。
+
+<span id="geek_base_10">10、Go 语言当中 Channel 缓冲有什么特点？</span>
+
+Go 语言当中 Channel 缓冲分为无缓冲通道和有缓冲通道；无缓冲的 Channel 是同步的，而有缓冲的 Channel 是非同步的。
+
+> **无缓冲的`Channel`**：无缓冲的通道指的是通道大小为0，发送和接收方需要同时准备好，才可以完成发送和接收操作。（无缓冲的`Channel`由于没有缓冲发送和接收需要同步。）
+>
+> **有缓冲的`Channel`**：有缓冲的通道指的是有缓冲大小大于1，不需要发送方和接收方同时准备好，都可以进行发送和接收操作。（有缓冲`Channel`不要求发送和接收操作同步。）
+>
+> **区别**：无缓冲的通道保证进行发送和接收的 `Goroutine `会在同一时间进行数据交换；而有缓冲的通道只有在通道中没有要接收的值时，接收动作才会阻塞，只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
+
+无缓冲的通道指的是通道的大小为0，也就是说，这种类型的通道在接收前没有能力保存任何值，它要求发送 `Goroutine` 和接收 `Goroutine` 同时准备好，才可以完成发送和接收操作。
+
+有缓冲的` Channel`(`buffered channel`) 是一种在被接收前能存储一个或者多个值的通道。这种类型的通道并不强制要求 `goroutine `之间必须同时完成发送和接收。通道会阻塞发送和接收动作的条件也会不同。只有在通道中没有要接收的值时，接收动作才会阻塞。只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
+
+<span id="geek_base_11">11、Go 语言中 cap函数可以作用于那些内容？</span>
+
+Cap 函数是内置函数，主要应用于以下几种类型：
+
+* Array（数组）：
+
+* Slice（切片）：make 方式创建切片可以指定切片的大小和容量。cap 是一个内置函数，用于统计切片的容量，即最大可以存放多少个元素。`var 切片名 []type = make([]type, len, [cap])`。
+
+  ![image-20211115102750393](Golang体系.assets/image-20211115102750393.png)
+
+* Channel（通道）：
+
+```go
+// The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make's return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//	Slice: The size specifies the length. The capacity of the slice is
+//	equal to its length. A second integer argument may be provided to
+//	specify a different capacity; it must be no smaller than the
+//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	of size 10 and returns a slice of length 0 and capacity 10 that is
+//	backed by this underlying array.
+//	Map: An empty map is allocated with enough space to hold the
+//	specified number of elements. The size may be omitted, in which case
+//	a small starting size is allocated.
+//	Channel: The channel's buffer is initialized with the specified
+//	buffer capacity. If zero, or the size is omitted, the channel is
+//	unbuffered.
+func make(t Type, size ...IntegerType) Type
+```
+
+<span id="geek_base_12"> 12、`go convey` 是什么？一般用来做什么？</span>
+
+- `go convey` 是一个支持 `golang` 的单元测试框架。
+- `go convey` 能够自动监控文件修改并启动测试，并可以将测试结果实时输出到 `Web` 界面。
+- `go convey` 提供了丰富的断言简化测试用例的编写。
+
+<span id="geek_base_13">13、Go 语言当中 new 和 make 有什么区别吗？</span>
+
+> 二者都是内存的分配（堆上），`make`只用于`slice`、`map`以及`channel`的初始化（非零值）；而`new`用于任意类型的内存分配，并且内存置为零。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
+
+`new`函数声明：初始化指向一个类型的指针。
+
+```go
+// The new built-in function allocates memory. The first argument is a type,
+// not a value, and the value returned is a pointer to a newly
+// allocated zero value of that type.
+func new(Type) *Type
+```
+
+它只接受一个参数，这个参数是一个类型，分配好内存后，返回一个指向该类型内存地址的指针。它同时把分配的内存置为零，也就是类型的零值。
+
+`make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
+
+函数声明：
+
+```go
+// The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make's return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//	Slice: The size specifies the length. The capacity of the slice is
+//	equal to its length. A second integer argument may be provided to
+//	specify a different capacity; it must be no smaller than the
+//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	of size 10 and returns a slice of length 0 and capacity 10 that is
+//	backed by this underlying array.
+//	Map: An empty map is allocated with enough space to hold the
+//	specified number of elements. The size may be omitted, in which case
+//	a small starting size is allocated.
+//	Channel: The channel's buffer is initialized with the specified
+//	buffer capacity. If zero, or the size is omitted, the channel is
+//	unbuffered.
+func make(t Type, size ...IntegerType) Type
+```
+
+像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
+
+<span id="geek_base_14">14、 Go 语言中 make 的作用是什么？ </span>
+
+`make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
+
+函数声明：
+
+```go
+// The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make's return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//	Slice: The size specifies the length. The capacity of the slice is
+//	equal to its length. A second integer argument may be provided to
+//	specify a different capacity; it must be no smaller than the
+//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	of size 10 and returns a slice of length 0 and capacity 10 that is
+//	backed by this underlying array.
+//	Map: An empty map is allocated with enough space to hold the
+//	specified number of elements. The size may be omitted, in which case
+//	a small starting size is allocated.
+//	Channel: The channel's buffer is initialized with the specified
+//	buffer capacity. If zero, or the size is omitted, the channel is
+//	unbuffered.
+func make(t Type, size ...IntegerType) Type
+```
+
+像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
+
+```go
+// 使用内置函数 make 初始化 map，传入的参数是类型，map 没有容量限制，初始化时无需指定容量的大小。
+m := make(map[T]T)
+
+// 分配一个长度为 10 的底层数组，返回一个长度为 0，容量为 10 的切片。
+// 使用内置函数 make 初始化 slice，第一个参数是类型，第二个参数是 slice 的长度，第三个参数是可选参数，它代表 slice 的容量，如果不传入第三个参数，slice 的容量与长度相同，但是如果传入第三个参数，它的值（容量）比如大于或等于传入的第二个参数（长度）。
+s := make([]T, 0, 10)
+
+// 给 channel 分配的内存空间大小（缓冲容量）为 10。
+// channel 的缓冲区使用指定的值初始化缓冲容量。
+// 如果为零或忽略大小(不传入第二个参数)，则 channel 为无缓冲的。
+c := make(chan T, 10)
+```
+
+![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
+
+<span id="geek_base_15">15、`Printf()`、`Sprintf()`、`Fprintf()`都是格式化输出，有什么不同？</span>
+
+虽然这三个函数，都是格式化输出，但是输出的目标不一样。
+
+- `Printf`：格式化并输出到标准输出。
+- `Sprintf`：格式化并返回一个字符串，不直接输出。
+- `Fprintf`：格式化并输出到指定的输出流（文件、标准输出等）。
+
+```go
+// Printf根据format参数生成格式化的字符串并写入标准输出。返回写入的字节数和遇到的任何错误。
+func Printf(format string, a ...interface{}) (n int, err error)
+// Sprintf根据format参数生成格式化的字符串并返回该字符串。
+func Sprintf(format string, a ...interface{}) string
+// Fprintf根据format参数生成格式化的字符串并写入w。返回写入的字节数和遇到的任何错误。
+func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+```
+
+使用示例：
+
+```go
+fmt.Printf("DeletedMsg NsqInfo Record topic: %s info: %s ", topic, string(b))
+req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/nodes", host), nil)
+builder.WriteString(fmt.Sprintf(`{"index": {"_id": %d}`, s.ID))
+
+
+```
+
+
+
+
 
 ## 应用场景
 

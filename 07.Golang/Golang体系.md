@@ -68,9 +68,9 @@
 * [04、Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
 * [05、什么是 goroutine？你如何停止它？](#geek_base_05)
 * [06、如何在运行时检查变量类型？](#geek_base_06)
-* [07、两个接口之间可以存在什么关系？`Go`中接口有什么特点？](#geek_base_07)
-* [Go 当中同步锁有什么特点?作用是什么?](#geek_base_08)
-* [Go 语言当中 Channel(通道)有什么特点，需要注意什么?](#geek_base_09)
+* [07、两个接口之间可以存在什么关系？Go中接口有什么特点？](#geek_base_07)
+* [08、Go 当中同步锁有什么特点?作用是什么?](#geek_base_08)
+* [09、Go 语言当中 Channel（通道）有什么特点，会 panic 的情况有几种？会  block 的情况有几种？需要注意什么？](#geek_base_09)
 * [Go 语言当中 Channel 缓冲有什么特点?](#geek_base_10)
 * [Go 语言中 cap 函数可以作用于那些内容?](#geek_base_11)
 * [**go convey** **是什么?一般用来做什么?**](#geek_base_12)
@@ -591,19 +591,28 @@ func findrunnable() (gp *g, inheritTime bool) {
 
 `channel`的读写特性（空读写阻塞，写关闭异常，读关闭空零）：
 
-* 给一个 `nil channel` 发送数据，造成永远阻塞。
 * 从一个 `nil channel` 接收数据，造成永远阻塞。
+* 给一个 `nil channel` 发送数据，造成永远阻塞。
 * 给一个`nil channel`关闭，引起`painc`。
-* 给一个已经关闭的 `channel` 发送数据，引起 `panic`。
-* 关闭一个已经关闭的`channel`，引起`painc`。
-* 从一个关闭的 `channel` 接收数据，如果缓冲区中为空，则返回一个零值。
+* 从一个`empty channel`接收数据，会造成阻塞。
+* 给一个`full channel`发送数据，会造成阻塞。
+* 从一个`closed channel`接收数据，会返回未读的元素，如果缓冲区为空，则读完后返回零值。
+* 给一个已经关闭的 `closed channel` 发送数据，引起 `panic`。
+* 关闭一个已经关闭的`closed channel`，引起`painc`。
 * 无缓冲的`channel`是同步的，而有缓冲的`channel`是非同步的。
 
-会 `panic` 的情况，总共有 3 种:
+**会 `panic` 的情况，总共有 3 种**:
 
 * `close` 为 `nil` 的 `chan`;
-*  `send` 已经 `close` 的 `chan`; 
+* `send` 已经 `close` 的 `chan`; 
 * `close` 已经 `close `的 `chan`。
+
+**会`block`的情况，总共有 4 种：**
+
+* 从一个 `nil channel` 接收数据，造成永远阻塞。
+* 给一个 `nil channel` 发送数据，造成永远阻塞。
+* 从一个`empty channel`接收数据，会造成阻塞。
+* 给一个`full channel`发送数据，会造成阻塞。
 
 执行下面的代码发生什么？
 
@@ -2968,6 +2977,10 @@ import "包的路径"
 方案一：定期轮询 `channel`。向 `goroutine` 发送一个信号通道来停止它。
 
 ```go
+func init()  {
+    go watchTopicViewNum()
+}
+
 func watchTopicViewNum()  {
     var slice []topic_view_history.TopicViewHistory
     var ticker = time.NewTicker(time.Second * time.Duration(conf.App.TopicViewNumSyncEvery))
@@ -3073,7 +3086,7 @@ func main() {
 
 
 
-<span id="geek_base_06">如何在运行时检查变量类型？</span>
+<span id="geek_base_06">06、如何在运行时检查变量类型？</span>
 
 `Type Switch`:`switch` 语句被用于 `type-switch` 来判断某个 `interface` 变量中实际指向的变量类型。
 
@@ -3081,7 +3094,7 @@ func main() {
 
 
 
-<span id="geek_base_07">两个接口之间可以存在什么关系？`Go`中接口有什么特点？</span>
+<span id="geek_base_07">07、两个接口之间可以存在什么关系？`Go`中接口有什么特点？</span>
 
 > 如果两个接口有相同的方法列表，那么他们就是等价的，可以相互赋值。如果 接口 A 的方法列表是接口 B 的方法列表的自己，那么接口 B 可以赋值给接口 A。接口查询是否成功，要在运行期才能够确定。
 
@@ -3234,7 +3247,52 @@ func main() {
 
   
 
+<span id="geek_base_08">08、`Go` 当中同步锁有什么特点？作用是什么？</span>
 
+> 同步锁主要包括互斥锁 `Mutex`、读写锁 `RWMutex`，主要解决资源竞争的问题，保证读写共享资源的安全性（同步锁的作用是保证资源在使用时的独有性，不会因为并发而导致数据错乱， 保证系统的稳定性。）。
+>
+> 使用互斥锁 `Mutex`，限定临界区只能同时由一个线程持有，如果 `Mutex` 已经被一个 `goroutine` 获取了锁，其它等待中的 `goroutine` 只能一直等待。不管是读还是写，我们都通过 `Mutex` 来保证只有一个 `goroutine` 访问共享资源，这在某些情况下有点`浪费`。比如说，在写少读多的情况下，即使一段时间内没有写操作，大量并发的读访问也不得不在 `Mutex` 的保护下变成了串行访问，这个时候， 使用 `Mutex`，对性能的影响就比较大。
+>
+> 使用读写锁`RWMutex`，通过区分读写操作，将串行的读变成并行的读，提高读操作的性能。当写操作的 `goroutine` 持有锁的时候，它就是一个互斥锁 `Mutex`，其它的写操作和读操作的 `goroutine`，需要阻塞等待持有这个锁的 `goroutine` 释放锁。标准库中的 `RWMutex` 是一个 `reader/writer` 互斥 锁。`RWMutex `在某一时刻只能由任意数量的 `reader` 持有，或者是只被单个的 `writer` 持有。
+
+注：在并发编程中，如果程序中的一部分会被并发访问或修改，那么，为了避免并发访问导致的意想不到的结果，这部分程序需要被保护起来，这部分被保护起来的程序，就叫做`临界区`。
+
+同步原语（`Synchronization primitives`，并发原语）是解决并发问题的一个基础的数据结构。其中使用最广泛的同步原语有互斥锁 `Mutex`、读写锁 `RWMutex`、并发编排 `WaitGroup`、条件变量 `Cond`、管道`Channel` 等。同步原语的适用场景：
+
+* 共享资源。并发地读写共享资源，会出现数据竞争(`data race`)的问题，所以需要 `Mutex`、`RWMutex` 这样的并发原语来保护。
+* 任务编排。需要 `goroutine` 按照一定的规律执行，而 `goroutine` 之间有相互等待或者依 赖的顺序关系，我们常常使用 `WaitGroup` 或者 `Channel` 来实现。
+* 消息传递。信息交流以及不同的 `goroutine` 之间的线程安全的数据交流，常常使用 `Channel` 来实现。
+
+
+
+<span id="geek_base_09">09、`Go` 语言当中 `Channel`（通道）有什么特点，会 `panic` 的情况有几种？会 `block` 的情况有几种？需要注意什么？</span>
+
+![image-20211112231007294](Golang体系.assets/image-20211112231007294.png)
+
+`channel`的读写特性（空读写阻塞，写关闭异常，读关闭空零）：
+
+* 从一个 `nil channel` 接收数据，造成永远阻塞。
+* 给一个 `nil channel` 发送数据，造成永远阻塞。
+* 给一个`nil channel`关闭，引起`painc`。
+* 从一个`empty channel`接收数据，会造成阻塞。
+* 给一个`full channel`发送数据，会造成阻塞。
+* 从一个`closed channel`接收数据，会返回未读的元素，如果缓冲区为空，则读完后返回零值。
+* 给一个已经关闭的 `closed channel` 发送数据，引起 `panic`。
+* 关闭一个已经关闭的`closed channel`，引起`painc`。
+* 无缓冲的`channel`是同步的，而有缓冲的`channel`是非同步的。
+
+**会 `panic` 的情况，总共有 3 种**:
+
+* `close` 为 `nil` 的 `chan`;
+* `send` 已经 `close` 的 `chan`; 
+* `close` 已经 `close `的 `chan`。
+
+**会`block`的情况，总共有 4 种：**
+
+* 从一个 `nil channel` 接收数据，造成永远阻塞。
+* 给一个 `nil channel` 发送数据，造成永远阻塞。
+* 从一个`empty channel`接收数据，会造成阻塞。
+* 给一个`full channel`发送数据，会造成阻塞。
 
 ## 应用场景
 

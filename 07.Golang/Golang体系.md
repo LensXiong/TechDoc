@@ -45,7 +45,7 @@
 * [如何实现线程安全的`Map`类型？](#map01)
 * [关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？](#conc03)
 
-## 函数相关
+## 专题相关
 
 #### make && new
 
@@ -54,6 +54,14 @@
 #### array && slice
 
 * [`golang` 中 `array` 与 `slice` 有何区别？](#array_slice)
+
+#### defer 关键字
+
+* [什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
+
+#### 值引用 && 类型引用
+
+* [Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#value_quote)
 
 ## GO 基础类
 
@@ -72,6 +80,10 @@
 * [13、Go 语言当中 new 和 make 有什么区别吗?](#geek_base_13)
 * [14、Go 语言中 make 的作用是什么?](#geek_base_14)
 * [15、Printf()、Sprintf()、FprintF() 都是格式化输出，有什么不同?](#geek_base_15)
+* [16、array 和 slice 的区别是什么？](#array_slice)
+* [17、Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#geek_base_17)
+* [18、Go 语言是如何实现切片扩容的？扩容策略是什么？](#geek_base_18)
+* [19、什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
 
 
 
@@ -86,9 +98,6 @@
 * 了解`string`和`[]byte`转换原理吗？会发生内存拷⻉吗? 如何进行高效转换？
 * [进程、线程、协程各自的优缺点？](#coroutine)
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
-* 
-* [`slice` 和`array`的区别是什么？](#slice_array)
-* 
 * [`defer`、`recover`和`panic`的问题？](#defer_recover)
 * [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
 * 
@@ -2728,8 +2737,6 @@ func main() {
 
 方式二：`go` 中 `goroutine` 可以通过 `channel` 进行安全读写共享变量。
 
-
-
 ## 函数相关
 
 #### `make` && `new`
@@ -2901,9 +2908,9 @@ c := make(chan T, 10)
 
 ![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
 
-#### slice && array 
+#### array && slice
 
-<span id="slice_array">问：`slice` 和`array`的区别是什么？</span>
+<span id="array_slice">问：`slice` 和`array`的区别是什么？</span>
 
 * 数组的零值是元素类型的零值，切片的零值是 `nil`，`nil` 也是唯一可以和切片类型作比较的值；
 * 数组的长度固定，不能动态变化，而切片是一个可以动态变化的数组。数组是多个相同类型数据的组合，一个数组一旦声明/定义了，其长度是固定的， 不能动态变化，否则会报越界；
@@ -3179,6 +3186,161 @@ func main() {
 
 ![image-20211031180114277](Golang体系.assets/image-20211031180114277.png)
 
+
+
+#### 值类型 && 引用类型
+
+<span id="value_quote">Go 语言当中值类型和地址传递（引用类型）如何运用？有什么区别？举例说明</span>。
+
+> 值类型包括：基本数据类型 `int` 系列，`float` 系列，`bool`类型，`string`类型 、数组`array`和结构体 `struct`。
+>
+> 引用类型包括：`pointer`指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
+
+* 值类型定义：变量直接存储值，内存通常在栈中分配。
+* 引用类型定义：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
+* 如果希望函数内的变量能修改函数外的变量，可以传入变量的地址&，函数内以指针的方式操作变量，从效果上看类似引用。
+
+![image-20211115173532024](Golang体系.assets/image-20211115173532024.png)
+
+* 值传递只会把参数的值复制一份放进对应的函数，两个变量的地址不同， 不可相互修改。
+* 地址传递（引用传递）会将变量本身传入对应的函数，在函数中可以对该变量进行值内容的修改。
+
+#### `defer`关键字
+
+<span id="defer">什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？</span>
+
+* 什么是`defer`?
+
+>`defer` 是 `Go` 语言的一种用于注册延迟调用的机制，使得函数或语句可以在当前函数执行完毕后执行。
+
+* 为什么需要`defer`?
+
+> `Go`语言提供的语法糖，减少资源泄露的发生。
+
+* 如何使用`defer`?
+
+> 在创建资源语句的附近，使用`defer`语句释放资源。
+
+*  `defer`的执行顺序是什么？
+
+> 出栈顺序（先进后出），它的执行顺序与声明顺序相反。
+
+`defer` 的常用场景:
+
+- `defer`语句经常被用于处理成对的操作，如打开、关闭、连接、断开连接、加锁、释放锁。
+- 通过`defer`机制，不论函数逻辑多复杂，都能保证在任何执行路径下，资源被释放。
+-  释放资源的`defer`应该直接跟在请求资源的语句后。
+
+`defer`关键字的使用，写出下面代码的输出内容。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    deferCall()
+}
+func deferCall() {
+    defer func() { fmt.Println("打印前") }()
+    defer func() { fmt.Println("打印中") }()
+    defer func() { fmt.Println("打印后") }()
+    panic("触发异常")
+}
+```
+
+结果：
+
+```
+打印后
+打印中
+打印前
+panic: 触发异常
+```
+
+解析：
+
+`defer` 关键字的实现跟`go`关键字很类似，不同的是它调用的是 `runtime.deferproc` 而不 是 `runtime.newproc `。
+
+ 在 `defer` 出现的地方，插入了指令 `call runtime.deferproc` ，然后在函数返回之前的地 方，插入指令 `call runtime.deferreturn` 。
+
+`goroutine`的控制结构中，有一张表记录 `defer` ，调用 `runtime.deferproc` 时会将需要 `defer`的表达式记录在表中，而在调用 `runtime.deferreturn` 的时候，则会依次从`defer`表 中出栈（先进后出）并执行。
+
+ 因此，题目最后输出顺序应该是 `defer` 定义顺序的倒序。 `panic` 错误并不能终止 `defer` 的执行。
+
+拓展：
+
+在函数中，开发者经常需要创建资源(比如：数据库连接、文件句柄、锁等) ，为了在函数执行完毕后，及时的释放资源，`Go` 的设计者提供 `defer `(延时机制)。
+
+当 `go` 执行到一个 `defer` 时，不会立即执行 `defer` 后的语句，而是将 `defer` 后的语句压入到一个栈中，然后继续执行函数下一个语句。当函数执行完毕后，在从 `defer` 栈中，依次从栈顶（先入后出）取出语句执行。
+
+在 `defer` 将语句放入到栈时，也会将相关的值拷贝同时入栈。**值拷贝示例**
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func sum(n1 int, n2 int) int {
+
+    // 当执行到defer时，暂时不执行，会将defer后面的语句压入到独立的栈(defer栈)
+    // 当函数执行完毕后，再从defer栈，按照先入后出的方式出栈，执行
+    defer fmt.Println("ok1 n1=", n1) // defer 3. ok1 n1 = 10
+    defer fmt.Println("ok2 n2=", n2) // defer 2. ok2 n2= 20
+    //增加一句话
+    n1++                         // n1 = 11
+    n2++                         // n2 = 21
+    res := n1 + n2               // res = 32
+    fmt.Println("ok3 res=", res) // 1. ok3 res= 32
+    return res
+}
+
+func main() {
+    res := sum(10, 20)
+    fmt.Println("res=", res) // 4. res= 32
+} 
+```
+
+
+
+案例二：`defer`关键字的使用，写出下面代码的输出内容。
+
+```go
+package main
+
+import "fmt"
+
+func calc(index string, a, b int) int {
+    ret := a + b
+    fmt.Println(index, a, b, ret)
+    return ret
+}
+func main() {
+    a := 1
+    b := 2
+    defer calc("1", a, calc("10", a, b))
+    a = 0
+    defer calc("2", a, calc("20", a, b))
+    b = 1
+}
+
+```
+
+结果：
+
+```go
+10 1 2 3
+20 0 2 2
+2 0 2 2
+1 1 3 4
+```
+
+解析：`defer` 在定义的时候会计算好调用函数的参数，所以会优先输出 10 、 20 两个参 数。然后根据定义的顺序倒序执行。
+
 ## GO基础类
 
 <span id="geek_base_01">01、与其他语言相比，使用 Go 有什么好处?</span>
@@ -3312,8 +3474,6 @@ func main() {
     fmt.Println("结束")
 }
 ```
-
-
 
 方案二：使用 `context`。
 
@@ -3744,6 +3904,69 @@ type slice struct {
 }
 ```
 
+<span id="geek_base_17">17、Go 语言当中值传递和地址传递（引用传）如何运用？有什么区别？举例说明。</span>
+
+> 值类型包括：基本数据类型 `int` 系列，`float` 系列，`bool`类型，`string`类型 、数组`array`和结构体 `struct`。
+>
+> 引用类型包括：`pointer`指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
+
+* 值类型定义：变量直接存储值，内存通常在栈中分配。
+* 引用类型定义：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
+* 如果希望函数内的变量能修改函数外的变量，可以传入变量的地址&，函数内以指针的方式操作变量，从效果上看类似引用。
+
+![image-20211115173532024](Golang体系.assets/image-20211115173532024.png)
+
+* 值传递只会把参数的值复制一份放进对应的函数，两个变量的地址不同， 不可相互修改。
+* 地址传递（引用传递）会将变量本身传入对应的函数，在函数中可以对该变量进行值内容的修改。
+
+<span id="geek_base_18">18、Go 语言是如何实现切片扩容的？扩容策略是什么？ </span>
+
+用 `append` 内置函数，可以对切片进行动态追加。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    // 用 append 内置函数，可以对切片进行动态追加
+    var slice3 []int = []int{100, 200, 300}
+    // 通过append直接给slice3追加具体的元素
+    slice3 = append(slice3, 400, 500, 600)
+    fmt.Println("slice3", slice3) // 100, 200, 300,400, 500, 600
+
+    // 通过 append 将切片slice3追加给slice3
+    slice3 = append(slice3, slice3...) // 100, 200, 300,400, 500, 600 100, 200, 300,400, 500, 600
+    fmt.Println("slice3", slice3)
+}
+```
+
+![image-20211031210658743](Golang体系.assets/image-20211031210658743.png)
+
+ `append `操作的本质就是对数组扩容：`go` 底层会创建一个新的数组 `newArr`(按照扩容后大小) 将 `slice` 原来包含的元素拷贝到新的数组 `newArr`，` slice` 重新引用到 `newArr`。
+
+```go
+func main() {
+    arr := make([]int, 0)
+    for i := 0; i < 2000; i++ {
+		fmt.Println("len 为", len(arr), "cap 为", cap(arr))
+    arr = append(arr, i)
+    }
+}
+// 我们可以看下结果依次是 0,1,2,4,8,16,32,64,128,256,512,1024 但到了 1024 之后，就变成了 1280,1696,2304 每次都是扩容了四分之一左右
+```
+
+`Go` 中切片扩容的策略是这样的:
+
+-   首先判断，如果新申请容量大于2倍的旧容量，最终容量就是新申请的容量。
+-  否则判断，如果旧切片的长度小于1024，则最终容量就是旧容量的两倍。
+- 否则判断，如果旧切片长度大于等于1024，则最终容量从旧容量开始循环，增加原来的 1/4,，直到最终容量大于等于新申请的容量。
+- 如果最终容量计算值溢出，则最终容量就是新申请容量。
+
+
+
 ## 应用场景
 
 <span id="scene01">保存用户作品浏览量方案设计?</span>
@@ -4044,16 +4267,6 @@ func live() People {
 ![image-20211104160608037](Golang体系.assets/image-20211104160608037.png)
 
 `stu`是一个指向`nil`的空指针，但是最后`return stu` 会触发`匿名变量 People = stu`值拷贝动作，所以最后`live()`放回给上层的是一个`People insterface{}`类型，也就是一个`iface struct{}`类型。 stu为nil，只是`iface`中的data 为nil而已。 但是`iface struct{}`本身并不为nil。
-
-## 值类型和引用类型
-
-<span id="value_quote">关于值类型和引用类型的理解？</span>
-
-* 值类型定义：变量直接存储值，内存通常在栈中分配。
-* 引用类型定义：变量存储的是一个地址，这个地址对应的空间才真正存储数据(值)，内存通常在堆上分配，当没有任何变量引用这个地址时，该地址对应的数据空间就成为一个垃圾，由 GC 来回收。
-
-* 值类型包括：基本数据类型 `int` 系列，`float` 系列，`bool`类型，`string`类型 、数组`array`和结构体 `struct`。
-* 引用类型包括：指针、`slice` 切片、`map`、管道 `chan`、`interface` 等都是引用类型。
 
 ## 指针
 
@@ -5389,132 +5602,6 @@ func main(){
     }
 }
 ```
-
-##  `defer `关键字
-
-* 什么是`defer`?
-
->`defer` 是 `Go` 语言的一种用于注册延迟调用的机制，使得函数或语句可以在当前函数执行完毕后执行。
-
-* 为什么需要`defer`?
-
-> `Go`语言提供的语法糖，减少资源泄露的发生。
-
-* 如何使用`defer`?
-
-> 在创建资源语句的附近，使用`defer`语句释放资源。
-
-`defer`关键字的使用，写出下面代码的输出内容。
-
-```go
-package main
-
-import (
-    "fmt"
-)
-
-func main() {
-    deferCall()
-}
-func deferCall() {
-    defer func() { fmt.Println("打印前") }()
-    defer func() { fmt.Println("打印中") }()
-    defer func() { fmt.Println("打印后") }()
-    panic("触发异常")
-}
-```
-
-结果：
-
-```
-打印后
-打印中
-打印前
-panic: 触发异常
-```
-
-解析：
-
-`defer` 关键字的实现跟`go`关键字很类似，不同的是它调用的是 `runtime.deferproc` 而不 是 `runtime.newproc `。
-
- 在 `defer` 出现的地方，插入了指令 `call runtime.deferproc` ，然后在函数返回之前的地 方，插入指令 `call runtime.deferreturn` 。
-
-`goroutine`的控制结构中，有一张表记录 `defer` ，调用 `runtime.deferproc` 时会将需要 `defer`的表达式记录在表中，而在调用 `runtime.deferreturn` 的时候，则会依次从`defer`表 中出栈（先进后出）并执行。
-
- 因此，题目最后输出顺序应该是 `defer` 定义顺序的倒序。 `panic` 错误并不能终止 `defer` 的执行。
-
-拓展：
-
-在函数中，开发者经常需要创建资源(比如：数据库连接、文件句柄、锁等) ，为了在函数执行完毕后，及时的释放资源，`Go` 的设计者提供 `defer `(延时机制)。
-
-当 `go` 执行到一个 `defer` 时，不会立即执行 `defer` 后的语句，而是将 `defer` 后的语句压入到一个栈中，然后继续执行函数下一个语句。当函数执行完毕后，在从 `defer` 栈中，依次从栈顶（先入后出）取出语句执行。
-
-在 `defer` 将语句放入到栈时，也会将相关的值拷贝同时入栈。**值拷贝示例**
-
-```go
-package main
-
-import (
-    "fmt"
-)
-
-func sum(n1 int, n2 int) int {
-
-    // 当执行到defer时，暂时不执行，会将defer后面的语句压入到独立的栈(defer栈)
-    // 当函数执行完毕后，再从defer栈，按照先入后出的方式出栈，执行
-    defer fmt.Println("ok1 n1=", n1) // defer 3. ok1 n1 = 10
-    defer fmt.Println("ok2 n2=", n2) // defer 2. ok2 n2= 20
-    //增加一句话
-    n1++                         // n1 = 11
-    n2++                         // n2 = 21
-    res := n1 + n2               // res = 32
-    fmt.Println("ok3 res=", res) // 1. ok3 res= 32
-    return res
-}
-
-func main() {
-    res := sum(10, 20)
-    fmt.Println("res=", res) // 4. res= 32
-} 
-```
-
-
-
-案例二：`defer`关键字的使用，写出下面代码的输出内容。
-
-```go
-package main
-
-import "fmt"
-
-func calc(index string, a, b int) int {
-    ret := a + b
-    fmt.Println(index, a, b, ret)
-    return ret
-}
-func main() {
-    a := 1
-    b := 2
-    defer calc("1", a, calc("10", a, b))
-    a = 0
-    defer calc("2", a, calc("20", a, b))
-    b = 1
-}
-
-```
-
-结果：
-
-```go
-10 1 2 3
-20 0 2 2
-2 0 2 2
-1 1 3 4
-```
-
-
-
-解析：`defer` 在定义的时候会计算好调用函数的参数，所以会优先输出 10 、 20 两个参 数。然后根据定义的顺序倒序执行。
 
 
 

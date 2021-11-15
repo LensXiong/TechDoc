@@ -61,7 +61,7 @@
 
 #### 值引用 && 类型引用
 
-* [Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#value_quote)
+* [Go 语言当中值传递和地址传递（引用传递）如何运用？有什么区别？举例说明？](#value_quote)
 
 ## GO 基础类
 
@@ -84,8 +84,13 @@
 * [17、Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#geek_base_17)
 * [18、Go 语言是如何实现切片扩容的？扩容策略是什么？](#geek_base_18)
 * [19、什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
+* [20、Golang Slice 的底层实现？](#geek_base_20)
 
 
+
+## 源码分析
+
+* [Golang 源码系列一：Slice 实现原理分析。](#source_01)
 
 ## 应用场景
 
@@ -2913,7 +2918,7 @@ c := make(chan T, 10)
 <span id="array_slice">问：`slice` 和`array`的区别是什么？</span>
 
 * 数组的零值是元素类型的零值，切片的零值是 `nil`，`nil` 也是唯一可以和切片类型作比较的值；
-* 数组的长度固定，不能动态变化，而切片是一个可以动态变化的数组。数组是多个相同类型数据的组合，一个数组一旦声明/定义了，其长度是固定的， 不能动态变化，否则会报越界；
+* 数组的长度固定，不能动态变化，而切片是一个可以动态变化的数组。数组是多个相同类型数据的组合，一个数组一旦声明/定义了，其长度是固定的， 不能动态变化，否则会报越界；切片是一种可变长度的数组；
 * 数组默认是值传递，而切片是数组的一个引用，因此切片是引用类型，在进行传递时，遵守引用传递的机制。
 
 切片和数组的零值：
@@ -3340,6 +3345,14 @@ func main() {
 ```
 
 解析：`defer` 在定义的时候会计算好调用函数的参数，所以会优先输出 10 、 20 两个参 数。然后根据定义的顺序倒序执行。
+
+<span id="geek_base_20">20、Golang Slice 的底层实现？</span>
+
+
+
+<span id="geek_base_21">21、什么是内存对齐？</span>
+
+
 
 ## GO基础类
 
@@ -3964,6 +3977,126 @@ func main() {
 -  否则判断，如果旧切片的长度小于1024，则最终容量就是旧容量的两倍。
 - 否则判断，如果旧切片长度大于等于1024，则最终容量从旧容量开始循环，增加原来的 1/4,，直到最终容量大于等于新申请的容量。
 - 如果最终容量计算值溢出，则最终容量就是新申请容量。
+
+## 源码分析
+
+### Slice
+
+<span id="source_01">`Golang` 源码系列一：`Slice`实现原理分析。</span>
+
+`slice`的底层结构：
+
+```go
+type slice struct {
+	array unsafe.Pointer // 指向底层数组的指针
+	len   int // 切片的长度
+	cap   int // 切片的长度
+}
+type Pointer *ArbitraryType
+type ArbitraryType int
+```
+
+`slice`占多少字节？：
+
+```go
+package main
+
+import (
+    "fmt"
+    "unsafe"
+)
+
+// 运行结果：
+// int:8
+// int8:1
+// int16:2
+// int32:4
+// int64:8
+// slice:24
+
+// 知识点：为什么slice会占24byte？
+/*
+type slice struct {
+	array unsafe.Pointer // 指向底层数组的指针
+	len   int // 切片的长度
+	cap   int // 切片的长度
+}
+
+type Pointer *ArbitraryType
+type ArbitraryType int
+*/
+
+func main() {
+    var a int
+    var b int8
+    var c int16
+    var d int32
+    var e int64
+    slice := make([]int, 0)
+    slice = append(slice, 1)
+    fmt.Printf("int:%d\nint8:%d\nint16:%d\nint32:%d\nint64:%d\n",
+        unsafe.Sizeof(a),
+        unsafe.Sizeof(b),
+        unsafe.Sizeof(c),
+        unsafe.Sizeof(d),
+        unsafe.Sizeof(e))
+    fmt.Printf("slice:%d", unsafe.Sizeof(slice))
+}
+```
+
+`slice`初始化：
+
+```go
+package main
+
+import "fmt"
+
+// go tool compile -S main.go | grep CALL
+
+// 0x0042 00066 (main.go:7)        CALL    runtime.makeslice(SB)
+// 0x006d 00109 (main.go:8)        CALL    runtime.growslice(SB)
+// 0x00a4 00164 (main.go:9)        CALL    runtime.convTslice(SB)
+// 0x00c0 00192 (main.go:9)        CALL    runtime.convT64(SB)
+// 0x00d8 00216 (main.go:9)        CALL    runtime.convT64(SB)
+
+func main() {
+    slice := make([]int, 0)
+    slice = append(slice, 1)
+    fmt.Println(slice, len(slice), cap(slice))
+}
+```
+
+源码：
+
+```go
+func makeslice(et *_type, len, cap int) unsafe.Pointer {
+	mem, overflow := math.MulUintptr(et.size, uintptr(cap))
+	if overflow || mem > maxAlloc || len < 0 || len > cap {
+		// NOTE: Produce a 'len out of range' error instead of a
+		// 'cap out of range' error when someone does make([]T, bignumber).
+		// 'cap out of range' is true too, but since the cap is only being
+		// supplied implicitly, saying len is clearer.
+		// See golang.org/issue/4085.
+		mem, overflow := math.MulUintptr(et.size, uintptr(len))
+		if overflow || mem > maxAlloc || len < 0 {
+			panicmakeslicelen()
+		}
+		panicmakeslicecap()
+	}
+
+	return mallocgc(mem, et, true)
+}
+
+func MulUintptr(a, b uintptr) (uintptr, bool) {
+	if a|b < 1<<(4*sys.PtrSize) || a == 0 {
+		return a * b, false
+	}
+	overflow := b > MaxUintptr/a
+	return a * b, overflow
+}
+```
+
+
 
 
 

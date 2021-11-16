@@ -47,19 +47,31 @@
 
 ## 专题相关
 
-#### make && new
+### make && new
 
 * [`golang` 中 `make` 与 `new` 有何区别？](#make_new)
 
-#### array && slice
+### array && slice
 
 * [`golang` 中 `array` 与 `slice` 有何区别？](#array_slice)
 
-#### defer 关键字
+### slice 底层实现
+
+
+
+### map 底层实现
+
+* [`golang` 中 `map`的底层实现？](#map_01)
+* [`golang` 中 `map`的初始化都发生了什么？](#map_02)
+* [`golang` 中 `map`是如何进行查找的？](#map_03)
+* [`golang` 中 `map`是如何进行扩容的？](#map_04)
+* [`golang` 中 `map`是如何进行迁移的？](#map_05)
+
+### defer 关键字
 
 * [什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
 
-#### 值引用 && 类型引用
+### 值引用 && 类型引用
 
 * [Go 语言当中值传递和地址传递（引用传递）如何运用？有什么区别？举例说明？](#value_quote)
 
@@ -85,6 +97,7 @@
 * [18、Go 语言是如何实现切片扩容的？扩容策略是什么？](#geek_base_18)
 * [19、什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
 * [20、Golang Slice 的底层实现？](#geek_base_20)
+* [21、Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？](#geek_base_21)
 
 
 
@@ -105,8 +118,6 @@
 * 读写锁 `RWMutex` 和互斥锁 `Mutex` 。下面的代码有什么问题?
 * [`defer`、`recover`和`panic`的问题？](#defer_recover)
 * [用过 `fallthrough` 关键字吗？这个关键字的作用是什么？](#fallthrough)
-* 
-
 * [`JSON` 标准库对 `nil slice` 和`non-nil`空 `slice` 的处理是一致的吗？](#nil_slice)
 * [了解过选项模式吗？能否写一段代码实现一个函数选项模式？](#option_pattern)
 * [是否可以获取常量的地址，什么是内存的四区？](#const)
@@ -2742,9 +2753,9 @@ func main() {
 
 方式二：`go` 中 `goroutine` 可以通过 `channel` 进行安全读写共享变量。
 
-## 函数相关
+## 专题相关
 
-#### `make` && `new`
+### `make` && `new`
 
 <span id="make_new">`golang`中`make`与`new`有何区别？</span>
 
@@ -2913,7 +2924,7 @@ c := make(chan T, 10)
 
 ![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
 
-#### array && slice
+### array && slice
 
 <span id="array_slice">问：`slice` 和`array`的区别是什么？</span>
 
@@ -3191,9 +3202,7 @@ func main() {
 
 ![image-20211031180114277](Golang体系.assets/image-20211031180114277.png)
 
-
-
-#### 值类型 && 引用类型
+### 值类型 && 引用类型
 
 <span id="value_quote">Go 语言当中值类型和地址传递（引用类型）如何运用？有什么区别？举例说明</span>。
 
@@ -3210,7 +3219,194 @@ func main() {
 * 值传递只会把参数的值复制一份放进对应的函数，两个变量的地址不同， 不可相互修改。
 * 地址传递（引用传递）会将变量本身传入对应的函数，在函数中可以对该变量进行值内容的修改。
 
-#### `defer`关键字
+
+
+### Slice 底层实现
+
+<span id="source_slice_01">`golang` 中 `slice`的底层实现？它是如何进行扩容的？它是如何进行查找的？</span>
+
+
+
+### Map 底层实现
+
+<span id="map_01">`golang` 中 `map`的底层实现？</span>
+
+* `map` 的底层如何实现：Go 语言采用的是哈希查找表，并且使用链表解决哈希冲突。通过 key 的哈希值将 key 散落到不同的桶中，每个桶中有 8 个 cell。哈希值的低位决定桶序号，高位标识同一个桶中的不同 key。
+* 当向桶中添加了很多 key，造成元素过多，或者溢出桶太多，就会触发扩容。扩容分为等量扩容和 2 倍容量扩容。扩容后，原来一个 bucket 中的 key 一分为二，会被重新分配到两个桶中。扩容过程是渐进的，主要是防止一次扩容需要搬迁的 key 数量过多，引发性能问题。触发扩容的时机是增加了新元素，bucket 搬迁的时机则发生在赋值、删除期间，每次最多搬迁两个 bucket。
+
+`Map`的底层实现是采用哈希查找表，并且使用链表来解决哈希冲突的。通过 `key` 的哈希值将 `key` 散落到不同的桶中，每个桶中有 8 个 `cell`。哈希值的低位决定桶序号，高位标识同一个桶中的不同 `key`。
+
+![image-20211116222528574](Golang体系.assets/image-20211116222528574.png)
+
+```go
+type hmap struct {
+	count     int    // 元素个数
+	flags     uint8  // 用于处理并发时，是否正在写入
+	B         uint8  // 创建桶的个数为2的B次方
+	noverflow uint16 // 已使用的溢出桶的个数
+	hash0     uint32 // 哈希因子，用于对key生成哈希值
+
+	buckets    unsafe.Pointer // 当前map中桶的数组（扩容后指向新桶）
+	oldbuckets unsafe.Pointer // 扩容后指向旧桶
+	nevacuate  uintptr        // 接下来要迁移的旧桶编号
+	extra *mapextra           // 扩展字段
+}
+
+type mapextra struct {
+    overflow    *[]*bmap
+    oldoverflow *[]*bmap
+    nextOverflow *bmap
+}
+
+// A bucket for a Go map.
+type bmap struct {
+    tophash [bucketCnt]uint8        // len为8的数组
+}
+
+//底层定义的常量 
+const (
+    // Maximum number of key/value pairs a bucket can hold.
+    bucketCntBits = 3
+    bucketCnt     = 1 << bucketCntBits
+）
+  
+type bmap struct {
+  topbits  [8]uint8
+  keys     [8]keytype
+  values   [8]valuetype
+  pad      uintptr
+  overflow uintptr
+}
+```
+
+<span id="map_02">`golang` 中 `map`的初始化都发生了什么？</span>
+
+初始化一个`map`的过程分析：
+
+```go
+// 初始化一个可容纳10个元素的map
+info = make(map[string]string,10)
+```
+
+- 第一步：创建一个`hmap`结构体对象。
+
+- 第二步：生成一个哈希因子`hash0` 并赋值到`hmap`对象中（用于后续为`key`创建哈希值）。
+
+- 第三步：根据`hint`=10，并根据算法规则来创建 B，当前B应该为1。
+
+  ```go
+  hint            B
+  0~8				      0
+  9~13            1
+  14~26           2
+  ...
+  ```
+
+- 第四步：根据B去创建去创建桶（`bmap`对象）并存放在`buckets`数组中，当前`bmap`的数量应为2.
+
+  - 当B<4时，根据B创建桶的个数的规则为：$2^B$（标准桶）。
+  - 当B>=4时，根据B创建桶的个数的规则为：$2^B$ + $2^{B-4}$（标准桶+溢出桶）。
+
+  注意：每个`bmap`中可以存储8个键值对，当不够存储时需要使用溢出桶，并将当前`bmap`中的`overflow`字段指向溢出桶的位置。
+
+  ![image-20211116223439360](Golang体系.assets/image-20211116223439360.png)
+
+```go
+func makemap(t *maptype, hint int, h *hmap) *hmap {
+	mem, overflow := math.MulUintptr(uintptr(hint), t.bucket.size)
+	if overflow || mem > maxAlloc {
+		hint = 0
+	}
+
+	// initialize Hmap
+	if h == nil {
+		h = new(hmap)
+	}
+	h.hash0 = fastrand()
+
+	// Find the size parameter B which will hold the requested # of elements.
+	// For hint < 0 overLoadFactor returns false since hint < bucketCnt.
+	B := uint8(0)
+	for overLoadFactor(hint, B) {
+		B++
+	}
+	h.B = B
+
+	// allocate initial hash table
+	// if B == 0, the buckets field is allocated lazily later (in mapassign)
+	// If hint is large zeroing this memory could take a while.
+	if h.B != 0 {
+		var nextOverflow *bmap
+		h.buckets, nextOverflow = makeBucketArray(t, h.B, nil)
+		if nextOverflow != nil {
+			h.extra = new(mapextra)
+			h.extra.nextOverflow = nextOverflow
+		}
+	}
+
+	return h
+}
+```
+
+<span id="map_03">`golang` 中 `map`是如何进行查找的？</span>
+
+在`map`中查找数据时，内部的执行流程为：
+
+- 第一步：结合哈希因子和键 `name`生成哈希值。
+- 第二步：获取哈希值的`后B位`，并根据后B为的值来决定将此键值对存放到那个桶中（`bmap`）。
+- 第三步：确定桶之后，再根据`key`的哈希值计算出`tophash`（高8位），根据`tophash`和`key`去桶中查找数据。当前桶如果没找到，则根据overflow再去溢出桶中找，均未找到则表示key不存在。
+
+<span id="map_04">`golang` 中 `map`是如何进行扩容的？</span>
+
+在向`map`中添加数据时，当达到某个条件，则会引发字典扩容。
+
+扩容条件：
+
+- `map`中数据总个数 / 桶个数 > 6.5 ，引发翻倍扩容。
+- 使用了太多的溢出桶时（溢出桶使用的太多会导致`map`处理速度降低）。
+  - B <=15，已使用的溢出桶个数 >= $2^B$ 时，引发等量扩容。
+  - B > 15，已使用的溢出桶个数 >= $2^{15}$ 时，引发等量扩容。
+
+```
+func hashGrow(t *maptype, h *hmap) {
+	// If we've hit the load factor, get bigger.
+	// Otherwise, there are too many overflow buckets,
+	// so keep the same number of buckets and "grow" laterally.
+	bigger := uint8(1)
+	if !overLoadFactor(h.count+1, h.B) {
+		bigger = 0
+		h.flags |= sameSizeGrow
+	}
+	oldbuckets := h.buckets
+	newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+	...
+}
+```
+
+当扩容之后：
+
+- 第一步：B会根据扩容后新桶的个数进行增加（翻倍扩容，新B=旧B+1，等量扩容，新B=旧B）。
+- 第二步：`oldbuckets`指向原来的桶（旧桶）。
+- 第三步：`buckets`指向新创建的桶（新桶中暂时还没有数据）。
+- 第四步：`nevacuate`设置为0，表示如果数据迁移的话，应该从原桶（旧桶）中的第0个位置开始迁移。
+- 第五步：`noverflow`设置为0，扩容后新桶中已使用的溢出桶为0。
+- 第六步：`extra.oldoverflow`设置为原桶（旧桶）已使用的所有溢出桶。即：`h.extra.oldoverflow = h.extra.overflow`。
+- 第七步：`extra.overflow`设置为nil，因为新桶中还未使用溢出桶。
+- 第八步：`extra.nextOverflow`设置为新创建的桶中的第一个溢出桶的位置。
+
+![image-20211116233416560](Golang体系.assets/image-20211116233416560.png)
+
+
+
+
+
+<span id="map_05">`golang` 中 `map`是如何进行迁移的？</span>
+
+
+
+
+
+###  `defer`关键字
 
 <span id="defer">什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？</span>
 
@@ -3347,6 +3543,186 @@ func main() {
 解析：`defer` 在定义的时候会计算好调用函数的参数，所以会优先输出 10 、 20 两个参 数。然后根据定义的顺序倒序执行。
 
 <span id="geek_base_20">20、Golang Slice 的底层实现？</span>
+
+`slice`的结构定义：`slice`中定义了三个变量，一个是指向底层数字的指针`array`，另外两个是切片的长度`len`和切片的容量`cap`。一个`slice`占24个`byte`。一个`int`占8个`byte`。
+
+```go
+type slice struct {
+  array unsafe.Pointer // 指向底层数组的指针
+  len   int // 切片的长度
+  cap   int // 切片的容量
+}
+```
+
+![image-20211116093303179](Golang体系.assets/image-20211116093303179.png)
+
+`slice`的初始化：`makeslice`函数的工作主要就是计算`slice`所需内存大小，然后调用`mallocgc`进行内存的分配。计算`slice`所需内存又是通过`MulUintptr`来实现的，`MulUintptr`主要就是用切片中元素大小和切片的容量相乘计算出所需占用的内存空间，如果内存溢出，或计算出的内存大小大于最大可分配内存，`MulUintptr`的`overflow`会返回`true`，`makeslice`就会报错。另外如果传入长度小于0或者长度小于容量，`makeslice`也会报错。
+
+```go
+func makeslice(et *_type, len, cap int) unsafe.Pointer {
+	mem, overflow := math.MulUintptr(et.size, uintptr(cap))
+	if overflow || mem > maxAlloc || len < 0 || len > cap {
+		// NOTE: Produce a 'len out of range' error instead of a
+		// 'cap out of range' error when someone does make([]T, bignumber).
+		// 'cap out of range' is true too, but since the cap is only being
+		// supplied implicitly, saying len is clearer.
+		// See golang.org/issue/4085.
+		mem, overflow := math.MulUintptr(et.size, uintptr(len))
+		if overflow || mem > maxAlloc || len < 0 {
+			panicmakeslicelen()
+		}
+		panicmakeslicecap()
+	}
+
+	return mallocgc(mem, et, true)
+}
+
+// MulUintptr returns a * b and whether the multiplication overflowed.
+// On supported platforms this is an intrinsic lowered by the compiler.
+func MulUintptr(a, b uintptr) (uintptr, bool) {
+	if a|b < 1<<(4*sys.PtrSize) || a == 0 {
+		return a * b, false
+	}
+	overflow := b > MaxUintptr/a
+	return a * b, overflow
+}
+```
+
+<span id="geek_base_21">21、Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？</span>
+
+* 当`slice`容量足够时，我们往`slice`中`append`时，`slice`底层数组指向的内存地址不会发生改变。因此此种情况下的扩容前后是同一个`slice`。
+
+```go
+package main
+
+import (
+   "fmt"
+   "unsafe"
+)
+// 运行结果：
+// 0xc00009e000 1 10
+// 0xc00009e000 2 10
+func main() {
+   slice := make([]int, 0, 10)
+   slice = append(slice, 1)
+   fmt.Println(unsafe.Pointer(&slice[0]), len(slice), cap(slice))
+   slice = append(slice, 2)
+   fmt.Println(unsafe.Pointer(&slice[0]), len(slice), cap(slice))
+}
+```
+
+* 当`slice`容量不够时，会重新分配一块新的内存地址，把原来的值拷贝过来，然后再执行 `append() `操作。底层数组的指向指针会发生变化，这种情况丝毫不影响原数组，因此此种情况下的扩容前后不是同一个`slice`。
+
+```go
+func main() {
+   slice := make([]int, 0)
+   slice = append(slice, 1)
+   fmt.Printf("%p %d %d\n", unsafe.Pointer(&slice[0]), len(slice), cap(slice))
+   slice = append(slice, 2)
+   fmt.Printf("%p %d %d\n", unsafe.Pointer(&slice[0]), len(slice), cap(slice))
+}
+// 0xc00009a008 1 1
+// 0xc00009a030 2 2
+```
+
+* `cap`的扩容规则，从源码中我们可以简单的总结出`slice`容量的扩容规则：当原`slice`的`cap`小于`1024`时，新`slice`的`cap`变为原来的2倍；原`slice`的`cap`大于1024时，新`slice`变为原来的1.25倍。但这个规则不是完全正确的。
+
+```go
+func growslice(et *_type, old slice, cap int) slice {
+	if raceenabled {
+		callerpc := getcallerpc()
+		racereadrangepc(old.array, uintptr(old.len*int(et.size)), callerpc, funcPC(growslice))
+	}
+	if msanenabled {
+		msanread(old.array, uintptr(old.len*int(et.size)))
+	}
+
+	if cap < old.cap {
+		panic(errorString("growslice: cap out of range"))
+	}
+
+	if et.size == 0 {
+		// append should not create a slice with nil pointer but non-zero len.
+		// We assume that append doesn't need to preserve old.array in this case.
+		return slice{unsafe.Pointer(&zerobase), old.len, cap}
+	}
+
+	newcap := old.cap
+	doublecap := newcap + newcap
+	if cap > doublecap {
+		newcap = cap
+	} else {
+		if old.len < 1024 {
+			newcap = doublecap
+		} else {
+			// Check 0 < newcap to detect overflow
+			// and prevent an infinite loop.
+			for 0 < newcap && newcap < cap {
+				newcap += newcap / 4
+			}
+			// Set newcap to the requested cap when
+			// the newcap calculation overflowed.
+			if newcap <= 0 {
+				newcap = cap
+			}
+		}
+  }
+}  
+```
+
+* 实际上扩容规则中还涉及到了内存对齐的过程：因此从1->2->4->8->16...->1024，都是成倍增长，当cap大于1024后，再`append`元素，`cap`变为1280，变成了1024的1.25倍，也符合上面的规则；但是继续`append`，1280->1696，似乎不是1.25倍，而是1.325倍，源码中`roundupsize`是内存对齐的过程。
+
+```go
+switch {
+	case et.size == 1:
+		lenmem = uintptr(old.len)
+		newlenmem = uintptr(cap)
+		capmem = roundupsize(uintptr(newcap))
+		overflow = uintptr(newcap) > maxAlloc
+		newcap = int(capmem)
+}
+
+// Returns size of the memory block that mallocgc will allocate if you ask for the size.
+func roundupsize(size uintptr) uintptr {
+	if size < _MaxSmallSize {
+		if size <= smallSizeMax-8 {
+			return uintptr(class_to_size[size_to_class8[divRoundUp(size, smallSizeDiv)]])
+		} else {
+			return uintptr(class_to_size[size_to_class128[divRoundUp(size-smallSizeMax, largeSizeDiv)]])
+		}
+	}
+	if size+_PageSize < size {
+		return size
+	}
+	return alignUp(size, _PageSize)
+}
+```
+
+`golang`中内存分配是根据对象大小来配不同的`mspan`，为了避免造成过多的内存碎片，`slice`在扩容中需要对扩容后的`cap`容量进行内存对齐的操作。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5499,11 +5875,7 @@ func main() {
 }
 ```
 
-
-
 结论：无论是使用标准转换还是强制转换，都是根据实际业务场景进行选择，脱离实际业务场景做选择其实都是不合适的。
-
-
 
 ## 读写锁 `RWMutex` 和互斥锁 `Mutex` 
 

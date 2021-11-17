@@ -77,27 +77,65 @@
 
 ## GO 基础类
 
-* [01、与其他语言相比，使用 Go 有什么好处?](#geek-base-01)
-* [02、Golang 使用什么数据类型?](#geek_base_02)
-* [03、Go 程序中的包是什么?](#geek_base_03)
-* [04、Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
-* [05、什么是 Goroutine？你如何停止它？](#geek_base_05)
-* [06、如何在运行时检查变量类型？](#geek_base_06)
-* [07、两个接口之间可以存在什么关系？Go中接口有什么特点？](#geek_base_07)
-* [08、Go 当中同步锁有什么特点？作用是什么?](#geek_base_08)
-* [09、Go 语言当中 Channel（通道）有什么特点，会 panic 的情况有几种？会  block 的情况有几种？需要注意什么？](#geek_base_09)
-* [10、Go 语言当中 Channel 缓冲有什么特点？](#geek_base_10)
-* [11、Go 语言中 cap 函数可以作用于那些内容？](#geek_base_11)
-* [12、go convey是什么？一般用来做什么？](#geek_base_12)
-* [13、Go 语言当中 new 和 make 有什么区别吗?](#geek_base_13)
-* [14、Go 语言中 make 的作用是什么?](#geek_base_14)
-* [15、Printf()、Sprintf()、FprintF() 都是格式化输出，有什么不同?](#geek_base_15)
-* [16、array 和 slice 的区别是什么？](#array_slice)
-* [17、Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#geek_base_17)
-* [18、Go 语言是如何实现切片扩容的？扩容策略是什么？](#geek_base_18)
-* [19、什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
-* [20、Golang Slice 的底层实现？](#geek_base_20)
-* [21、Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？](#geek_base_21)
+* [与其他语言相比，使用 Go 有什么好处?](#geek-base-01)
+
+* [Golang 使用什么数据类型?](#geek_base_02)
+
+* [Go 程序中的包是什么?](#geek_base_03)
+
+* [Go支持什么形式的类型转换？将整数转换为浮点数。](#geek_base_04)
+
+* [什么是 Goroutine？你如何停止它？](#geek_base_05)
+
+* [如何在运行时检查变量类型？](#geek_base_06)
+
+* [两个接口之间可以存在什么关系？Go中接口有什么特点？](#geek_base_07)
+
+* [Go 当中同步锁有什么特点？作用是什么?](#geek_base_08)
+
+* [Go 语言当中 Channel 有什么特点，会 panic 的情况有几种？会  block 的情况有几种？需要注意什么？](#geek_base_09)
+
+* [Go 语言当中 Channel 缓冲有什么特点？](#geek_base_10)
+
+* [Go 语言中 cap 函数可以作用于那些内容？](#geek_base_11)
+
+* [go convey是什么？一般用来做什么？](#geek_base_12)
+
+* [Go 语言当中 new 和 make 有什么区别吗?](#geek_base_13)
+
+* [Go 语言中 make 的作用是什么?](#geek_base_14)
+
+* [Printf()、Sprintf()、FprintF() 都是格式化输出，有什么不同?](#geek_base_15)
+
+* [array 和 slice 的区别是什么？](#array_slice)
+
+* [Go 语言当中值传递和地址传递(引用传递)如何运用？有什么区别？举例说明？](#geek_base_17)
+
+* [Go 语言是如何实现切片扩容的？扩容策略是什么？](#geek_base_18)
+
+* [什么是`defer`？为什么需要`defer`？如何使用`defer`？ `defer`的执行顺序是什么？](#defer)
+
+* [Golang Slice 的底层实现？](#geek_base_20)
+
+* [Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？](#geek_base_21)
+
+* [`golang` 中 `map`的底层实现？](#map_01)
+
+* [`golang` 中 `map`的初始化都发生了什么？](#map_02)
+
+* [`golang` 中 `map`是如何进行查找的？](#map_03)
+
+* [`golang` 中 `map`是如何进行扩容的？](#map_04)
+
+* [`golang` 中 `map`是如何进行迁移的？](#map_05)
+
+* [是否了解`golang`的`CSP`并发模型的思想？谈谈你对`channel`的理解？](#csp)
+
+* [`channel`的读写特性是什么？会发生`painc`的情况是有几种，分别是什么？下面的代码输出什么？](#channel_read)
+
+* [`Channel` 的 `ring buffer` 实现？](#geek_base_29)
+
+  
 
 
 
@@ -707,7 +745,7 @@ func main() {
 
 ### CSP 模型思想
 
-<span id="csp">是否了解`golang`的`CSP`并发模型的思想?</span>
+<span id="csp">是否了解`golang`的`CSP`并发模型的思想？谈谈你对`channel`的理解？</span>
 
 `CSP` 模型是上个世纪七十年代提出的，不同于传统的多线程通过共享内存来通信，`CSP` 讲究的是**以通信的方式来共享内存**。用于描述两个独立的并发实体通过共享的通讯 `channel `(管道)进行通信的并发模型。`CSP `中 `channel `是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的 `channel`。
 
@@ -926,6 +964,18 @@ func main() {
 第二次读chan的协程结束，struct={}， ok=false
 第三次读chan的协程结束，struct={}， ok=false
 ```
+
+### ring buffer 实现
+
+<span id="geek_base_29">`Channel` 的 `ring buffer` 实现？</span>
+
+`channel`的缓冲区通过`ring buffer`实现，同时存在两个标记`sendx`和`recvx`分别来标识写入位置和读取位置。当发生写入是`sendx`会加1，当达到最大位置时，`sendx`会回到起始位置。
+
+`hchan` 中有两个与 `buffer` 相关的变量：`recvx` 和 `sendx`。其中 `sendx` 表示 `buffer` 中可写的 `index`，`recvx` 表示 `buffer` 中可读的 `index`。 从 `recvx` 到 `sendx` 之间的元素，表示已正常存放入 `buffer` 中的数据。
+
+<img src="Golang体系.assets/image-20211117162805702.png" alt="image-20211117162805702" style="zoom:50%;" />
+
+上图展示的是一个缓冲区为8的`channel buffer`，`recvx`指向最早被读取的数据，`sendx`指向再次写入时插入的位置。
 
 ### goroutine 泄露
 
@@ -3363,7 +3413,11 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 
 <span id="map_04">`golang` 中 `map`是如何进行扩容的？</span>
 
-当向桶中添加了很多 key，造成元素过多，或者溢出桶太多，就会触发扩容。扩容分为等量扩容和 2 倍容量扩容。扩容后，原来一个 bucket 中的 key 一分为二，会被重新分配到两个桶中。扩容过程是渐进的，主要是防止一次扩容需要搬迁的 key 数量过多，引发性能问题。触发扩容的时机是增加了新元素，bucket 搬迁的时机则发生在赋值、删除期间，每次最多搬迁两个 bucket。
+* 装载因子：`count/2^B`，数据总个数 / 桶个数。
+* 触发条件：装载因子是否大于6.5，溢出桶`overflow bucket`个数是否太多。
+* 解决方法：① 翻倍扩容：扩容采取了一种称为“渐进式”地方式，原有的 key 并不会一次性搬迁完毕，每次最多只会搬迁 2 个 bucket。② 等量扩容：就是将旧桶（含溢出桶）中的值迁移到新桶中。
+
+当向桶中添加了很多 key，造成元素过多，或者溢出桶太多，就会触发扩容。扩容分为等量扩容（溢出桶个数太多）和翻倍扩容（装载因子大于6.5）。扩容后，原来一个 bucket 中的 key 一分为二，会被重新分配到两个桶中。扩容过程是渐进的，主要是防止一次扩容需要搬迁的 key 数量过多，引发性能问题。触发扩容的时机是增加了新元素，bucket 搬迁的时机则发生在赋值、删除期间，每次最多搬迁两个 bucket。
 
 扩容条件：
 
@@ -3682,7 +3736,7 @@ func MulUintptr(a, b uintptr) (uintptr, bool) {
 }
 ```
 
-<span id="geek_base_21">21、Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？</span>
+<span id="geek_base_21">Golang 扩容前后的 Slice 是否相同？它的扩容机制是什么？</span>
 
 * 当`slice`容量足够时，我们往`slice`中`append`时，`slice`底层数组指向的内存地址不会发生改变。因此此种情况下的扩容前后是同一个`slice`。
 
@@ -3792,41 +3846,17 @@ func roundupsize(size uintptr) uintptr {
 }
 ```
 
-`golang`中内存分配是根据对象大小来配不同的`mspan`，为了避免造成过多的内存碎片，`slice`在扩容中需要对扩容后的`cap`容量进行内存对齐的操作。
+`golang`中内存分配是根据对象大小来配不同的`mspan`，为了避免造成过多的内存碎片，`slice`在扩容中需要对扩容后的`cap`容量进行内存对齐。
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<span id="geek_base_21">21、什么是内存对齐？</span>
 
 
 
 ## GO基础类
 
-<span id="geek_base_01">01、与其他语言相比，使用 Go 有什么好处?</span>
+<span id="geek_base_01">与其他语言相比，使用 Go 有什么好处?</span>
 
 * 基于`CSP` 并发模型(`Communicating Sequential Processes` )的思想实现。`channel` 的经典思想：**不要通过共享内存来通信，而是通过通信来实现内存共享**。`JAVA/C++`等语言倡导共享内存来通信，而`Go`倡导以通信的方式来共享内存。
 * `goroutine`属于用户态线程（轻量级），相对于`JAVA/C++`等语言的多线程（操作系统线程），它解决了操作（内核）系统线程占用内存太大、创建和切换开销性能消耗较大的问题。用户态线程`goroutine`是一个非常轻量级的，其创建和切换都在用户代码中完成而无需进入操作系统内核，所以其开销要远远小于系统线程的创建和切换；另外一个优势在于`goroutine`只占2-4KB内存空间，可以在程序轻易的创建成千上万甚至上百万的`goroutine`出来并发的执行任务而不用太担心性能和内存等问题。其他程序如`JAVA/C++`的多线程，往往是内核态的，比较重量级，几千个线程可能就会耗光`CPU`。
@@ -3834,11 +3864,11 @@ func roundupsize(size uintptr) uintptr {
 * Go 语言保证了既能到达静态编译语言的安全和性能，又达到了动态语言开发维护的高效率 ，使用一个表达式来形容 Go 语言：`Go = C + Python` , 说明 Go 语言既有 C 静态语言程序的运行速度，又能达到 Python 动态语言的快速开发。
 * 设计理念和哲学。追求简单高效，少即是多的哲学，有且仅有一种方法把事情做好做对。 `Rob Pike`曾经说过，Go 语言实际上是复杂的，但只是让大家感觉很简单。它能长期保持简单性、稳定性和健壮性。我觉得这些特质比软件设计的其他目标更为重要。Go 开发团队的工作态度非常严谨，每个功能都经过了深思熟虑，力求最简单且最完整的解决方案，这样的团队纪律为他们赢得了巨大的优势。
 
-<span id="geek_base_02">02、`golang` 都使用什么数据类型？</span>
+<span id="geek_base_02">`golang` 都使用什么数据类型？</span>
 
 ![image-20211113225207136](Golang体系.assets/image-20211113225207136.png)			
 
-<span id="geek_base_03">03、Go 程序中的包是什么?</span>
+<span id="geek_base_03">Go 程序中的包是什么?</span>
 
 Go 程序中包的本质实际上就是创建不同的文件夹，来存放程序文件。go 的每一个文件都是属于一个包的，它是以包的形式来管理文件和项目目录结构的。包的主要作用：
 
@@ -3869,7 +3899,7 @@ import "包的路径"
 * 在同一包下，不能有相同的函数名(也不能有相同的全局变量名)，否则报重复定义。
 * 如果你要编译成一个可执行程序文件，就需要将这个包声明为 main , 即 `package main` 。这个就是一个语法规范，如果你是写一个库 ，包名可以自定义。
 
-<span id="geek_base_04">04、Go 支持什么形式的类型转换？将整数转换为浮点数。</span>
+<span id="geek_base_04">Go 支持什么形式的类型转换？将整数转换为浮点数。</span>
 
 `Go` 和 `java / c` 不同，`Go` 在不同类型的变量之间赋值时需要显式转换。`Go`中数据类型不能自动转换。
 
@@ -4003,7 +4033,7 @@ func main() {
 
 
 
-<span id="geek_base_06">06、如何在运行时检查变量类型？</span>
+<span id="geek_base_06">如何在运行时检查变量类型？</span>
 
 `Type Switch`:`switch` 语句被用于 `type-switch` 来判断某个 `interface` 变量中实际指向的变量类型。
 
@@ -4011,7 +4041,7 @@ func main() {
 
 
 
-<span id="geek_base_07">07、两个接口之间可以存在什么关系？`Go`中接口有什么特点？</span>
+<span id="geek_base_07">两个接口之间可以存在什么关系？`Go`中接口有什么特点？</span>
 
 > 如果两个接口有相同的方法列表，那么他们就是等价的，可以相互赋值。如果 接口 A 的方法列表是接口 B 的方法列表的自己，那么接口 B 可以赋值给接口 A。接口查询是否成功，要在运行期才能够确定。
 
@@ -4162,7 +4192,7 @@ func main() {
 
 * 空接口` interface{} `没有任何方法，所以所有类型都实现了空接口，即我们可以把任何一个变量赋给空接口。
 
-<span id="geek_base_08">08、`Go` 当中同步锁有什么特点？作用是什么？</span>
+<span id="geek_base_08">`Go` 当中同步锁有什么特点？作用是什么？</span>
 
 > 同步锁主要包括互斥锁 `Mutex`、读写锁 `RWMutex`，主要解决资源竞争的问题，保证读写共享资源的安全性（同步锁的作用是保证资源在使用时的独有性，不会因为并发而导致数据错乱， 保证系统的稳定性。）。
 >
@@ -4178,7 +4208,7 @@ func main() {
 * 任务编排。需要 `goroutine` 按照一定的规律执行，而 `goroutine` 之间有相互等待或者依 赖的顺序关系，我们常常使用 `WaitGroup` 或者 `Channel` 来实现。
 * 消息传递。信息交流以及不同的 `goroutine` 之间的线程安全的数据交流，常常使用 `Channel` 来实现。
 
-<span id="geek_base_09">09、`Go` 语言当中 `Channel`（通道）有什么特点，会 `panic` 的情况有几种？会 `block` 的情况有几种？需要注意什么？</span>
+<span id="geek_base_09">`Go` 语言当中 `Channel`（通道）有什么特点，会 `panic` 的情况有几种？会 `block` 的情况有几种？需要注意什么？</span>
 
 ![image-20211112231007294](Golang体系.assets/image-20211112231007294.png)
 
@@ -4207,7 +4237,7 @@ func main() {
 * 从一个`empty channel`接收数据，会造成阻塞。
 * 给一个`full channel`发送数据，会造成阻塞。
 
-<span id="geek_base_10">10、Go 语言当中 Channel 缓冲有什么特点？</span>
+<span id="geek_base_10">Go 语言当中 Channel 缓冲有什么特点？</span>
 
 Go 语言当中 Channel 缓冲分为无缓冲通道和有缓冲通道；无缓冲的 Channel 是同步的，而有缓冲的 Channel 是非同步的。
 
@@ -4221,7 +4251,7 @@ Go 语言当中 Channel 缓冲分为无缓冲通道和有缓冲通道；无缓�
 
 有缓冲的` Channel`(`buffered channel`) 是一种在被接收前能存储一个或者多个值的通道。这种类型的通道并不强制要求 `goroutine `之间必须同时完成发送和接收。通道会阻塞发送和接收动作的条件也会不同。只有在通道中没有要接收的值时，接收动作才会阻塞。只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
 
-<span id="geek_base_11">11、Go 语言中 cap函数可以作用于那些内容？</span>
+<span id="geek_base_11">Go 语言中 cap函数可以作用于那些内容？</span>
 
 Cap 函数是内置函数，主要应用于以下几种类型：
 
@@ -4254,13 +4284,13 @@ Cap 函数是内置函数，主要应用于以下几种类型：
 func make(t Type, size ...IntegerType) Type
 ```
 
-<span id="geek_base_12"> 12、`go convey` 是什么？一般用来做什么？</span>
+<span id="geek_base_12"> `go convey` 是什么？一般用来做什么？</span>
 
 - `go convey` 是一个支持 `golang` 的单元测试框架。
 - `go convey` 能够自动监控文件修改并启动测试，并可以将测试结果实时输出到 `Web` 界面。
 - `go convey` 提供了丰富的断言简化测试用例的编写。
 
-<span id="geek_base_13">13、Go 语言当中 new 和 make 有什么区别吗？</span>
+<span id="geek_base_13">Go 语言当中 new 和 make 有什么区别吗？</span>
 
 > 二者都是内存的分配（堆上），`make`只用于`slice`、`map`以及`channel`的初始化（非零值）；而`new`用于任意类型的内存分配，并且内存置为零。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
 
@@ -4302,7 +4332,7 @@ func make(t Type, size ...IntegerType) Type
 
 像`map`、`slice`、`chan` 这些类型声明是不会分配内存的，初始化需要 `make `，分配内存后才能赋值和使用。
 
-<span id="geek_base_14">14、 Go 语言中 make 的作用是什么？ </span>
+<span id="geek_base_14"> Go 语言中 make 的作用是什么？ </span>
 
 `make` 内置函数仅用作分配内存空间并初始化 `slice`，`map` 和 `chan` 类型的对象。与 `new` 相同，第一个参数是类型，而不是值。与 `new` 不同，`make` 的返回类型与其参数的类型相同，而不是指向它的指针。
 
@@ -4347,7 +4377,7 @@ c := make(chan T, 10)
 
 ![image-20211102175107139](Golang体系.assets/image-20211102175107139.png)
 
-<span id="geek_base_15">15、`Printf()`、`Sprintf()`、`Fprintf()`都是格式化输出，有什么不同？</span>
+<span id="geek_base_15">`Printf()`、`Sprintf()`、`Fprintf()`都是格式化输出，有什么不同？</span>
 
 虽然这三个函数，都是格式化输出，但是输出的目标不一样。
 
@@ -4372,7 +4402,7 @@ req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/nodes", host), nil)
 builder.WriteString(fmt.Sprintf(`{"index": {"_id": %d}`, s.ID))
 ```
 
-<span id="geek_base_16">16、`golang` 中 `array` 与 `slice` 有何区别？</span>
+<span id="geek_base_16">`golang` 中 `array` 与 `slice` 有何区别？</span>
 
 * 数组的零值是元素类型的零值，切片的零值是 `nil`，`nil` 也是唯一可以和切片类型作比较的值；
 * 数组的长度固定，不能动态变化，而切片是一个可以动态变化的数组。数组是多个相同类型数据的组合，一个数组一旦声明/定义了，其长度是固定的， 不能动态变化，否则会报越界；
@@ -4387,7 +4417,7 @@ type slice struct {
 }
 ```
 
-<span id="geek_base_17">17、Go 语言当中值传递和地址传递（引用传）如何运用？有什么区别？举例说明。</span>
+<span id="geek_base_17">Go 语言当中值传递和地址传递（引用传）如何运用？有什么区别？举例说明。</span>
 
 > 值类型包括：基本数据类型 `int` 系列，`float` 系列，`bool`类型，`string`类型 、数组`array`和结构体 `struct`。
 >
@@ -4402,7 +4432,7 @@ type slice struct {
 * 值传递只会把参数的值复制一份放进对应的函数，两个变量的地址不同， 不可相互修改。
 * 地址传递（引用传递）会将变量本身传入对应的函数，在函数中可以对该变量进行值内容的修改。
 
-<span id="geek_base_18">18、Go 语言是如何实现切片扩容的？扩容策略是什么？ </span>
+<span id="geek_base_18">Go 语言是如何实现切片扩容的？扩容策略是什么？ </span>
 
 用 `append` 内置函数，可以对切片进行动态追加。
 

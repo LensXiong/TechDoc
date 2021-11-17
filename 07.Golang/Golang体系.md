@@ -44,6 +44,8 @@
 * [如何避免错误使用 `WaitGroup` 的情况？至少五点。](#wg01)
 * [如何实现线程安全的`Map`类型？](#map01)
 * [关于并发问题的解决方案，什么时候选择并发原语？什么时候选择`Channel`？](#conc03)
+* [目前` Mutex` 的 `state` 字段有几个意义，这几个意义分别是由哪些字段表示的？](#mutex_status)
+* [Mutex 正常模式和饥饿模式分别是什么？](#mutex_model)
 
 ## 专题相关
 
@@ -2462,11 +2464,7 @@ func main() {
 
 ##### Mutex
 
-<span id="conc01">目前` Mutex` 的 `state` 字段有几个意义，这几个意义分别是由哪些字段表示的？</span>
-
-> 目前` Mutex` 的 `state` 字段
-
-![image-20211109210349905](Golang体系.assets/image-20211109210349905.png)
+<span id="mutex_status">目前` Mutex` 的 `state` 字段有几个，这几个意义分别是由哪些字段表示的？</span>
 
 ```go
 type Mutex struct {
@@ -2494,13 +2492,34 @@ const (
 )
 ```
 
+<img src="Golang体系.assets/image-20211109210349905.png" alt="image-20211109210349905" style="zoom:50%;" />
+
+
+
+<span id="mutex_model">Mutex 正常模式和饥饿模式？</span>
+
+Mutex 可能处于两种操作模式下:**正常模式**和**饥饿模式**。
+
+* 正常模式下，`waiter` 都是进入先入先出队列，被唤醒的 `waiter` 并不会直接持有锁，而是要和新来的 `goroutine` 进行竞争。新来的 `goroutine` 有先天的优势，它们正在 `CPU `中运行，可能它们的数量还不少，所以，在高并发情况下，被唤醒的 `waiter` 可能比较悲剧地获取不到锁，这时，它会被插入到队列的前面。如果` waiter` 获取不到锁的时间超过阈值 1 毫秒，那么，这个 `Mutex `就进入到了饥饿模式。
+
+* 在饥饿模式下，`Mutex` 的拥有者将直接把锁交给队列最前面的 `waiter`。新来的 `goroutine` 不会尝试获取锁，即使看起来锁没有被持有，它也不会去抢，也不会 `spin`，它会乖乖地加入到等待队列的尾部。
+
+如果拥有 `Mutex` 的 `waiter` 发现下面两种情况的其中之一，它就会把这个 `Mutex` 转换成正常模式：
+
+* 此 `waiter` 已经是队列中的最后一个 `waiter `了，没有其它的等待锁的 `goroutine` 了; 
+* 此 `waiter` 的等待时间小于 1 毫秒。
+
+正常模式拥有更好的性能，因为即使有等待抢锁的 `waiter`，`goroutine` 也可以连续多次获取到锁。
+
+饥饿模式是对公平性和性能的一种平衡，它避免了某些 `goroutine` 长时间的等待锁。在饥饿模式下，优先对待的是那些一直在等待的 `waiter`。
+
+
+
 
 
 <span id="conc02">等待一个 `Mutex` 的 `goroutine` 数最大是多少？是否能满足现实的需求？</span>
 
->
->
->
+
 
 
 
@@ -2711,6 +2730,10 @@ func (m ConcurrentMap) Get(key string) (interface{}, bool) {
 * 简单等待所有任务的完成用 `WaitGroup`，也有 `Channel` 的推崇者用 `Channel`，都可 以；
 *  需要和 `Select` 语句结合，使用 `Channel`；
 *  需要和超时配合时，使用 `Channel` 和 `Context`。
+
+
+
+
 
 ### Happens Before 原则
 

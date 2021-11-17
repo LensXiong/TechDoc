@@ -3231,31 +3231,36 @@ func main() {
 
 <span id="map_01">`golang` 中 `map`的底层实现？</span>
 
-* `map` 的底层如何实现：Go 语言采用的是哈希查找表，并且使用链表解决哈希冲突。通过 key 的哈希值将 key 散落到不同的桶中，每个桶中有 8 个 cell。哈希值的低位决定桶序号，高位标识同一个桶中的不同 key。
-* 当向桶中添加了很多 key，造成元素过多，或者溢出桶太多，就会触发扩容。扩容分为等量扩容和 2 倍容量扩容。扩容后，原来一个 bucket 中的 key 一分为二，会被重新分配到两个桶中。扩容过程是渐进的，主要是防止一次扩容需要搬迁的 key 数量过多，引发性能问题。触发扩容的时机是增加了新元素，bucket 搬迁的时机则发生在赋值、删除期间，每次最多搬迁两个 bucket。
+>  Go 语言采用的是哈希查找表，并且使用链表解决哈希冲突。通过 `key` 的哈希值将 `key` 散落到不同的桶中，每个桶中有 8 个 `cell`。哈希值的低位决定桶序号，高位标识同一个桶中的不同 `key`。具体是有两个核心结构体`hmap`和`bmap`组成。Go里面Map的实现**主要**用到了数组，其次还用到了链表。
 
-`Map`的底层实现是采用哈希查找表，并且使用链表来解决哈希冲突的。通过 `key` 的哈希值将 `key` 散落到不同的桶中，每个桶中有 8 个 `cell`。哈希值的低位决定桶序号，高位标识同一个桶中的不同 `key`。
-
-![image-20211116222528574](Golang体系.assets/image-20211116222528574.png)
+<img src="Golang体系.assets/image-20211117100700792.png" alt="image-20211117100700792" style="zoom:50%;" />
 
 ```go
 type hmap struct {
-	count     int    // 元素个数
-	flags     uint8  // 用于处理并发时，是否正在写入
-	B         uint8  // 创建桶的个数为2的B次方
+	count     int    // 键值对的数量
+	flags     uint8  // 状态标识，比如正在被写、buckets和oldbuckets在被遍历、等量扩容(Map扩容相关字段)
+	B         uint8  // 桶，最大可容纳的元素数量，值为负载因子（默认 6.5） * 2 ^ B，是 2 的指数
 	noverflow uint16 // 已使用的溢出桶的个数
 	hash0     uint32 // 哈希因子，用于对key生成哈希值
 
-	buckets    unsafe.Pointer // 当前map中桶的数组（扩容后指向新桶）
-	oldbuckets unsafe.Pointer // 扩容后指向旧桶
-	nevacuate  uintptr        // 接下来要迁移的旧桶编号
-	extra *mapextra           // 扩展字段
+	buckets    unsafe.Pointer // 当前map中桶的数组（扩容后指向新桶）,指向一个数组(连续内存空间)，数组的类型为[]bmap，bmap类型就是存在键值对的结构，也称之为标准桶
+	oldbuckets unsafe.Pointer // 扩容时，存放之前的buckets(Map扩容相关字段)
+	nevacuate  uintptr        // 分流次数，成倍扩容分流操作计数的字段(Map扩容相关字段)
+	extra *mapextra           // 溢出桶结构，正常桶里面某个bmap存满了，会使用这里面的内存空间存放键值对
 }
 
 type mapextra struct {
-    overflow    *[]*bmap
-    oldoverflow *[]*bmap
-    nextOverflow *bmap
+    overflow    *[]*bmap // 称之为溢出桶。和hmap.buckets的类型一样也是数组[]bmap，当正常桶bmap存满了的时候就使用hmap.extra.overflow的bmap。
+    oldoverflow *[]*bmap // 扩容时存放之前的overflow(Map扩容相关字段)
+    nextOverflow *bmap  // 指向溢出桶里下一个可以使用的bmap
+}
+
+type bmap struct {
+  topbits  [8]uint8 // 长度为8的数组，[]uint8，元素为：key获取的hash的高8位，遍历时对比使用，提高性能。
+  keys     [8]keytype // 长度为8的数组，[]keytype，元素为：具体的key值。
+  values   [8]valuetype // 长度为8的数组，[]valuetype，元素为：键值对的key对应的值。
+  pad      uintptr // 对齐内存使用的，不是每个bmap都有会这个字段，需要满足一定条件
+  overflow uintptr // 指向的hmap.extra.overflow溢出桶里的bmap，上面的字段topbits、keys、values长度为8，最多存8组键值对，存满了就往指向的这个bmap里存
 }
 
 // A bucket for a Go map.
@@ -3269,15 +3274,15 @@ const (
     bucketCntBits = 3
     bucketCnt     = 1 << bucketCntBits
 ）
-  
-type bmap struct {
-  topbits  [8]uint8
-  keys     [8]keytype
-  values   [8]valuetype
-  pad      uintptr
-  overflow uintptr
-}
 ```
+
+为什么会有溢出桶`overflow`?
+
+> 使用溢出桶是为了解决哈希冲突（碰撞）的问题，当 `hmap.buckets` 满了后，就会使用溢出桶接着存储。Go 采用的是数组 + 链地址法解决哈希冲突。
+
+为什么存储 k 和 v 的载体并不是用 `k/v/k/v/k/v/k/v` 的模式，而是 `k/k/k/k/v/v/v/v` 的形式去存储？
+
+> 能够解决因对齐所浪费的内存空间。
 
 <span id="map_02">`golang` 中 `map`的初始化都发生了什么？</span>
 
@@ -3358,7 +3363,7 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 
 <span id="map_04">`golang` 中 `map`是如何进行扩容的？</span>
 
-在向`map`中添加数据时，当达到某个条件，则会引发字典扩容。
+当向桶中添加了很多 key，造成元素过多，或者溢出桶太多，就会触发扩容。扩容分为等量扩容和 2 倍容量扩容。扩容后，原来一个 bucket 中的 key 一分为二，会被重新分配到两个桶中。扩容过程是渐进的，主要是防止一次扩容需要搬迁的 key 数量过多，引发性能问题。触发扩容的时机是增加了新元素，bucket 搬迁的时机则发生在赋值、删除期间，每次最多搬迁两个 bucket。
 
 扩容条件：
 
@@ -3398,13 +3403,102 @@ func hashGrow(t *maptype, h *hmap) {
 
 
 
+> 赋值的时候会触发扩容吗？扩容的基准条件是什么？
 
+```go
+if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+    hashGrow(t, h)
+    goto again
+}
+```
+
+在特定条件的情况下且当前没有正在进行扩容动作（以判断 `hmap.oldbuckets != nil` 为基准）。哈希表在赋值、删除的动作下会触发扩容行为，条件如下：
+
+- 触发 `load factor` 的最大值，负载因子已达到当前界限。
+- 溢出桶 `overflow buckets` 过多。
+
+>  负载因子是什么？过高会带来什么问题？它的变动会对哈希表操作带来什么影响吗？
+
+负载因子 `load factor`，只要用途是评估哈希表当前的时间复杂度，其与哈希表当前包含的键值对数、桶数量等相关。如果负载因子越大，则说明空间使用率越高，但产生哈希冲突的可能性更高。而负载因子越小，说明空间使用率低，产生哈希冲突的可能性更低。
+
+| loadFactor | %overflow | bytes/entry | hitprobe | missprobe |
+| ---------- | --------- | ----------- | -------- | --------- |
+| 4.00       | 2.13      | 20.77       | 3.00     | 4.00      |
+| 4.50       | 4.05      | 17.30       | 3.25     | 4.50      |
+| 5.00       | 6.85      | 14.77       | 3.50     | 5.00      |
+| 5.50       | 10.55     | 12.94       | 3.75     | 5.50      |
+| 6.00       | 15.27     | 11.67       | 4.00     | 6.00      |
+| **6.50**   | 20.90     | 10.79       | 4.25     | 6.50      |
+| 7.00       | 27.14     | 10.15       | 4.50     | 7.00      |
+
+- `loadFactor`：负载因子
+- `%overflow`：溢出率，具有溢出桶 `overflow buckets` 的桶的百分比
+- `bytes/entry`：每个键值对所的字节数开销
+- `hitprobe`：查找存在的 key 时，平均需要检索的条目数量
+- `missprobe`：查找不存在的 key 时，平均需要检索的条目数量
+
+这一组数据能够体现出不同的负载因子会给哈希表的动作带来怎么样的影响。
+
+>  溢出桶越多会带来什么问题？
+
+溢出桶 `overflow buckets` 过多，会导致扩容问题。
+
+> 扩容的容量规则是怎么样的？
+
+扩容的基准条件也就两种，若不是负载因子 `load factor` 超过当前界限，也就是属于溢出桶 `overflow buckets` 过多的情况。
+
+* 溢出桶 `overflow buckets` 过多的情况，**等量扩容**，**不改变大小的扩容动作**。
+
+```go
+if !overLoadFactor(h.count+1, h.B) {
+    bigger = 0
+    h.flags |= sameSizeGrow
+}
+```
+
+* 负载因子 `load factor` 超过当前界限，**翻倍扩容**，会动态扩容**当前大小的两倍**作为其新容量大小。
+
+```go
+bigger := uint8(1)
+...
+newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+```
+
+>  扩容的步骤是怎么样的？涉及到了哪些数据结构？
+
+
+
+
+
+
+
+> 扩容是一次性扩容还是增量扩容？为什么？
+
+` Go map `中扩容是采取增量扩容的方式，并非全量扩容。假设刚好当前 `hmap` 的容量比较大，直接全量扩容的话，就会导致扩容要花费大量的时间和内存，导致系统卡顿，最直观的表现就是慢。而增量扩容，就可以解决这个问题。它通过每一次的 `map` 操作行为去分摊总的一次性动作。因此有了 `buckets/oldbuckets` 的设计，它是逐步完成的，并且会在扩容完毕后才进行清空。
+
+>  正在扩容的时候又要扩容怎么办？
+
+```go
+again:
+    bucket := hash & bucketMask(h.B)
+    ...
+    if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+        hashGrow(t, h)
+        goto again 
+    }
+```
+
+ `goto again` 语句，结合上下文可得若正在进行扩容，就会不断地进行迁移。待迁移完毕后才会开始进行下一次的扩容动作。
 
 <span id="map_05">`golang` 中 `map`是如何进行迁移的？</span>
 
+* 如果是翻倍扩容，那么迁移规就是将旧桶中的数据分流至新的两个桶中（比例不定），并且桶编号的位置为：同编号位置和翻倍后对应编号位置。迁移时会遍历某个旧桶中所有的key（包括溢出桶），并根据key重新生成哈希值，根据哈希值的 `低B位` 来决定将此键值对分流道那个新桶中。
 
+![image-20211117152757026](Golang体系.assets/image-20211117152757026.png)
 
+扩容后，B的值在原来的基础上已加1，也就意味着通过多1位来计算此键值对要分流到新桶位置，如上图：当新增的位（红色）的值为 0，则数据会迁移到与旧桶编号一致的位置。当新增的位（红色）的值为 1，则数据会迁移到翻倍后对应编号位置。
 
+* 如果是等量扩容（溢出桶太多引发的扩容），那么数据迁移机制就会比较简单，就是将旧桶（含溢出桶）中的值迁移到新桶中。这种扩容和迁移的意义在于：当溢出桶比较多而每个桶中的数据又不多时，可以通过等量扩容和迁移让数据更紧凑，从而减少溢出桶。
 
 ###  `defer`关键字
 

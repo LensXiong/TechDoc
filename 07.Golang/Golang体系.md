@@ -59,7 +59,14 @@
 
 ### slice 底层实现
 
+slice 追加到队首。
 
+```go
+newSlice := make([]int, len(slice) + len(ids))
+n := copy(newSlice, ids)
+copy(newSlice[n:], slice)
+slice = newSlice
+```
 
 ### map 底层实现
 
@@ -6537,8 +6544,34 @@ The commands are:
 
 
 
+### 输出了null
 
-# 
+切片、map、等零值为`nil`，对应json的值为null
+如果要输出`[]`则要赋值为空切片
+
+```
+// someOne赋值为
+someOne := User{
+		Age:      20,
+		Name:     "老王",
+		Address:  "",
+		Skill:    []string{},
+		Phone:    []string{"18888888888","15555555555"},
+		Birthday: birthday,
+		Password: "admin123",
+	}
+// 对应的输出
+{"age":20,"name":"老王","skill":[],"phone":["18888888888","15555555555"],"birthday":"2000-01-01T10:08:00+08:00"}
+```
 
 
+
+> 要注意的是空map对应的json输出为 **{}** 而非 [] 
+
+```go
+if len(list) == 0 {
+    // 避免返回null
+    list = make([]feedPrototype.FeedArticle, 0)
+}
+```
 

@@ -692,5 +692,117 @@ zset-max-ziplist-value 64 // 单个元素大小超过 64 byte ，将用 skiplist
 
 
 
+## Redis 实际应用场景示例
+
+① Hash 应用场景：
+
+```go
+// 查询自己是否有新发表作品
+// 自己新发表的作品，展示在推荐页feed流中第4位，每天展示1次，连续展示2天
+// 自己新发表的作品，展示在话题下feed流【作品】中第1位，每天展示1次，连续展示2天
+
+const (
+    newestTopicID                         = "newest-topic-id"
+    newestArticleID                       = "newest-article-id"
+    newestArticleCreatedAt                = "newest-article-created-at"
+    newestArticleViewAmountAfterTopic     = "newest-article-amount-topic"
+    newestArticleViewAmountAfterRecommend = "newest-article-amount-recommend"
+
+    viewStatisticsTemplate = "view-statistics-student-id-%d"
+)
+
+type Newest struct {
+    TopicID   int64
+    ArticleID int64
+    CreatedAt int64
+    ViewAmountAfterTopic     int64
+    ViewAmountAfterRecommend int64
+}
+func SetNewestArticle(studentID, topicID, articleID int64) error {
+    key := fmt.Sprintf(viewStatisticsTemplate, studentID)
+    return cache.Cache.HMSet(key, map[string]interface{}{
+        newestTopicID:                         topicID,
+        newestArticleID:                       articleID,
+        newestArticleCreatedAt:                time.Now().Unix(),
+        newestArticleViewAmountAfterTopic:     0,
+        newestArticleViewAmountAfterRecommend: 0,
+    }).Err()
+}
+
+func GetNewest(studentID int64) *Newest {
+    key := fmt.Sprintf(viewStatisticsTemplate, studentID)
+    slice := cache.Cache.HMGet(key, newestTopicID, newestArticleID, newestArticleCreatedAt,
+        newestArticleViewAmountAfterTopic, newestArticleViewAmountAfterRecommend).Val()
+    n := &Newest{
+        TopicID:                  int64Val(slice[0]),
+        ArticleID:                int64Val(slice[1]),
+        CreatedAt:                int64Val(slice[2]),
+        ViewAmountAfterTopic:     int64Val(slice[3]),
+        ViewAmountAfterRecommend: int64Val(slice[4]),
+    }
+    return n
+}
+
+func IncrNewestArticleViewAmountRecommend(studentID int64) error {
+   key := fmt.Sprintf(viewStatisticsTemplate, studentID)
+   return cache.Cache.HIncrBy(key, newestArticleViewAmountAfterRecommend, 1).Err()
+}
+
+func IncrNewestArticleViewAmountTopic(studentID int64) error {
+    key := fmt.Sprintf(viewStatisticsTemplate, studentID)
+    return cache.Cache.HIncrBy(key, newestArticleViewAmountAfterTopic, 1).Err()
+}
+
+func DelNewest(studentID int64) error {
+    key := fmt.Sprintf(viewStatisticsTemplate, studentID)
+    return cache.Cache.HDel(key, newestTopicID, newestArticleID, newestArticleCreatedAt,
+        newestArticleViewAmountAfterTopic, newestArticleViewAmountAfterRecommend).Err()
+}
+
+```
+
+② Zset 应用场景
+
+```go
+const (
+    // 保存置顶状态的作品，是一个zset结构，不仅能放置占位符，还能统计置顶作品数量
+    cacheKeyArticlePinnedTemplate = "student-id-%d-pinned-article"
+    maxPinnedAmount = 3
+)
+
+func pinned(studentID, articleID, timestamp int64)  {
+    tryLoadPinned(studentID)
+    key := fmt.Sprintf(cacheKeyArticlePinnedTemplate, studentID)
+    cache.Cache.ZAdd(key, redis.Z{
+        Score:  float64(timestamp),
+        Member: articleID,
+    })
+}
+
+func CancelPinnedCache(studentID, articleID int64)  {
+    tryLoadPinned(studentID)
+    key := fmt.Sprintf(cacheKeyArticlePinnedTemplate, studentID)
+    cache.Cache.ZRem(key, articleID)
+}
+
+func HasPinned(studentID int64, articleID int64) bool {
+    tryLoadPinned(studentID)
+    key := fmt.Sprintf(cacheKeyArticlePinnedTemplate, studentID)
+    err := cache.Cache.ZScore(key, fmt.Sprintf("%d", articleID)).Err()
+    // 无论是nil还是其他的redis错误，err都不会为空
+    return err == nil
+}
+
+func GetPinnedAmount(studentID int64) int64 {
+    tryLoadPinned(studentID)
+    key := fmt.Sprintf(cacheKeyArticlePinnedTemplate, studentID)
+    i, _ := cache.Cache.ZCount(key, "1", prototype.MaxScore).Result()
+    return i
+}
+
+```
+
+
+
 ### 
 

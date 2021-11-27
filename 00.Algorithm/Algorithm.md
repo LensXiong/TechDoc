@@ -8,7 +8,7 @@
 
 [数组和链表的区别？](#array_list)
 
-[数组是如何实现根据下标随机访问数组元素的呢？](#array_random)
+[一维数组是如何实现根据下标随机访问数组元素的呢？二维数组的寻址方式又是什么？](#array_random)
 
 
 
@@ -48,11 +48,13 @@ a[k]_address = base_address + k * type_size
 
 专业的解释：数组（`Array`）是一种线性表数据结构。它用一组连续的内存空间，来存储一组具有相同类型的数据。
 
-<img src="Algorithm.assets/image-20211127220810368.png" alt="image-20211127220810368" style="zoom:50%;" />
+<img src="./Algorithm.assets/image-20211127220810368.png" alt="image-20211127220810368" style="zoom:50%;" />
+
+数组用一块连续的内存空间，来存储相同类型的一组数据，最大的特点就是支持随机访问，但插入、删除操作也因此变得比较低效，平均情况时间复杂度为 O(n)。
 
 
 
-<span id="array_random">数组是如何实现根据下标随机访问数组元素的呢？</span>
+<span id="array_random">一维数组是如何实现根据下标随机访问数组元素的呢？二维数组的寻址方式又是什么？</span>
 
 > 通过寻址公式，计算内存地址，然后通过地址来访问内存中的元素。
 >
@@ -60,7 +62,7 @@ a[k]_address = base_address + k * type_size
 
 假设用一个长度为 10 的 int 类型的数组 `int[] a = new int[10]`来举例。如下图所示，计算机会给数组 a[10]，分配了一块连续内存空间 1000～1039，其中，内存块的首地址为 base_address = 1000。
 
-<img src="Algorithm.assets/image-20211127221129690.png" alt="image-20211127221129690" style="zoom:50%;" />
+<img src="./Algorithm.assets/image-20211127221129690.png" alt="image-20211127221129690" style="zoom:50%;" />
 
 计算机会给每个内存单元分配一个地址，计算机通过地址来访问内存中的数据。当计算机需要随机访问数组中的某个元素时，它会首先通过下面的寻址公式，计算出该元素存储的内存地址：
 
@@ -69,4 +71,10 @@ a[i]_address = base_address + i * data_type_size
 ```
 
 其中 data_type_size 表示数组中每个元素的大小。我们举的这个例子里，数组中存储的是 int 类型数据，所以 data_type_size 就为 4 个字节。
+
+二维数组内存寻址：对于 `m * n` 的数组，`a[i][j](i < m,j < n)`的地址为：
+
+```go
+address = base_address + ( i * n + j) * type_size
+```
 

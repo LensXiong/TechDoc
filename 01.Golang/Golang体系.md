@@ -199,15 +199,15 @@ slice = newSlice
 
 * `1:1关系`：1个协程绑定1个线程，这种最容易实现，协程的调度都由CPU完成了。缺点：协程的创建、删除和切换的代价都由CPU完成，有点略显昂贵了。
 
-![image-20211105164923263](bak_assets/gmp/01.png)
+![image-20211105164923263](Golang体系.assets/gmp/01.png)
 
 * `N:1 关系`：N个协程绑定1个线程，优点就是**协程在用户态线程即完成切换，不会陷入到内核态，这种切换非常的轻量快速**。但也有很大的缺点，1个进程的所有协程都绑定在1个线程上。缺点：某个程序用不了硬件的多核加速能力。一旦某协程阻塞，造成线程阻塞，本进程的其他协程都无法执行了，根本就没有并发的能力了。
 
-![image-20211105164802822](bak_assets/gmp/02.png)
+![image-20211105164802822](Golang体系.assets/gmp/02.png)
 
 * `M:N关系`：M个协程绑定1个线程，是N:1和1:1类型的结合。
 
-![image-20211105165046924](bak_assets/gmp/03.png)
+![image-20211105165046924](Golang体系.assets/gmp/03.png)
 
 > 协程跟线程是有区别的，线程由CPU调度是抢占式的，**协程由用户态调度是协作式的**，一个协程让出CPU后，才执行下一个协程。
 
@@ -217,7 +217,7 @@ slice = newSlice
 
 `GM`的调度模型：M想要执行、放回G都必须访问全局G队列，并且M有多个，即多线程访问同一资源需要加锁进行保证互斥/同步，所以全局G队列是有互斥锁进行保护的。
 
-![image-20211105170122567](bak_assets/gmp/04.png)
+![image-20211105170122567](Golang体系.assets/gmp/04.png)
 
 `GM` 调度模型的缺点：
 
@@ -229,7 +229,7 @@ slice = newSlice
 
 Go 线程模型属于M:N模型，主要包含三个概念：内核线程(M)、协程的上下文环境（P）、协程(G)。
 
-![image-20211105163514301](bak_assets/gmp/05.png)
+![image-20211105163514301](Golang体系.assets/gmp/05.png)
 
 * G (`Goroutine`)。本质上属于轻量级的线程，是基于协程建立的用户态线程。它拥有自己的栈、指令指针和维护其他调度相关的信息。G分为P的本地队列和全局队列G，存放的是等待运行的G，存的数量有限，本地队列不超过256个。新建G'时，G'优先加入到P的本地队列，如果队列满了，则会把本地队列中一半的G移动到全局队列。
 
@@ -278,7 +278,7 @@ func GOMAXPROCS(n int) int
 
 * `G0`是每次启动一个M都会第一个创建的`goroutine`，G0仅用于负责调度的G，G0不指向任何可执行的函数, 每个M都会有一个自己的G0。在调度或系统调用时会使用G0的栈空间，全局变量的G0是M0的G0。
 
-![image-20211105173000879](bak_assets/gmp/06.png)
+![image-20211105173000879](Golang体系.assets/gmp/06.png)
 
 
 
@@ -363,7 +363,7 @@ Go中，协程被称为`goroutine`，它非常轻量，一个`goroutine`只占�
 
 `goroutine`是建立在操作系统线程基础之上的用户态线程，它与操作系统线程之间实现了一个多对多(M:N)的两级线程模型。
 
-![image-20211028222830640](bak_assets/goroutine/01.png)
+![image-20211028222830640](Golang体系.assets/goroutine/01.png)
 
  这里的 M:N 是指M个`goroutine`运行在N个操作系统线程之上，内核负责对这N个操作系统线程进行调度，而这N个系统线程又负责对这M个`goroutine`进行调度和运行。
 
@@ -413,7 +413,7 @@ func schedule() {
 * **抢占**：在`coroutine`中要等待一个协程主动让出CPU才执行下一个协程，在Go中，一个`goroutine`最多占用`CPU` 10ms，防止其他`goroutine`被饿死，这就是`goroutine`不同于`coroutine`的一个地方。
 * **全局G队列**：在新的调度器中依然有全局G队列，但功能已经被弱化了，当M执行`work stealing`从其他P偷不到G时，它可以从全局G队列获取G。
 
-![image-20211105103418528](bak_assets/goroutine/02.png)
+![image-20211105103418528](Golang体系.assets/goroutine/02.png)
 
 具体执行流程如下：
 
@@ -429,9 +429,9 @@ func schedule() {
 
  6、当M系统调用结束时候，这个G会尝试获取一个空闲的P执行，并放入到这个P的本地队列。如果获取不到P，那么这个线程M变成休眠状态， 加入到空闲线程中，然后这个G会被放入全局队列中。
 
-![image-20211101122357165](bak_assets/goroutine/03.png)
+![image-20211101122357165](Golang体系.assets/goroutine/03.png)
 
-![image-20211028225032397](bak_assets/goroutine/04.png)
+![image-20211028225032397](Golang体系.assets/goroutine/04.png)
 
 `schedule`函数分三步分别从各运行队列中寻找可运行的`goroutine`：
 
@@ -646,7 +646,7 @@ func findrunnable() (gp *g, inheritTime bool) {
 
 <span id="channel_read">`channel`的读写特性是什么？会发生`painc`的情况是有几种，分别是什么？下面的代码输出什么？</span>
 
-![image-20211112231007294](bak_assets/channel/01.png)
+![image-20211112231007294](Golang体系.assets/channel/01.png)
 
 `channel`的读写特性（空读写阻塞，写关闭异常，读关闭空零）：
 
@@ -769,7 +769,7 @@ func main() {
 * `CSP` 解耦发送方和接收方，注重消息传递方式。
 * `Actor Model`之间直接通讯，注重处理单元。
 
-![image-20211029121333099](bak_assets/channel/02.png)
+![image-20211029121333099](Golang体系.assets/channel/02.png)
 
 `go` 中 `channel` 是被单独创建并且可以在进程之间传递，它的通信模式类似于 `boss-worker` 模式的，一个实体通过将消息发送到 `channel` 中，然后又监听这个 `channel `的实体处理，两个实体之间是匿名的，这个就实现实体中间的解耦，其中 `channel `是同步的一个消息被发送到 `channel` 中，最终是一定要被另外的实体消费掉的，在实现原理上其实类似一个阻塞的消息队列。
 
@@ -779,7 +779,7 @@ func main() {
 
  `Golang` 只用到了 `CSP` 的很小一部分，即理论中的 `Process/Channel`（ `goroutine/channel`）：这两个并发之间没有从属关系， `Process` 可以订阅任意 `Channel`，`Channel `也并不关心是哪个` Process `在利用它进行通信；`Process` 围绕 `Channel `进行读写，形成一套有序阻塞和可预测的并发模型。
 
-![image-20211029152454752](bak_assets/channel/03.png)
+![image-20211029152454752](Golang体系.assets/channel/03.png)
 
 ### 无缓冲的 `channel`(同步通道)
 
@@ -793,7 +793,7 @@ func main() {
 
 无缓冲的通道指的是通道的大小为0，也就是说，这种类型的通道在接收前没有能力保存任何值，它要求发送 `goroutine` 和接收 `goroutine` 同时准备好，才可以完成发送和接收操作。
 
-![image-20211108204842890](bak_assets/channel/04.png)
+![image-20211108204842890](Golang体系.assets/channel/04.png)
 
 从上面无缓冲的通道定义来看，发送 `goroutine` 和接收 `gouroutine` 必须是同步的，同时准备后，如果没有同时准备好的话，先执行的操作就会阻塞等待，直到另一个相对应的操作准备好为止。这种无缓冲的通道我们也称之为同步通道。
 
@@ -820,7 +820,7 @@ func main() {
 
 ② 两个`goroutine`中使用无缓冲的`channel`，则读写互为阻塞，即双方代码的执行都会阻塞在` <-ch` 和 `ch <-` 处，直到双方读写完成在 `ch` 中的传递，各自继续向下执行，此处借用`CSP` 图例说明：
 
-![image-20211101112249275](bak_assets/channel/05.png)
+![image-20211101112249275](Golang体系.assets/channel/05.png)
 
 示例代码：
 
@@ -850,7 +850,7 @@ func main1() {
 
 这导致有缓冲的通道和无缓冲的通道之间的一个很大的不同：**无缓冲的通道保证进行发送和接收的 `goroutine `会在同一时间进行数据交换；有缓冲的通道没有这种保证。**
 
-![image-20211108204813244](bak_assets/channel/06.png)
+![image-20211108204813244](Golang体系.assets/channel/06.png)
 
 在 `make `时传递第二参 `capacity`，即为有缓冲的 `channel`：
 
@@ -974,7 +974,7 @@ func main() {
 
 `hchan` 中有两个与 `buffer` 相关的变量：`recvx` 和 `sendx`。其中 `sendx` 表示 `buffer` 中可写的 `index`，`recvx` 表示 `buffer` 中可读的 `index`。 从 `recvx` 到 `sendx` 之间的元素，表示已正常存放入 `buffer` 中的数据。
 
-<img src="bak_assets/channel/07.png" alt="image-20211117162805702" style="zoom:50%;" />
+<img src="Golang体系.assets/channel/07.png" alt="image-20211117162805702" style="zoom:50%;" />
 
 上图展示的是一个缓冲区为8的`channel buffer`，`recvx`指向最早被读取的数据，`sendx`指向再次写入时插入的位置。
 
@@ -1035,7 +1035,7 @@ func main() {
 
 `channel`本质上是一个有锁的环形队列，外加发送方队列（`sendq`）、接收方队列（`recvq`），加上互斥锁 `mutex` 等结构。
 
-![image-20211029160929781](bak_assets/channel/08.png)
+![image-20211029160929781](Golang体系.assets/channel/08.png)
 
 `hchan`结构体源码：`/src/runtime/chan.go` go版本：`1.15.11`
 
@@ -1161,7 +1161,7 @@ func makechan(t *chantype, size int) *hchan {
 
 `makechan` 方法的逻辑比较简单，就是创建 `hchan` 并分配合适的 `buf` 大小的堆上内存空间。
 
-![image-20211029150550896](bak_assets/channel/09.png)
+![image-20211029150550896](Golang体系.assets/channel/09.png)
 
 #### 发送数据
 
@@ -1578,15 +1578,15 @@ func closechan(c *hchan) {
 
 * 第一步，暂停程序业务逻辑， 找出不不可达的对象(5和6)，和可达对象（1-2-3和4-7）。
 
-  ![image-20211102114745493](bak_assets/gc/01.png)
+  ![image-20211102114745493](Golang体系.assets/gc/01.png)
 
 * 第⼆步，开始标记，程序找出它所有可达的对象（1-2-3和4-7），并做上标记。
 
-  ![image-20211102114850117](bak_assets/gc/02.png)
+  ![image-20211102114850117](Golang体系.assets/gc/02.png)
 
 * 第三步，标记完了之后，然后开始清除未标记的对象（5和6）。
 
-  ![image-20211102114927570](bak_assets/gc/03.png)
+  ![image-20211102114927570](Golang体系.assets/gc/03.png)
 
 > 注：`mark and sweep`算法在执行的时候，需要程序暂停。即 `STW(stop the world)`，`STW`的过程中，`CPU`不执行用户代码，全部用于垃圾回收，这个过程的影响很大，所以`STW`也是一些回收机制最大的难题和希望优化的点。所以在执行第三步的这段时间，程序会暂定停止任何工作，卡在那等待回收执行完毕。
 
@@ -1594,11 +1594,11 @@ func closechan(c *hchan) {
 
 `Go V1.3`版本之前就是按照以上来实施的, 在执行GC的基本流程就是首先启动`STW`暂停，然后执行标记，再执行数据回收，最后停止`STW`，如图所示。
 
-![image-20211102155242319](bak_assets/gc/04.png)
+![image-20211102155242319](Golang体系.assets/gc/04.png)
 
 `Go V1.3` 做了简单的优化，将`STW`的步骤提前，减少`STW`暂停的时间范围。如下所示：
 
-![image-20211102155448530](bak_assets/gc/05.png)
+![image-20211102155448530](Golang体系.assets/gc/05.png)
 
 无论怎么优化，`Go V1.3`都面临这个一个重要问题，就是`mark-and-sweep` 算法会暂停整个程序 。
 
@@ -1626,23 +1626,23 @@ func closechan(c *hchan) {
 
 * 第一步 ，每次新创建的对象，默认的颜色都是标记为**白色**，如图所示。
 
-  ![image-20211102160206143](bak_assets/gc/06.png)
+  ![image-20211102160206143](Golang体系.assets/gc/06.png)
 
 * 第二步，每次`GC`回收开始，会从根节点开始遍历所有对象，把遍历到的对象从白色集合放入**灰色**集合如图所示。
 
-![image-20211102160309275](bak_assets/gc/07.png)
+![image-20211102160309275](Golang体系.assets/gc/07.png)
 
 * 遍历灰色集合，将灰色对象引用的对象从白色集合放入灰色集合，之后将此灰色对象放入黑色集合，如图所示。
 
-![image-20211102160409273](bak_assets/gc/08.png)
+![image-20211102160409273](Golang体系.assets/gc/08.png)
 
 * **第四步**, 重复**第三步**, 直到灰色中无任何对象，如图所示。
 
-  ![image-20211102160510907](bak_assets/gc/09.png)
+  ![image-20211102160510907](Golang体系.assets/gc/09.png)
 
 * **第五步**: 回收所有的白色标记表的对象，也就是回收垃圾，如图所示。
 
-![image-20211102160549314](bak_assets/gc/10.png)
+![image-20211102160549314](Golang体系.assets/gc/10.png)
 
 以上我们将全部的白色对象进行删除回收，剩下的就是全部依赖的黑色对象。
 
@@ -1652,23 +1652,23 @@ func closechan(c *hchan) {
 
 第一步，假设目前黑色的有对象1和对象4， 灰色的有对象2和对象7，其他的为白色对象，且对象2是通过指针p指向对象3的，如图所示。
 
-![image-20211108085901433](bak_assets/gc/11.png)
+![image-20211108085901433](Golang体系.assets/gc/11.png)
 
 第二步，目前黑色的有对象1和对象4， 灰色的有对象2和对象7，其他的为白色对象，且对象2是通过指针p指向对象3的，如图所示。
 
-![image-20211108090012154](bak_assets/gc/12.png)
+![image-20211108090012154](Golang体系.assets/gc/12.png)
 
 第三步，与此同时灰色的对象2将指针p移除，那么白色的对象3实则就是被挂在了已经扫描完成的黑色的对象4下，如图所示。
 
-![image-20211108090055077](bak_assets/gc/13.png)
+![image-20211108090055077](Golang体系.assets/gc/13.png)
 
 第四步，正常指向三色标记的算法逻辑，将所有灰色的对象标记为黑色，那么对象2和对象7就被标记成了黑色，如图所示。
 
-![image-20211108090134681](bak_assets/gc/14.png)
+![image-20211108090134681](Golang体系.assets/gc/14.png)
 
 第五步，执行了三色标记的最后一步，将所有白色对象当做垃圾进行回收，如图所示。
 
-![image-20211108090203490](bak_assets/gc/15.png)
+![image-20211108090203490](Golang体系.assets/gc/15.png)
 
 >  结果：本来是对象4合法引用的对象3，却被GC给“误杀”回收掉了。如果示例中的白色对象3还有很多下游对象的话，也会一并都清理掉。
 
@@ -1679,7 +1679,7 @@ func closechan(c *hchan) {
 
 如果当以上两个条件同时满足时，就会出现对象丢失现象！如果三色标记过程不启动`STW`，那么在`GC`扫描过程中，任意的对象均可能发生读写操作，如图所示，在还没有扫描到对象2的时候，已经标记为黑色的对象4，此时创建指针q，并且指向白色的对象3。
 
-![image-20211102162254314](bak_assets/gc/16.png)
+![image-20211102162254314](Golang体系.assets/gc/16.png)
 
 为了防止这种现象的发生，最简单的方式就是`STW`，直接禁止掉其他用户程序对对象引用关系的干扰，但是**`STW`的过程有明显的资源浪费，对所有的用户程序都有很大影响**。那么是否可以在保证对象不丢失的情况下合理的尽可能的提高GC效率，减少STW时间呢？答案是可以的，我们只要使用一种机制，尝试去破坏上面的两个必要条件就可以了。
 
@@ -1697,9 +1697,9 @@ func closechan(c *hchan) {
 
 强三色不变色实际上是强制性的不允许黑色对象引用白色对象，这样就不会出现有白色对象被误删的情况。
 
-![image-20211102164352237](bak_assets/gc/17.png)弱三色不变式强调，黑色对象可以引用白色对象，但是这个白色对象必须存在其他灰色对象对它的引用，或者可达它的链路上游存在灰色对象。 这样实则是黑色对象引用白色对象，白色对象处于一个危险被删除的状态，但是上游灰色对象的引用，可以保护该白色对象，使其安全。
+![image-20211102164352237](Golang体系.assets/gc/17.png)弱三色不变式强调，黑色对象可以引用白色对象，但是这个白色对象必须存在其他灰色对象对它的引用，或者可达它的链路上游存在灰色对象。 这样实则是黑色对象引用白色对象，白色对象处于一个危险被删除的状态，但是上游灰色对象的引用，可以保护该白色对象，使其安全。
 
-![image-20211102164410280](bak_assets/gc/18.png)
+![image-20211102164410280](Golang体系.assets/gc/18.png)
 
 #### 插入屏障  vs 删除屏障
 
@@ -1717,69 +1717,69 @@ func closechan(c *hchan) {
 
 * ① 程序刚创建的对象标记为白色，将所有对象放入白色集合中。
 
-  ![image-20211108102841534](bak_assets/gc/19.png)
+  ![image-20211108102841534](Golang体系.assets/gc/19.png)
 
 * ② 遍历根节点（非递归，只遍历一次），得到灰色对象。
 
-  ![image-20211108102903833](bak_assets/gc/20.png)
+  ![image-20211108102903833](Golang体系.assets/gc/20.png)
 
 * ③ 遍历灰色标记表，将可达的对象，从白色标记为灰色，遍历之后的灰色标记为黑色。
 
-  ![image-20211108102928950](bak_assets/gc/21.png)
+  ![image-20211108102928950](Golang体系.assets/gc/21.png)
 
 * ④ 由于并发特性，此刻外界向对象4添加对象8，对象1添加对象9。由于对象4位于堆空间，即将触发插入屏障，对象1在栈空间，不触发。
 
-  ![image-20211108102949121](bak_assets/gc/22.png)
+  ![image-20211108102949121](Golang体系.assets/gc/22.png)
 
 * ⑤ 由于插入写屏障，在堆空间黑色对象添加白色，会将白色改为灰色。对象8改为灰色，对象9依然为灰色。
 
-  ![image-20211108103013384](bak_assets/gc/23.png)
+  ![image-20211108103013384](Golang体系.assets/gc/23.png)
 
 * ⑥ 继续循环上述流程进行三色标记，直至没有灰色节点。
 
-   ![image-20211108103042456](bak_assets/gc/24.png)
+   ![image-20211108103042456](Golang体系.assets/gc/24.png)
 
 * ⑦ 在准备回收白色前，重新扫描一次栈空间，此时加STW暂停保护栈，防止外界干扰（有新的白色被黑色添加）。
 
-  ![image-20211108103104783](bak_assets/gc/25.png)
+  ![image-20211108103104783](Golang体系.assets/gc/25.png)
 
 * ⑧ 在STW中，将栈中的对象进行三色标记，直至没有灰色对象为止。
 
-  ![image-20211108103119757](bak_assets/gc/26.png)
+  ![image-20211108103119757](Golang体系.assets/gc/26.png)
 
 * ⑨ 停止STW，清除白色对象。
 
-  ![image-20211108103146107](bak_assets/gc/27.png)
+  ![image-20211108103146107](Golang体系.assets/gc/27.png)
 
 > 删除屏障的整体流程（不区分栈和堆空间）：
 
 * ① 程序刚创建的对象标记为白色，将所有对象放入白色集合中。
 
-  ![image-20211108103443445](bak_assets/gc/28.png) 
+  ![image-20211108103443445](Golang体系.assets/gc/28.png) 
 
 * ② 遍历根节点（非递归，只遍历一次），得到灰色对象。
 
-  ![image-20211108103503331](bak_assets/gc/29.png)
+  ![image-20211108103503331](Golang体系.assets/gc/29.png)
 
 * ③ 灰色对象1删除对象5，如果不触发删除屏障，5-2-3路径与主路径断开，最后均会被清除。
 
-  ![image-20211108103529926](bak_assets/gc/30.png)
+  ![image-20211108103529926](Golang体系.assets/gc/30.png)
 
 * ④ 触发删除屏障，被删除的对象5，自身被标记为灰色。
 
-  ![image-20211108103547056](bak_assets/gc/31.png)
+  ![image-20211108103547056](Golang体系.assets/gc/31.png)
 
 * ⑤ 遍历灰色标记表，将可达的对象白色标记为灰色，遍历之后的灰色标记为黑色。
 
-  ![image-20211108103603822](bak_assets/gc/32.png)
+  ![image-20211108103603822](Golang体系.assets/gc/32.png)
 
 * ⑥ 继续循环上述流程进行三色标记，直至没有灰色节点。
 
-  ![image-20211108103621905](bak_assets/gc/33.png)
+  ![image-20211108103621905](Golang体系.assets/gc/33.png)
 
 * ⑦ 清除白色对象。
 
-![image-20211108103635968](bak_assets/gc/34.png)
+![image-20211108103635968](Golang体系.assets/gc/34.png)
 
 ### V1.8 混合写屏障机制
 
@@ -1801,23 +1801,23 @@ func closechan(c *hchan) {
 
 * 场景一： **对象被一个堆对象删除引用，成为栈对象的下游**。堆区，对象4删除对象7时，触发删除写屏障，将对象7置为灰色，对象7此时为灰色，处于被保护的状态。栈区不启动任何写屏障，所以直接将对象7挂在对象1下面。
 
-![image-20211108140824880](bak_assets/gc/35.png)
+![image-20211108140824880](Golang体系.assets/gc/35.png)
 
 
 
 * 场景二：**对象被一个栈对象删除引用，成为另一个栈对象的下游**。新创建一个对象9，因为混合写屏障模式中，`GC`过程中任何新创建的对象均标记为黑色。栈中不启动任何写屏障，对象9直接添加下游引用对象3，对象2直接删除对象3的引用关系。
 
-![image-20211108142005556](bak_assets/gc/36.png)
+![image-20211108142005556](Golang体系.assets/gc/36.png)
 
 * 场景三：**对象被一个堆对象删除引用，成为另一个堆对象的下游**。堆对象10添加下游引用堆对象7，触发屏障机制，被添加的对象7标记为灰色，对象6被保护。堆对象4删除堆对象7，触发屏障机制，被删除的对象7标记为灰色。
 
-  ![image-20211108142544550](bak_assets/gc/37.png)
+  ![image-20211108142544550](Golang体系.assets/gc/37.png)
 
   
 
 * 场景四：**对象从一个栈对象删除引用，成为另一个堆对象的下游**。栈对象1删除栈对象2的引用，栈空间不触发写屏障；堆对象4删除堆对象7的引用关系，转移至栈对象2，堆对象4在删除的时候触发屏障，标记堆对象7为灰色，保护堆对象7及其下游节点对象。
 
-  ![image-20211108143530162](bak_assets/gc/38.png)
+  ![image-20211108143530162](Golang体系.assets/gc/38.png)
 
  `Golang`中的混合写屏障满足`弱三色不变式`，结合了删除写屏障和插入写屏障的优点，只需要在开始时并发扫描各个`goroutine`的栈，使其变黑并一直保持，这个过程不需要`STW`，而标记结束后，因为栈在扫描后始终是黑色的，也无需再进行`re-scan`操作了，避免了对栈`re-scan`的过程，极大的减少了`STW`的时间。
 
@@ -2992,7 +2992,7 @@ s := make([]T, 0, 10)
 c := make(chan T, 10)
 ```
 
-![image-20211102175107139](bak_assets/make_new/01.png)
+![image-20211102175107139](Golang体系.assets/make_new/01.png)
 
 ### array && slice
 
@@ -3057,7 +3057,7 @@ func main() {
 
 数组的底层结构示意图：
 
-![image-20211031165038469](bak_assets/array_slice/01.png)
+![image-20211031165038469](Golang体系.assets/array_slice/01.png)
 
 上图总结：
 
@@ -3065,19 +3065,19 @@ func main() {
 * 数组的第一个元素的地址，就是数组的首地址。
 * 数组的各个元素的地址间隔是依据数组的类型决定，`int`占8个字节，比如 `int64 -> 8 int32->4...`。
 
-![image-20211031170052024](bak_assets/array_slice/02.png)
+![image-20211031170052024](Golang体系.assets/array_slice/02.png)
 
 `Go`的数组属值类型，在默认情况下是值传递，因此会进行值拷贝。数组间不会相互影响：
 
-![image-20211031171223947](bak_assets/array_slice/03.png)
+![image-20211031171223947](Golang体系.assets/array_slice/03.png)
 
 如想在其它函数中，去修改原来的数组，可以使用引用传递(指针方式)：
 
-![image-20211031171952476](bak_assets/array_slice/04.png)
+![image-20211031171952476](Golang体系.assets/array_slice/04.png)
 
 长度是数组类型的一部分，在传递函数参数时 需要考虑数组的长度：
 
-![image-20211031172034637](bak_assets/array_slice/05.png)
+![image-20211031172034637](Golang体系.assets/array_slice/05.png)
 
 `slice` 细节，切片定义的基本语法:
 
@@ -3122,7 +3122,7 @@ func main() {
 
 切片的底层结构示意图：
 
-![image-20211031173315782](bak_assets/array_slice/06.png)
+![image-20211031173315782](Golang体系.assets/array_slice/06.png)
 
 上图总结：
 
@@ -3158,7 +3158,7 @@ var 切片名 []type = make([]type, len, [cap])
 
 案例演示图：
 
-![image-20211031175006465](bak_assets/array_slice/07.png)
+![image-20211031175006465](Golang体系.assets/array_slice/07.png)
 
 ③ 方式三：定义一个切片，直接就指定具体数组，使用原理类似 make 的方式。
 
@@ -3242,7 +3242,7 @@ func main() {
 }
 ```
 
-![image-20211031210658743](bak_assets/array_slice/08.png)
+![image-20211031210658743](Golang体系.assets/array_slice/08.png)
 
  `append `操作的本质就是对数组扩容：`go` 底层会创建一个新的数组 `newArr`(按照扩容后大小) 将 `slice` 原来包含的元素拷贝到新的数组 `newArr`，` slice` 重新引用到 `newArr`。
 
@@ -3270,7 +3270,7 @@ func main() {
 
 ⑧ 切片是引用类型，所以在传递时，遵守引用传递机制。
 
-![image-20211031180114277](bak_assets/array_slice/09.png)
+![image-20211031180114277](Golang体系.assets/array_slice/09.png)
 
 
 
@@ -3305,7 +3305,7 @@ func main() {
 
 >  Go 语言采用的是哈希查找表，并且使用链表解决哈希冲突。通过 `key` 的哈希值将 `key` 散落到不同的桶中，每个桶中有 8 个 `cell`。哈希值的低位决定桶序号，高位标识同一个桶中的不同 `key`。具体是有两个核心结构体`hmap`和`bmap`组成。Go里面Map的实现**主要**用到了数组，其次还用到了链表。
 
-<img src="bak_assets/map/image-20211117100700792.png" alt="image-20211117100700792" style="zoom:50%;" />
+<img src="Golang体系.assets/map/image-20211117100700792.png" alt="image-20211117100700792" style="zoom:50%;" />
 
 ```go
 type hmap struct {
@@ -3386,7 +3386,7 @@ info = make(map[string]string,10)
 
   注意：每个`bmap`中可以存储8个键值对，当不够存储时需要使用溢出桶，并将当前`bmap`中的`overflow`字段指向溢出桶的位置。
 
-  ![image-20211116223439360](bak_assets/map/02.png)
+  ![image-20211116223439360](Golang体系.assets/map/02.png)
 
 ```go
 func makemap(t *maptype, hint int, h *hmap) *hmap {
@@ -3475,7 +3475,7 @@ func hashGrow(t *maptype, h *hmap) {
 - 第七步：`extra.overflow`设置为nil，因为新桶中还未使用溢出桶。
 - 第八步：`extra.nextOverflow`设置为新创建的桶中的第一个溢出桶的位置。
 
-![image-20211116233416560](bak_assets/map/03.png)
+![image-20211116233416560](Golang体系.assets/map/03.png)
 
 
 
@@ -3564,7 +3564,7 @@ again:
 
 * 如果是翻倍扩容，那么迁移规就是将旧桶中的数据分流至新的两个桶中（比例不定），并且桶编号的位置为：同编号位置和翻倍后对应编号位置。迁移时会遍历某个旧桶中所有的key（包括溢出桶），并根据key重新生成哈希值，根据哈希值的 `低B位` 来决定将此键值对分流道那个新桶中。
 
-![image-20211117152757026](bak_assets/map/04.png)
+![image-20211117152757026](Golang体系.assets/map/04.png)
 
 扩容后，B的值在原来的基础上已加1，也就意味着通过多1位来计算此键值对要分流到新桶位置，如上图：当新增的位（红色）的值为 0，则数据会迁移到与旧桶编号一致的位置。当新增的位（红色）的值为 1，则数据会迁移到翻倍后对应编号位置。
 

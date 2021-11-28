@@ -12,6 +12,22 @@
 
 
 
+## 链表
+
+[如何实现 LRU 缓存淘汰算法?](#lru)
+
+[手写常见五个链表操作之【单链表反转】。](#reverse linked list)
+
+[手写常见五个链表操作之【链表中环的检测】](#ring_linked_list)
+
+[手写常见五个链表操作之【两个有序的链表合并】](#_linked_list)
+
+[手写常见五个链表操作之【两个有序的链表合并】](#_linked_list)
+
+[手写常见五个链表操作之【求链表的中间结点】](#_linked_list)
+
+
+
 # 解答列表
 
 ## 数组
@@ -78,3 +94,19 @@ a[i]_address = base_address + i * data_type_size
 address = base_address + ( i * n + j) * type_size
 ```
 
+
+
+## 链表
+
+<span id="lru">如何实现 LRU 缓存淘汰算法?</span>
+
+常见的策略有三种：先进先出策略 FIFO(First In，First Out)、最少使用策略 LFU(Least Frequently Used)、最近最少使用策略 LRU(Least Recently Used)。
+
+实现思路：通过维护一个有序单链表，越靠近链表尾部的结点是越早之前访问的。当有一个新的数据被访问时，我们从链表头开始顺序遍历链表。
+
+<img src="../../Algorithm/Algorithm.assets/image-20211128163059044.png" alt="image-20211128163059044" style="zoom:50%;" />
+
+* 如果此数据之前已经被缓存在链表中了，我们遍历得到这个数据对应的结点，并将其从原来的位置删除，然后再插入到链表的头部。
+* 如果此数据没有在缓存链表中，又可以分为两种情况:
+  ① 如果此时缓存未满，则将此结点直接插入到链表的头部;
+  ②  如果此时缓存已满，则链表尾结点删除，将新的数据结点插入链表的头部。

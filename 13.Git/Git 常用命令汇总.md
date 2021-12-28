@@ -1,14 +1,96 @@
-# git reset
+# 生成多个SSH Key
 
-# 修正提交
+1、本地生成`SSH-Key`：
+
+```shell
+# 生成一个gitee用的SSH-Key
+ssh-keygen -t rsa -C 'xxxx@xx.com' -f ~/.ssh/gitee_id_rsa
+# 生成一个github用的SSH-Key
+ssh-keygen -t rsa -C 'xxxx@xx.com' -f ~/.ssh/github_id_rsa
+# 生成一个用gitlab的SSH-Key
+ssh-keygen -t rsa -C 'xxxx@xx.com' -f ~/.ssh/gitlab_id_rsa
+```
+
+2、在 `~/.ssh` 目录下新建一个`config`文件，添加如下内容：
+
+```
+# gitee
+Host gitee.com
+HostName gitee.com
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/gitee_id_rsa
+
+# github
+Host github.com
+HostName github.com
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/github_id_rsa
+
+# gitlab
+Host xxxx.com
+HostName xxxx.com
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/gitlab_id_rsa
+```
+
+> 其中Host和HostName填写git服务器的域名，IdentityFile指定私钥的路径。
+
+3、将 `.pub` 文件中内容复制到相应的平台`SSH`设置中。
+
+```
+# Mac
+$ pbcopy < ~/.ssh/id_rsa.pub
+
+# Windows
+$ clip < ~/.ssh/id_rsa.pub
+# Copies the contents of the id_rsa.pub file to your clipboard
+
+# Linux
+$ sudo apt-get install xclip
+# Downloads and installs xclip. If you don't have `apt-get`, you might need to use another installer (like `yum`)
+
+$ xclip -sel clip < ~/.ssh/id_rsa.pub
+# Copies the contents of the id_rsa.pub file to your clipboard
+```
+
+4、连接测试。
+
+```shell
+➜ ssh -T git@github.com
+The authenticity of host 'github.com (20.205.243.166)' can't be established.
+ED25519 key fingerprint is SHA256:+xxx/zLDA0zPMSvHdkr4UvCOqU.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
+Hi LensXiong! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+5、为项目单独配置用户名和邮箱。
+
+* 进入项目所在的目录，和` .git` 目录平行，在 `gitbash`中执行如下命令：
+
+```
+git config user.name "wangxiong"
+git config user.email "xxxx@xx.com"
+```
+
+* 使用 `git config --list` 命令进行查看，可以看到全局和本项目的配置
+
+* 在 `.git` 目录下也有一个 `config` 文件，设置好后，可以进去看下，看有没有修改好。
+
+
+
+# git 常用命令
+
+## 修正提交
 *  git commit --amend // 将暂存区中的文件提交（先可以将需要提交的文件进行add）
 
-# 本地文件撤销操作
+## 本地文件撤销操作
 * git checkout -- `<file>` // 撤销本地文件的所有修改
 * git reset HEAD `<file> `// 取消暂存的文件
 
 
-# git stash 
+## git stash 
 
 git stash 命令：临时暂存和恢复
 
@@ -22,27 +104,27 @@ git stash 命令：临时暂存和恢复
 * git stash clear // 删除所有缓存的stash
 
 
-# 查看远程分支
+## 查看远程分支
 
 * git branch -r | grep x // 查看远程分支并进行正则匹配
 *  git remote // 不带参数，列出已经存在的远程分支
 * git remote -v // 列出详细信息，在每一个名字后面列出其远程url，此时， -v 选项，显示对应的克隆地址
 * git remote show origin // 查看远程库的一些信息，及与本地分支的信息
 
-# git 拉取远程分支并切换到该分支
+## git 拉取远程分支并切换到该分支
 
 * git checkout -b 本地分支名 origin/远程分支名
 * git checkout --track origin/远程分支名 （这种写法是上面的简化版，效果完全一样）
 * git checkout -t origin/远程分支名（这种写法是上面两种的简化版）
 
 
-# git 查看所有远程分支以及同步
+## git 查看所有远程分支以及同步
 
 * git branch   // 查看本地仓库的分支
 * git branch -a  // 查看本地和远程仓库的所有分支
 * git branch -r  // 查看远程仓库的分支
 * git fetch // 将本地分支与远程保持同步
 
-# 删除分支
+## 删除分支
 * git branch -D 本地分支名 // 删除本地分支
 * git push origin --delete 远程分支名 // 删除远程分支

@@ -89,6 +89,97 @@ nohup <command> > xxx.log &
 | find . -type f -size 10M              | 搜索等于10M的文件                                |
 | find . -name "*.txt" -o -name "*.pdf" | 当前目录及子目录下查找所有以.txt和.pdf结尾的文件 |
 
+## ps
+
+作用：显示当前系统中进程的快照。也就是说，该命令能捕获系统在某一事件的进程状态。
+英文：`processes snapshot`,report a snapshot of the current processes.
+
+选项：
+
+| 选项 | 说明                   | 作用                         |
+| ---- | ---------------------- | ---------------------------- |
+| a    | all                    | 显示所有进程                 |
+| -a   | -all                   | 显示同一终端下的所有进程     |
+| -A   | Identical to -e.       | 显示所有进程                 |
+| -e   | Identical to -A.       | Select all processes.        |
+| f    | Do full-format listing | 显示程序之间的关系           |
+| u    | userlist               | 指定用户的所有进程           |
+| -au  |                        | 显示本用户的详细信息         |
+| -aux |                        | 显示所有包含其他使用者的行程 |
+
+实例1：使用`cpu`和内存升序排序来过滤进程，并通过管道显示前10个结果。
+
+```linux
+[root@wx /]# ps -aux --sort -pcpu,-pmem | head -n 10
+USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
+root 10620 0.2 1.1 132656 11968 ? Ssl 9月12 89:52 /usr/local/aegis/aegis_client/aegis_10_51/AliYunDun
+root 25 0.1 0.0 0 0 ? S 7月24 147:03 [kswapd0]
+```
+
+
+
+实例2：使用`PS`实时监控进程状态（动态显示，每秒刷新一次）
+
+```linux
+[root@wx /]# watch -n 1 'ps -aux --sort -pcpu,-pmem | head -n 10'
+```
+
+
+
+实例3：查找特定进程的信息
+
+```linux
+[root@wx /]# ps -ef | grep nginx
+[root@wx /]# ps -aux|grep nginx
+```
+
+## netstat
+
+作用：用来打印`Linux`中网络系统的状态信息，获取整个`Linux`系统的网络情况。
+
+英文：`network statistics`, Print network connections, routing tables, interface statistics, masquerade connections, and multicast memberships.
+
+选项：
+
+| 选项 | 说明       | 作用                                       |
+| ---- | ---------- | ------------------------------------------ |
+| -a   | --all      | 显示所有连线中的Socket。                   |
+| -t   | --tcp      | 显示TCP传输协议的连线状况。                |
+| -u   | --udp      | 显示UDP传输协议的连线状况。                |
+| -n   | --numeric  | 直接使用ip地址，而不通过域名服务器。       |
+| -p   | --programs | 显示正在使用Socket的程序识别码和程序名称。 |
+| -l   | -listening | 显示监控中的服务器的Socket。               |
+| -e   | --extend   | 显示网络其他相关信息。                     |
+
+实例1：禁用反向域名解析,只列出 TCP 或 UDP 协议的连接。
+
+```linux
+[root@wx /]# netstat -antu
+Proto Recv-Q Send-Q Local Address Foreign Address State
+tcp 0 0 0.0.0.0:80 0.0.0.0:* LISTEN
+udp 0 0 0.0.0.0:68 0.0.0.0:*
+```
+
+
+
+实例2：只列出监听中的`nginx`连接，要求获取进程名(-p)、进程号(-p)以及用户 ID(-e)。
+
+```linux
+[root@wx /]# netstat -lnept | grep nginx
+tcp 0 0 0.0.0.0:80 0.0.0.0:* LISTEN 0 30270 13332/nginx: master
+```
+
+
+
+实例3：查看端口占用情况（redis-6379，mysql-3306）
+
+```linux
+[root@wx /]# netstat -tunpl | grep 3306
+tcp6 0 0 :::3306 :::* LISTEN 22311/mysqld
+```
+
+
+
 # Vim 
 
 ## 跳转

@@ -21,11 +21,11 @@ Linux xxxx 3.10.0-1160.76.1.el7.x86_64 #1 SMP Wed Aug 10 16:21:17 UTC 2022 x86_6
 1、`lsb_release -a`，即可列出所有版本信息：
 ```
 [root@localhost ~]# lsb_release -a
-LSB Version: :core-3.1-ia32:core-3.1-noarch:graphics-3.1-ia32:graphics-3.1-noarch
-Distributor ID: CentOS
-Description: CentOS release 5.5 (Final)
-Release: 5.5
-Codename: Final
+LSB Version:	:core-4.1-amd64:core-4.1-noarch:cxx-4.1-amd64:cxx-4.1-noarch:desktop-4.1-amd64:desktop-4.1-noarch:languages-4.1-amd64:languages-4.1-noarch:printing-4.1-amd64:printing-4.1-noarch
+Distributor ID:	CentOS
+Description:	CentOS Linux release 7.9.2009 (Core)
+Release:	7.9.2009
+Codename:	Core
 ```
 注：`bash: lsb_release: command not found...`
 解决：

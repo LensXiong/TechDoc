@@ -2,6 +2,52 @@
 
 # Linux 
 
+## 系统版本信息
+### 查看Linux内核版本命令（两种方法）：
+
+1、`cat /proc/version`
+```
+[root@localhost ~]# cat /proc/version
+Linux version 3.10.0-1160.76.1.el7.x86_64 (xxxx@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-44) (GCC) ) #1 SMP Wed Aug 10 16:21:17 UTC 2022
+```
+2、`uname -a`
+```
+[root@localhost ~]# uname -a
+Linux xxxx 3.10.0-1160.76.1.el7.x86_64 #1 SMP Wed Aug 10 16:21:17 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+```
+
+### 查看Linux系统版本的命令（3种方法）：
+
+1、`lsb_release -a`，即可列出所有版本信息：
+```
+[root@localhost ~]# lsb_release -a
+LSB Version: :core-3.1-ia32:core-3.1-noarch:graphics-3.1-ia32:graphics-3.1-noarch
+Distributor ID: CentOS
+Description: CentOS release 5.5 (Final)
+Release: 5.5
+Codename: Final
+```
+注：`bash: lsb_release: command not found...`
+解决：
+```
+[root@localhost ~]# yum install -y redhat-lsb
+```
+
+这个命令适用于所有的Linux发行版，包括Redhat、SuSE、Debian…等发行版。
+
+2、cat /etc/redhat-release，这种方法只适合Redhat系的Linux：
+```
+[root@localhost ~]# cat /etc/redhat-release
+CentOS Linux release 7.9.2009 (Core)
+```
+3、cat /etc/issue，此命令也适用于所有的Linux发行版。
+```
+[root@localhost ~]# cat /etc/issue
+\S
+Kernel \r on an \m
+```
+
+
 ## 2>&1 | tee
 
 ① 标准输出+标准错误

@@ -2,6 +2,18 @@
 
 # Linux 
 
+## iterm rz 上传
+问题：
+```
+/usr/local/bin/iterm2-send-zmodem.sh: line 21: /usr/local/bin/sz: No such file or directory
+```
+处理：
+```
+brew list lrzsz
+vim /usr/local/bin/iterm2-send-zmodem.sh
+```
+修改对应的 `/usr/local/bin/sz` 为 `brew list lrzsz` 中查看的位置。
+
 
 ## Ubuntu Docker Timezone 设置
 一般来讲如下方法就够了：

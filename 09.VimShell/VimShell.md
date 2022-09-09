@@ -2,14 +2,30 @@
 
 # Linux 
 
+
+## Ubuntu Docker Timezone 设置
+一般来讲如下方法就够了：
+```
+RUN echo "Asia/Shanghai" > /etc/timezone
+RUN dpkg-reconfigure -f noninteractive tzdata
+```
+但是因为 `Ubuntu` 的 `bug`,  要添加一行 `RUn rm -f /etc/localtime`, 因此:
+```
+RUN echo "Asia/Shanghai" > /etc/timezone
+RUN rm -f /etc/localtime
+RUN dpkg-reconfigure -f noninteractive tzdata
+```
+如果提示 `tzdata` 未安装，则执行如下命令安装：
+```
+apt-get install -y tzdata
+```
+
 ## CPU
 关于x86、x86_64/x64、amd64和arm64/aarch64。
 
-* x86（32位系统）
+* x86（32位系统）g
 * x84_64（简称x64，属于64位系统，向下兼容x86）
-* amd64=x86_64=x64!=IA64（）
-
-
+* amd64=x86_64=x64!=IA64
 
 ## 系统版本信息
 ### 查看Linux内核版本

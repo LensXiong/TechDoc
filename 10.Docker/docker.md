@@ -6,11 +6,7 @@ docker save -o my_ubuntu_v3.tar runoob/ubuntu:v3
 
 // 导入镜像
 docker load < xxx.tar.gz
-
-
-
 ```
-
 
 
 # 安装

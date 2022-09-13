@@ -9,6 +9,19 @@ docker load < xxx.tar.gz
 ```
 
 
+## cp
+`docker cp` :用于容器与主机之间的数据拷贝。
+从容器中拷贝至主机：
+```
+格式：docker cp [OPTIONS] CONTAINER:SRC_PATH DEST_PATH|-
+示例：docker cp xxx_server:/root/xx/xxx /root/xxx/
+```
+从主机拷贝至容器：
+```
+格式：docker cp [OPTIONS] SRC_PATH|- CONTAINER:DEST_PATH
+示例：docker cp  ./xxx.so  xxx_analyze:/xxxServer/src/plugins/
+```
+
 # 安装
 
 ## rpm安装

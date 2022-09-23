@@ -1,12 +1,21 @@
-# 问题列表
+# 列表
 
-1、[Linux 环境使用的多么， 命令说几个。](#01)
+* [常用命令。](#01)
+* [ Centos 静态IP设置。](#centos_static_ip)
+* [ Ubuntu 静态IP设置。](#ubuntu_static_ip)
 
 
 
-# 问题解答
 
-1、<span id="01">Linux 环境使用的多么， 命令说几个。</span>
+
+
+
+
+
+
+<span id="centos_static_ip">Centos 静态IP设置。</span>
+
+<span id="01">Linux 常用命令</span>
 
 ```
 ps -ef | grep php-fpm
@@ -40,14 +49,14 @@ root     19422  0.0  0.0 103296   784 pts/1    S+   13:13   0:00 grep nginx
 
 
 
-```she
+```shell
 [root@iZ2z ~]# netstat -tunpl | grep 3306
 tcp        0      0 0.0.0.0:3306                0.0.0.0:*                   LISTEN      1340/mysqld
 ```
 
 
 
-```she
+```shell
 [root@iZ2z ~]# lsof -i
 COMMAND     PID      USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
 memcached  1019 memcached   26u  IPv4    8983      0t0  TCP *:memcache (LISTEN)
@@ -64,4 +73,9 @@ mysqld  1340 mysql   13u  IPv4   9791      0t0  TCP *:mysql (LISTEN)
 ```shell
 sed 's/7000/7001/g' redis7000/redis.conf > redis7001/redis.conf
 ```
+
+
+
+
+
 

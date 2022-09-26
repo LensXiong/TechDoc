@@ -5,14 +5,6 @@
 * [ Ubuntu 静态IP设置。](#ubuntu_static_ip)
 
 
-
-
-
-
-
-
-
-
 <span id="centos_static_ip">Centos 静态IP设置。</span>
 
 <span id="01">Linux 常用命令</span>

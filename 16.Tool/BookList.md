@@ -4,3 +4,5 @@
 
 [Go 语言设计与实现](https://draveness.me/golang/)
 
+# Git 清单
+[Git-中文版](https://git-scm.com/book/zh/v2)

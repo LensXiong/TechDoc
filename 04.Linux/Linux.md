@@ -1,13 +1,52 @@
 # 列表
 
-* [常用命令。](#01)
+* [常用命令。](#common_command)
 * [ Centos 静态IP设置。](#centos_static_ip)
 * [ Ubuntu 静态IP设置。](#ubuntu_static_ip)
+* [ Docker-compose 中两个桥接网络导致 Telnet 不通。](#bridge_gateway)
+
+
+<span id="bridge_gateway">Centos 静态IP设置。</span>
+问题：telnet 内网下另一台服务中某个端口无法访问。
+```
+networks:
+skygo_net:
+driver: bridge
+enable_ipv6: false
+ipam:
+driver: default
+config:
+- subnet: 172.16.1.0/24
+gateway: 172.16.1.1
+
+[root@web-1 config]# ifconfig
+br-783ac168832a: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.16.1.1  netmask 255.255.255.0  broadcast 172.16.1.255
+        inet6 fe80::42:98ff:fe80:1648  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:98:80:16:48  txqueuelen 0  (Ethernet)
+        RX packets 274992  bytes 209994168 (200.2 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 440790  bytes 358828865 (342.2 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+br-xxxxxxxxxxx: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.16.1.1  netmask 255.255.255.0  broadcast 172.16.1.255
+        inet6 fe80::42:98ff:fe80:1648  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:98:80:16:48  txqueuelen 0  (Ethernet)
+        RX packets 274992  bytes 209994168 (200.2 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 440790  bytes 358828865 (342.2 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
+解决办法：关闭多余的网卡，通过 ifconfig 查看到桥接 172.16.1.1 中有两个网络。
+```
+ifconfig br-xxxxxx down
+```
+注：`ifconfig eth0 up` 为启动网卡`eth0` ；`ifconfig eth0 down` 为关闭网卡 `eth0`。`ssh`登陆`linux`服务器操作要小心，关闭了就不能开启了，除非你有多网卡。
 
 
 <span id="centos_static_ip">Centos 静态IP设置。</span>
 
-<span id="01">Linux 常用命令</span>
+<span id="common_command">Linux 常用命令</span>
 
 ```
 ps -ef | grep php-fpm

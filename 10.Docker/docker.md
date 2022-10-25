@@ -1,3 +1,20 @@
+
+
+# 查看容器映射目录
+```
+[root@v merged]# docker inspect skygo_mysql | grep Merge
+                "MergedDir": "/opt/skygo/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged",
+[root@ merged]# cd /opt/skygo/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged
+[root@v merged]# ll etc/mysql
+total 12K
+drwxr-xr-x 1 root root   94 Dec 21  2021 ./
+drwxr-xr-x 1 root root 4.0K Sep 22 10:52 ../
+drwxr-xr-x 1 root root   62 Dec 21  2021 conf.d/
+lrwxrwxrwx 1 root root   24 Dec 21  2021 my.cnf -> /etc/alternatives/my.cnf
+-rw-r--r-- 1 root root  839 Jul 10  2016 my.cnf.fallback
+-rw-r--r-- 1 root root 1.5K Jan  5  2021 mysql.cnf
+drwxr-xr-x 1 root root   24 Dec 21  2021 mysql.conf.d/
+```
 # 命令
 
 ```

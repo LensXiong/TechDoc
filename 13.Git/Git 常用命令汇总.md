@@ -128,3 +128,39 @@ git stash 命令：临时暂存和恢复
 ## 删除分支
 * git branch -D 本地分支名 // 删除本地分支
 * git push origin --delete 远程分支名 // 删除远程分支
+
+## git alias
+```
+[alias]
+    s = status -s
+    v = remote -v
+    r = remote show origin
+    b = branch
+    p = pull
+    ck = checkout
+    rd = reset HEAD --hard
+
+    d = diff --stat
+    dd = diff --stat --staged
+    ds = diff --staged
+
+    l = log --stat --graph --abbrev-commit
+    lp = log --stat --graph --abbrev-commit -p
+    ll = log --all --graph --pretty=format:'%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+[pull]
+    rebase = false
+[push]
+    default = simple
+[core]
+    editor = vim
+    fileMode = off
+    autocrlf = input
+    excludesfile = ~/.gitignore_global
+    quotepath = false
+[color]
+    ui = auto
+[merge]
+    log = true
+[rebase]
+    autosquash = true
+```

@@ -14,7 +14,11 @@ lrwxrwxrwx 1 root root   24 Dec 21  2021 my.cnf -> /etc/alternatives/my.cnf
 -rw-r--r-- 1 root root  839 Jul 10  2016 my.cnf.fallback
 -rw-r--r-- 1 root root 1.5K Jan  5  2021 mysql.cnf
 drwxr-xr-x 1 root root   24 Dec 21  2021 mysql.conf.d/
+[root@web-1 merged]# vim  etc/mysql/mysql.conf.d/mysqld.cnf
+max_allowed_packet=16777216
+innodb_log_file_size=256M
 ```
+
 # 命令
 
 ```

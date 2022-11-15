@@ -1,4 +1,12 @@
 
+# 容器中 mysql 执行sql数据
+```
+docker cp  ./xxx.sql  xxx_mysql:/home
+mysql -uroot -p
+use xxx
+source xxx
+
+```
 
 # 查看容器映射目录
 ```

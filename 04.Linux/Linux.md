@@ -11,6 +11,27 @@
 
 问题场景：`ssh`登录远程服务器时出现 `connect to host 192.16x.1.x port 22: Host is down`。
 
+先检查静态 IP 配置信息，确认 ONBOOT 为 yes：
+```
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=static
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+NAME=eno1
+UUID=xxxxxxx
+DEVICE=eno1
+ONBOOT=yes
+IPADDR=192.168.1.x
+PREFIX=24
+GATEWAY=192.168.1.1
+```
+设置网络服务的开机自启：
 ```
 [root@localhost ~]# cat /etc/redhat-release
 CentOS Linux release 8.4.2105
@@ -28,7 +49,7 @@ CentOS Linux release 8.4.2105
        valid_lft forever preferred_lft forever
     inet6 fe80::52eb:f6ff:feb7:6244/64 scope link noprefixroute
        valid_lft forever preferred_lft forever
-# 查看 eth0 的网卡信息：
+# 查看 eth0 的网卡信息
 [root@localhost ~]# ifconfig eno1
 eno1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 192.16x.1.x  netmask 255.255.255.0  broadcast 192.16x.1.255
@@ -79,6 +100,7 @@ NetworkManager.service                     enabled
 ```
 
 <span id="network_scripts_centos7">解决 CentOS7 查看网络管理服务配置，并设置开机自启。</span>
+
 问题场景：`ssh`登录远程服务器时出现 `connect to host 192.16x.1.x port 22: Host is down`。
 ```
 # 查看系统版本

@@ -82,6 +82,12 @@ NetworkManager-dispatcher.service          disabled
 NetworkManager-wait-online.service         disabled
 NetworkManager.service                     disabled
 [root@localhost ~]# systemctl status NetworkManager.service  
+# 开机启用 NetworkManager 服务
+[root@localhost ~]# chkconfig NetworkManager on
+Note: Forwarding request to 'systemctl enable NetworkManager.service'.
+Created symlink /etc/systemd/system/multi-user.target.wants/NetworkManager.service → /usr/lib/systemd/system/NetworkManager.service.
+Created symlink /etc/systemd/system/dbus-org.freedesktop.nm-dispatcher.service → /usr/lib/systemd/system/NetworkManager-dispatcher.service.
+Created symlink /etc/systemd/system/network-online.target.wants/NetworkManager-wait-online.service → /usr/lib/systemd/system/NetworkManager-wait-online.service.
 [root@localhost ~]# systemctl start NetworkManager.service 
 [root@localhost ~]# systemctl status NetworkManager.service
 ● NetworkManager.service - Network Manager

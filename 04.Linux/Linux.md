@@ -14,7 +14,7 @@
 ```
 [root@localhost ~]# cat /etc/redhat-release
 CentOS Linux release 8.4.2105
-# 使用 `ip addr` 查看本机的网卡：
+# 查看本机的网卡
 [root@localhost ~]# ip addr
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -28,7 +28,7 @@ CentOS Linux release 8.4.2105
        valid_lft forever preferred_lft forever
     inet6 fe80::52eb:f6ff:feb7:6244/64 scope link noprefixroute
        valid_lft forever preferred_lft forever
-# 使用`ifconfig eth0`查看 `eth0` 的网卡信息：
+# 查看 eth0 的网卡信息：
 [root@localhost ~]# ifconfig eno1
 eno1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 192.16x.1.x  netmask 255.255.255.0  broadcast 192.16x.1.255
@@ -55,6 +55,7 @@ docker0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
         RX errors 0  dropped 0  overruns 0  frame 0
         TX packets 0  bytes 0 (0.0 B)
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+# 查看网络服务管理状态并开启开机自启动
 [root@localhost ~]# systemctl list-unit-files --type service | grep NetworkManager
 NetworkManager-dispatcher.service          disabled
 NetworkManager-wait-online.service         disabled
@@ -80,7 +81,7 @@ NetworkManager.service                     enabled
 <span id="network_scripts_centos7">解决 CentOS7 查看网络管理服务配置，并设置开机自启。</span>
 问题场景：`ssh`登录远程服务器时出现 `connect to host 192.16x.1.x port 22: Host is down`。
 ```
-查看系统版本
+# 查看系统版本
 [root@localhost ~]# cat /etc/redhat-release
 CentOS Linux release 7.4.1708 (Core)
 # 查看网络服务管理的自启动配置状态

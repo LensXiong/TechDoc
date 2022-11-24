@@ -55,3 +55,13 @@ ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics
 ```
 pip3 --no-cache-dir install -r ./list.txt
 ```
+
+# 快速一次性卸载所有python包（第三方库）
+```
+# 查看安装的第三方模块。
+pip list 
+# 把所有的第三方模块的模块名称以及第三方模块的版本号等等信息保存在 modules.txt 文件中。
+pip freeze>modules.txt
+# 卸载所有的 python 包。
+pip uninstall -r modules.txt -y
+```

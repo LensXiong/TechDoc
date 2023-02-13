@@ -2,7 +2,9 @@
 
 # Linux 
 
-
+## Unix 终端系统（TTY）是如何工作的?
+[ Unix 终端系统（TTY）是如何工作的?](https://waynerv.com/posts/how-tty-system-works/)
+![img.png](img.png)
 
 ## iterm rz 上传
 问题：

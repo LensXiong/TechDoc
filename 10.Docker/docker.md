@@ -1,4 +1,107 @@
 
+# Docker 中与 MTU 相关的信息
+## 什么是 MTU ?
+
+MTU 指的是“最大传输单元”（Maximum Transmission Unit），是计算机网络中的一个术语，它是指在一个网络中，能够通过一次发送的数据包的最大大小。
+
+网络中的每个设备和协议都有其自己的MTU限制。当数据包的大小超过某个设备或协议的MTU限制时，
+该数据包将被分割成更小的数据包进行传输，这会增加网络的负载和延迟。
+
+MTU 的大小通常以字节为单位进行计算。在以太网中，MTU 的默认值为1500字节，而在其他网络协议中可能会有不同的值。
+管理员可以在网络设备中配置 MTU 大小，以满足特定的网络需求和性能要求。
+
+
+## 如何理解 Docker 中的 MTU。
+在 Docker 中，MTU 是指容器网络中的最大传输单元。与主机上的网络接口类似，Docker 容器也有其自己的网络接口和 MTU 值。
+Docker 网络使用 bridge 驱动程序来提供容器网络连接。在此模式下，Docker 会创建一个虚拟网络桥接设备，该设备用于将多个容器连接到同一网络中。
+
+在 Docker 中，容器的默认 MTU 大小为1500字节，与大多数以太网设备的默认 MTU 大小相同。
+管理员可以使用 --mtu 选项在创建容器时指定容器的 MTU 值。通过调整 MTU 大小，管理员可以在容器网络中优化性能和避免网络分段。
+
+例如，在高负载网络环境中，降低 MTU 大小可以减少分段和延迟，从而提高网络性能。
+另外，一些特定的网络协议和设备可能需要特定的 MTU 值才能正常工作，管理员也可以根据需要调整 MTU 大小来支持这些协议和设备。
+
+## Docker 中 python pip 网络的问题有哪些？
+在 Docker 中使用 Python 和 pip 安装第三方包时可能会遇到网络问题，包括但不限于以下几种：
+
+* 防火墙和代理问题：如果 Docker 主机上设置了防火墙或代理，可能会阻止 Docker 容器与外部网络进行通信，导致 pip 安装失败。
+
+* DNS 问题：Docker 容器默认使用主机上的 DNS 服务器，如果主机上的 DNS 服务器出现问题，容器中的 pip 也无法正常解析域名。
+
+* MTU 问题：在某些情况下，MTU 大小可能会影响 Docker 容器中 pip 的网络连接。如果默认的 MTU 值不适用于特定的网络环境，可能会导致网络连接失败。
+
+* pip 源问题：默认的 pip 源可能会被屏蔽或限速，如果需要更快速、稳定的安装，可以选择其他的 pip 源，例如使用阿里云源、清华源等。
+
+* 版本兼容性问题：有些 Python 包的不同版本可能存在不同的依赖关系和兼容性问题，可能会导致 pip 在 Docker 容器中无法正常安装或运行。
+
+为了避免这些问题，可以尝试以下几种解决方法：
+
+* 在 Dockerfile 中配置合适的防火墙和代理规则，确保容器可以与外部网络正常通信。
+
+* 在 Docker 容器中设置 DNS 服务器或使用其他 DNS 解析方案，确保 pip 可以正常解析域名。
+
+* 在 Docker 容器中调整 MTU 大小，以确保网络连接的稳定性和可靠性。
+
+* 在 pip 安装时指定更快速、稳定的 pip 源，以提高安装速度和可靠性。
+
+* 了解 Python 包的版本兼容性和依赖关系，尽可能使用与其他环境相同的版本，以确保在 Docker 容器中可以正常安装和运行。
+
+## 在 Docker 容器中如何调整 MTU 大小？
+在 Docker 容器中，可以通过以下几种方式来调整 MTU 大小：
+
+① 在创建容器时使用 `--mtu` 选项指定 MTU 大小：
+```
+docker run --mtu=1400 myimage
+```
+此命令将在创建名为 mycontainer 的容器时将其 MTU 大小设置为 1400 字节。
+② 在 Docker Compose 中使用 networks 关键字指定 MTU 大小：
+```yaml
+networks:
+  mynetwork:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: "1400"
+```
+这个配置将在 `Docker Compose` 中使用 `mynetwork` 网络时将其 MTU 大小设置为 1400 字节。
+③ 在 Docker 主机中设置默认的 MTU 大小，从而使所有容器使用相同的 MTU 大小。
+可以通过编辑 `/etc/docker/daemon.json` 文件并添加以下内容来实现：
+```
+{
+  "mtu": 1400
+}
+```
+这个配置将使 Docker 主机上的所有容器的 MTU 大小设置为 1400 字节。
+
+需要注意的是，MTU 大小应该与所连接的网络和设备相匹配，以避免网络分段和连接问题。
+在调整 MTU 大小时，应该进行测试和调试，以确保网络连接的稳定性和可靠性。
+
+## ip link show 和 ip addr 的区别？
+`ip link show` 适合查看网络接口的基本信息，而 `ip addr` 则提供了更详细的网络配置信息。
+`ip link show` 命令会列出所有的网络接口，并显示它们的状态、MAC 地址、MTU 等基本信息。
+此命令的输出格式更加简洁，适合快速浏览和查找网络接口。例如，以下是 `ip link show` 的示例输出：
+```
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 08:00:27:52:3c:fa brd ff:ff:ff:ff:ff:ff
+```
+相比之下，ip addr 命令提供了更详细的网络信息，包括每个网络接口的 IP 地址、广播地址、子网掩码等。此命令的输出格式更加详细，适合进行网络故障排除和调试。例如，以下是 ip addr 的示例输出：
+```
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:00:27:52:3c:fa brd ff:ff:ff:ff:ff:ff
+    inet 192.168.0.2/24 brd 192.168.0.255 scope global dynamic enp0s3
+       valid_lft 86396sec preferred_lft 86396sec
+    inet6 fe80::a00:27ff:fe52:3cfa/64 scope link
+       valid_lft forever preferred_lft forever
+```
 # 容器中 mysql 执行sql数据
 ```
 docker cp  ./xxx.sql  xxx_mysql:/home

@@ -3,6 +3,22 @@
 # Linux 
 
 
+## Vim 使用
+### 查找与替换
+`:s（substitute）`命令用来查找和替换字符串。常用示例如下：
+```
+// 当前行
+:s/foo/bar/g
+// 全文
+:%s/foo/bar/g
+// 选区，在 Visual 模式下选择区域后输入 :，Vim 即可自动补全为 :'<,'>。
+:'<,'>s/foo/bar/g
+// 5,12行
+:5,12s/foo/bar/g
+当前行 . 与接下来两行 +2：
+:.,+2s/foo/bar/g
+```
+
 ## Unix 终端系统（TTY）是如何工作的?
 [ Unix 终端系统（TTY）是如何工作的?](https://waynerv.com/posts/how-tty-system-works/)
 ![img.png](img.png)

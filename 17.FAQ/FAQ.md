@@ -61,3 +61,30 @@ Parameters: /usr/local/bin/iterm2-recv-zmodem.sh
 Instant: checked
 ```
 ![img.png](img.png)
+
+# Github Add SSH keys
+
+问题：Git 当前项目设置 用户名、邮箱。
+```
+➜  git config --list
+➜  git config user.name "xxxx"
+➜  git config user.email "xxx@gmail.com"
+```
+
+
+问题：`Github`上添加了`ssh key`，但是在`push`代码的时候还会要求我们输入用户名密码?
+
+其中一种可能的原因是，在克隆代码的时候，使用了`https`协议，而不是`git`协议。
+
+`https`协议要求你每次都需要输入用户名以及密码，自由`git`协议才可以使用`ssh-key`文件。
+
+```
+➜ git remote -v
+origin  https://github.com/LensXiong/TechDoc.git (fetch)
+origin  https://github.com/LensXiong/TechDoc.git (push)
+➜ git remote set-url origin git@github.com:LensXiong/TechDoc.git
+➜ git remote -v                                                 
+origin  git@github.com:LensXiong/TechDoc.git (fetch)
+origin  git@github.com:LensXiong/TechDoc.git (push)
+```
+

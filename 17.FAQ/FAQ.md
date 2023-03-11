@@ -1,17 +1,31 @@
 
-# docker-compose network_mode=“host”
+# ChatGPT
 
-问题：`docker-compose` 中 `network_mode=“host”` 外网访问不了。
-
-原因：`docker` 默认的 `network`是`bridge`，这个默认会把映射的端口加到宿主机防火墙。而`host`模式是不会主动加入防火墙的，所以需要添加端口。
-
-解决：
+[国外接码平台 sms-activate.org 官网]https://sms-activate.org/getNumber
+[VPN-ClashX](https://github.com/yichengchen/clashX)
+[VPN-ClashX 下载](https://github.com/yichengchen/clashX/releases)
+[DuangCloud](https://portal.dc-site3.com/#/login)
+登录`ChatGPT`报不可用 `country`:
 ```
-# 开放指定端口
-firewall-cmd --zone=public --add-port=9203/tcp --permanent
-# 重启防火墙
-firewall-cmd --reload
+OpenAI's services are not available in your country. (error=unsupported_country)
 ```
+核心要点：
+① 出站模式（全局）：全局连接
+② 勾选设置为系统代理。
+③ GLOBAL 海外专线。
+④ 配置导入相关`DuangCloud`配置。
+⑤ 浏览器系统设置代理：切换为系统代理（海外）。直接连接（国内）。
+⑥ 设置为系统代理来回切换几次，还是不行就重启`ClashX`。
+
+
+# MAC 技巧
+## 三指拖移
+新版 `macOS Catalina/Big Sur`系统里面三指拖移已经被苹果从触控板中移除并把这个功能放入了辅助功能里面。
+这个位置还不太好找，`mac`老手在这里也会频频翻车，这个功能开启也非常简单。
+
+新版 mac ：系统设置 -> 辅助功能 -> 指针控制 -> 触控板选项 -> 拖移样式 -> 三指拖移
+
+![img_1.png](img_1.png)
 
 # iterm2-zmodem
 解决：在 mac 下，实现与服务器进行便捷的文件上传和下载操作。
@@ -88,3 +102,36 @@ origin  git@github.com:LensXiong/TechDoc.git (fetch)
 origin  git@github.com:LensXiong/TechDoc.git (push)
 ```
 
+# macOS Zsh 使用 oh-my-zsh 打造高效便捷的 shell 环境
+
+[macOS Zsh 使用 oh-my-zsh 打造高效便捷的 shell 环境](https://sysin.org/blog/macos-zsh/)
+
+## zsh-autosuggestions
+
+作用是根据历史输入命令的记录即时的提示（建议补全），然后按 → 键即可补全。
+
+```
+git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions
+```
+编辑 `~/.zshrc`，找到 `plugins=(git)` 这一行，修改为：
+```
+plugins=(
+    git
+    # other plugins...
+    zsh-autosuggestions
+)
+```
+
+# docker-compose network_mode=“host”
+
+问题：`docker-compose` 中 `network_mode=“host”` 外网访问不了。
+
+原因：`docker` 默认的 `network`是`bridge`，这个默认会把映射的端口加到宿主机防火墙。而`host`模式是不会主动加入防火墙的，所以需要添加端口。
+
+解决：
+```
+# 开放指定端口
+firewall-cmd --zone=public --add-port=9203/tcp --permanent
+# 重启防火墙
+firewall-cmd --reload
+```

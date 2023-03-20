@@ -88,7 +88,7 @@ public class SmsHomePopServiceImpl implements SmsHomePopService { …… }
 作用:   `@component`的子类注解专用于 Action 组件的创建,通常加在 Action 组件上。
 
 ```xml
-<!--管理Action scope="prototype"-->
+<!--管理Action scope="03.prototype"-->
 <bean id="userAction" class="com.wangxiong.action.UserAction" scope="prototype">
   <property name="userService" ref="userService"/>
 </bean>

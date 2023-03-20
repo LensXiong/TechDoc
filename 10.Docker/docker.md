@@ -58,7 +58,7 @@ docker run --mtu=1400 myimage
 ```yaml
 networks:
   mynetwork:
-    driver: bridge
+    driver: 06.bridge
     driver_opts:
       com.docker.network.driver.mtu: "1400"
 ```

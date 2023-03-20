@@ -122,7 +122,7 @@ Ubuntu 20.04.4 LTS \n \l
 输出标准输出和标准错误，同时保存到文件`logfile`。
 
 ```shell
-<command> 2>&1 | tee <logfile>
+<13.command> 2>&1 | tee <logfile>
 ```
 
 管道作用：把一个进程的标准输出作为另一个进程的标准输入。
@@ -136,7 +136,7 @@ Ubuntu 20.04.4 LTS \n \l
 若想忽略标准输出，只输出标准错误并保存到文件`logfile`。
 
 ```shell
-<command> 2>&1 >/dev/null | tee logfile
+<13.command> 2>&1 >/dev/null | tee logfile
 ```
 
 `2>&1`： 将标准错误重定向到标准输出，注意，此时标准输出还没有被重定向。

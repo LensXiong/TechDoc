@@ -1,4 +1,54 @@
 
+# SSH 客户端无法识别主机密钥类型
+问题：运行 `ssh -p 2xxx xxxx@jumper.xxxx.net` 时出现 `Unable to negotiate with 10.xxx.xxx.xx port 22xx: no matching host
+key type found. Their offer: ssh-rsa`。
+
+原因：该错误表示 `SSH` 客户端无法识别主机密钥类型，是由于 `SSH` 服务器配置了旧的加密算法或不受支持的密钥类型导致的。
+
+解决：
+① `SSH` 目录的权限
+用户目录下的 `~/.ssh`目录以及下面的文件需要特别小心的管理其权限，
+
+整个 `~/.ssh` 目录需要设置 700 `(drwx------)` 权限
+`public key` 需要设置 `644(-rw-r--r--)`
+客户端的私钥需要设置 600 `(-rw-------)`
+需要保证该目录不会被其他 `group` 的用户读取和修改。
+使用 `vim ~/.ssh/config` 输入以下内容：
+```
+ # man ssh_config
+ # http://einverne.github.io/post/2017/05/ssh-keep-alive.html
+ # http://einverne.github.io/post/2020/07/sync-ssh-config.html
+ Host *
+     User git
+     PubkeyAcceptedAlgorithms +ssh-rsa
+     HostkeyAlgorithms +ssh-rsa
+     ForwardAgent yes
+     ServerAliveInterval 30
+     ServerAliveCountMax 10
+     TCPKeepAlive no
+     ControlMaster auto
+     ControlPath ~/.ssh/conn-%r@%h:%p
+     ControlPersist 120h
+     Compression yes
+```
+如上是关于 SSH 客户端的配置文件，用于定制 SSH 连接的行为和选项。以下是对每个配置参数的解释：
+```
+Host *: 这是一个通配符，表示适用于所有的主机。
+User git: 这个参数指定连接到远程主机时使用的用户名。
+PubkeyAcceptedAlgorithms +ssh-rsa 和 HostkeyAlgorithms +ssh-rsa: 这两个参数指定使用 ssh-rsa 算法进行密钥认证和主机密钥验证。
+ForwardAgent yes: 这个参数启用SSH代理转发功能，可以在连接到远程主机后让 SSH 客户端继续代理您的认证信息。
+ServerAliveInterval 30: 这个参数指定发送保活消息的时间间隔，以确保连接保持活动状态。
+ServerAliveCountMax 10: 这个参数指定发送保活消息后，如果没有收到任何响应，则尝试重新连接的次数。
+TCPKeepAlive no: 这个参数指定是否启用 TCP keepalive 功能。
+在SSH连接中，由于 SSH 协议本身已经包含了保活功能，因此建议禁用 TCP keepalive 功能，以避免不必要的流量和 CPU 开销。
+ControlMaster auto: 这个参数指定是否使用 SSH 主控模式，可以让 SSH 客户端复用现有的连接，从而加速 SSH 连接的建立和执行。
+ControlPath ~/.ssh/conn-%r@%h:%p: 这个参数指定主控模式下，用于保存控制连接的 Unix socket文件路径。
+ControlPersist 120h: 这个参数指定主控模式下，控制连接的持续时间。在指定时间内，如果没有任何活动，则保持连接打开状态。
+Compression yes: 这个参数指定是否启用数据压缩功能。在网络带宽受限的情况下，启用数据压缩功能可以提高 SSH 连接的效率。
+```
+配置 `iterm session`:
+
+![img_3.png](img_3.png)
 # 去掉 vim 每行结尾的 ^M
 有时候用 `vim` 打开文件，每行结尾都有一个灰色的`^M`。
 这个原因是该文件在 `windows` 或 `mac` 系统上被创建：

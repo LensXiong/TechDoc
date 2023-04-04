@@ -1,11 +1,72 @@
 # 列表
 
+* [查看服务器系统及硬件信息。](#lsb_cpu_free)
 * [常用命令。](#common_command)
 * [ Centos 静态IP设置。](#centos_static_ip)
 * [ Ubuntu 静态IP设置。](#ubuntu_static_ip)
 * [ Docker-compose 中两个桥接网络导致 Telnet 不通。](#bridge_gateway)
 * [ 解决 CentOS8 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos8)
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
+
+<span id="lsb_cpu_free">查看服务器系统及硬件信息。</span>
+查看服务器发行版本、CPU型号、CPU核数、硬盘大小和内存大小：
+
+```
+xxx@xxxx:~# lsb_release -d | awk -F"\t" '{print "发行版本: "$2}';\
+cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号: "$2}';\
+cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "CPU核数: "$2}';\
+sudo parted -l | grep "Disk /" | uniq | awk -F":" '{print "硬盘大小:" $2 " G",$2/1024 " TB"}';\
+free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
+发行版本: Ubuntu 22.04.1 LTS
+CPU型号:  Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz
+CPU核数:  4
+硬盘大小: 1000GB G 0.976562 TB
+内存大小: 8G
+```
+查看 `Ubuntu` 版本信息，包括发行版本、发行代号和描述信息：
+
+```
+root@xxx:~# lsb_release -a
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 22.04.1 LTS
+Release:	22.04
+Codename:	jammy
+```
+硬盘的分区信息：
+
+```
+root@xxx:~# sudo parted -l
+Model: ATA ST1000LM048-2E71 (scsi)
+Disk /dev/sda: 1000GB
+Sector size (logical/physical): 512B/4096B
+Partition Table: msdos
+Disk Flags:
+
+Number  Start   End     Size    Type     File system  Flags
+1      1049kB  256MB   255MB   primary  fat32        boot, esp
+2      256MB   1000GB  1000GB  primary  ext4
+```
+这是一个在`Ubuntu`系统中使用的命令，下面是每个组成部分的详细解释：
+
+* `parted`: 这是一个`Linux`分区工具，可用于对硬盘进行分区、格式化、重命名等操作。
+* `-l`: 这是`parted`命令的选项之一，用于显示当前系统上的所有硬盘和分区的详细信息。
+* `Model`: `ATA ST10xxxxx-2E71 (scsi)`: 此行显示了硬盘的型号和接口类型。
+* `Disk /dev/sda: 1000GB`此行显示了硬盘的设备文件名和总容量，这里的硬盘是`/dev/sda`，总容量是1000GB。
+* `Sector size (logical/physical): 512B/4096B:` 此行显示了硬盘扇区的逻辑和物理大小，这里的逻辑大小是512B，物理大小是4096B。
+* `Partition Table: msdos: `此行显示了硬盘分区表的类型，这里使用的是传统的`msdos`分区表。
+* `Disk Flags:`此行显示了硬盘的标志，这里没有设置任何标志。
+
+下面是硬盘的分区信息：
+```
+Number: 分区的编号。
+Start: 分区在硬盘上的起始位置。
+End: 分区在硬盘上的结束位置。
+Size: 分区的大小。
+Type: 分区的类型，这里的类型分别为primary（主分区）和extended（扩展分区）。
+File system: 分区的文件系统类型，这里分别为fat32和ext4。
+Flags: 分区的标志，这里分别为boot（引导分区）和esp（EFI系统分区）。
+```
 
 <span id="network_scripts_centos8">解决 CentOS8 查看网络管理服务配置，并设置开机自启。</span>
 

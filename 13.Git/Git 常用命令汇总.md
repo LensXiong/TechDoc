@@ -1,3 +1,78 @@
+
+
+# .gitignore 配置
+在项目中配置 `.gitignore`:
+```
+/.idea/
+/test/*
+/view/
+*.exe
+/tmp/
+log/log.go
+./log/*.log
+/.DS_Store
+/main
+/conf/app.ini
+test
+/file/
+```
+
+# git 配置
+使用 `vim /Users/xxxx/.gitconfig`配置如下信息：
+```
+[user]
+name = xxxx
+email = xxx@gmail.com
+[http]
+# 指定是否验证 SSL 证书，默认为 true 。在 SSL 证书无法验证通过时，可以将其设置为 false，以允许连接继续。
+sslVerify = false
+# 指定 HTTP 代理的地址和端口。可以使用 SOCKS 协议的代理。
+# proxy = socks://127.0.0.1:1081
+[https]
+# proxy = socks://127.0.0.1:1081
+[alias]
+s = status -s
+v = remote -v
+r = remote show origin
+b = branch
+p = pull
+ck = checkout
+rd = reset HEAD --hard
+
+d = diff --stat
+dd = diff --stat --staged
+ds = diff --staged
+
+l = log --stat --graph --abbrev-commit
+lp = log --stat --graph --abbrev-commit -p
+ll = log --all --graph --pretty=format:'%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+
+[pull]
+rebase = false
+[push]
+default = simple
+[core]
+# 指定使用的文本编辑器，默认为vim。
+editor = vim
+# 指定是否在Git中跟踪文件模式的更改，默认为off。
+fileMode = off
+# 指定如何处理换行符，默认为input，即保持原样。
+autocrlf = input
+# 指定一个全局的.gitignore文件，Git会自动忽略这个文件中列出的文件和文件夹。
+excludesfile = ~/.gitignore_global
+# 指定是否对文件名进行引号包裹，默认为false。
+quotepath = false
+[color]
+ui = auto
+[merge]
+log = true
+[rebase]
+autosquash = true
+[credential]
+helper = store
+```
+
+
 # 生成多个SSH Key
 
 1、本地生成`SSH-Key`：

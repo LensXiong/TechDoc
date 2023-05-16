@@ -1,5 +1,36 @@
 
 
+# 
+错误问题：使用 Git 进行 HTTPS 身份验证时，但终端无法弹出用于输入用户名和密码的提示。
+```
+fatal: could not read Username for 'https://code.xxx:10443': terminal prompts disabled
+```
+解决办法：使用凭证助手。
+macOS 解决办法：
+配置 Git 使用 macOS 的钥匙串访问凭证助手来存储和检索您的凭证。
+当执行需要身份验证的 Git 操作时，不再需要手动输入用户名和密码。
+① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码
+② 运行以下命令启用凭证助手：
+```
+git config --global credential.helper osxkeychain
+```
+③ 重新克隆一份，使用首次输入用户名和密码来记录凭证。
+
+```
+git clone https://xxx/xxx.git
+```
+![img.png](img.png)
+
+window的解决办法：
+① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码
+② 运行以下命令启用凭证助手：
+```
+git config --global credential.helper wincred
+```
+③ 控制面板-用户账户-凭据管理器中添加 windows 凭据。
+![img_1.png](img_1.png)
+
+
 # .gitignore 配置
 在项目中配置 `.gitignore`:
 ```

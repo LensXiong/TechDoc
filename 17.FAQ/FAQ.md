@@ -1,11 +1,31 @@
 
 
+# goland 安装 plantuml 过程
+
+* brew install graphviz
+* brew install plantuml
+* GoLand 中配置 PlantUML settings 路径
+* GoLand 中配置 Graphviz settings 路径
+
+在 `GoLand` 中配置 `Graphviz` 路径：
+```
+a. 打开 GoLand 并转到 File > Settings > Languages & Frameworks > Diagrams > PlantUML。
+b. 在 "PlantUML settings" 部分，找到 "Path to plantuml.jar" 字段，然后输入 plantuml.jar 的路径。
+c. 在 "Graphviz settings" 部分，找到 "Path to Graphviz dot executable" 字段，然后输入 dot 可执行文件的路径。
+d. 单击 "Apply" 或 "OK" 以保存更改并关闭设置窗口。
+```
+![](file/plantuml.png)
+
 # frpc
 
 
 
+# MAC 下移动硬盘无法写入
+当移动硬盘插入可以识别，无法写入的时候，是因为移动硬盘使用了NTFS格式而 Mac 系统原生是不支持这种格式的。
+只需要把硬盘格式化为 exfat 就可以在 Mac 和 Windows 下用了。
+点击启动台（LAUNCH PAD）-其他-磁盘工具，点击之后，选择你要的盘进行抹掉（慎重），成 exfat。
 
-
+【Mac 挂载硬盘命令：让mac写入硬盘更轻松】https://juejin.cn/post/7148295961021054983
 
 # WAN口和LAN口
 

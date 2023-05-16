@@ -68,6 +68,62 @@ File system: 分区的文件系统类型，这里分别为fat32和ext4。
 Flags: 分区的标志，这里分别为boot（引导分区）和esp（EFI系统分区）。
 ```
 
+查看 CPU 核数和 CPU 信息：
+
+```
+root@xxx:~# cat /proc/cpuinfo
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 42
+model name	: Intel(R) Core(TM) i5-2x00 CPU @ 3.x0GHz
+stepping	: 7
+microcode	: 0x2f
+cpu MHz		: 3288.426
+cache size	: 6144 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme 
+bugs		: cpu_meltdown
+bogomips	: 6185.79
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 3x bits physical, 4x bits virtual
+power management:
+```
+
+以G为单位，显示硬盘的使用情况：
+
+```
+root@codriver-desktop:~# df -Th
+Filesystem     Type     Size  Used Avail Use% Mounted on
+tmpfs          tmpfs    785M  2.8M  782M   1% /run
+/dev/sda2      ext4     912G   33G  837G   4% /
+tmpfs          tmpfs    3.9G     0  3.9G   0% /dev/shm
+tmpfs          tmpfs    5.0M  4.0K  5.0M   1% /run/lock
+/dev/sda1      vfat     240M  5.3M  235M   3% /boot/efi
+tmpfs          tmpfs    785M   76K  785M   1% /run/user/127
+tmpfs          tmpfs    785M   60K  785M   1% /run/user/0
+overlay        overlay  916G   33G  837G   4% /
+```
+
+以G为单位，显示内存的使用情况：
+
+```
+root@codriver-desktop:~# free -h
+total        used        free      shared  buff/cache   available
+7.7Gi       1.9Gi       352Mi       9.0Mi       5.4Gi       5.4Gi
+```
+
+
 <span id="network_scripts_centos8">解决 CentOS8 查看网络管理服务配置，并设置开机自启。</span>
 
 问题场景：`ssh`登录远程服务器时出现 `connect to host 192.16x.1.x port 22: Host is down`。

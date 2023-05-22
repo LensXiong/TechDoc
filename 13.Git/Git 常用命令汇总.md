@@ -9,7 +9,8 @@ fatal: could not read Username for 'https://code.xxx:10443': terminal prompts di
 macOS 解决办法：
 配置 Git 使用 macOS 的钥匙串访问凭证助手来存储和检索您的凭证。
 当执行需要身份验证的 Git 操作时，不再需要手动输入用户名和密码。
-① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码
+① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码。
+
 ② 运行以下命令启用凭证助手：
 ```
 git config --global credential.helper osxkeychain
@@ -22,7 +23,8 @@ git clone https://xxx/xxx.git
 ![img.png](img.png)
 
 window的解决办法：
-① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码
+① 登录 https://xxx/xxx.git 的服务，注册 克隆的账户和 HTTPS 密码。
+
 ② 运行以下命令启用凭证助手：
 ```
 git config --global credential.helper wincred

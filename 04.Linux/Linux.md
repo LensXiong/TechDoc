@@ -8,6 +8,26 @@
 * [ 解决 CentOS8 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos8)
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
 
+
+# 免密切换到 root 用户的设置
+
+① 使用 `root` 用户登录。修改 `/etc/sudoers` 文件的写权限。
+```
+chmod u+w /etc/sudoers
+```
+② 使用 `root` 权限编辑 `sudoers` 文件。
+```
+vim /etc/sudoers
+```
+③ 修改为
+```
+<your_username> ALL=(ALL) NOPASSWD: ALL
+```
+④ 记得取消 `/etc/sudoers` 文件的写权限。
+```
+chmod u-w /etc/sudoers
+```
+
 <span id="lsb_cpu_free">查看服务器系统及硬件信息。</span>
 查看服务器发行版本、CPU型号、CPU核数、硬盘大小和内存大小：
 

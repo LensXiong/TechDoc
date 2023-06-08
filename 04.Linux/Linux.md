@@ -11,39 +11,50 @@
 
 # 免密切换到 root 用户的设置
 
-① 使用 `root` 用户登录。修改 `/etc/sudoers` 文件的写权限。
+* 使用 `root` 用户登录。修改 `/etc/sudoers` 文件的写权限。
 ```
 chmod u+w /etc/sudoers
 ```
-② 使用 `root` 权限编辑 `sudoers` 文件。
+* 使用 `root` 权限编辑 `sudoers` 文件。
 ```
 vim /etc/sudoers
 ```
-③ 修改为
+* 修改为
 ```
-wangxiong ALL = (ALL:ALL)
+your_name ALL = (ALL:ALL)
 ```
-④ 记得取消 `/etc/sudoers` 文件的写权限。
+* 记得取消 `/etc/sudoers` 文件的写权限。
 ```
 chmod u-w /etc/sudoers
 ```
 
-<span id="lsb_cpu_free">查看服务器系统及硬件信息。</span>
-查看服务器发行版本、CPU型号、CPU核数、硬盘大小和内存大小：
+# Ubuntu 系统信息
+
+## 概览信息
+
+系统信息包含：Ubuntu 服务器发行版本、CPU 型号、CPU 核数、硬盘大小和内存大小。
 
 ```
-xxx@xxxx:~# lsb_release -d | awk -F"\t" '{print "发行版本: "$2}';\
+lsb_release -d | awk -F"\t" '{print "发行版本: "$2}';\
 cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号: "$2}';\
 cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "CPU核数: "$2}';\
 sudo parted -l | grep "Disk /" | uniq | awk -F":" '{print "硬盘大小:" $2 " G",$2/1024 " TB"}';\
 free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
+```
+
+示例结果：
+
+```
 发行版本: Ubuntu 22.04.1 LTS
 CPU型号:  Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz
 CPU核数:  4
 硬盘大小: 1000GB G 0.976562 TB
 内存大小: 8G
 ```
-查看 `Ubuntu` 版本信息，包括发行版本、发行代号和描述信息：
+
+## 发行版本
+
+查看 Ubuntu 版本信息，包括发行版本、发行代号和描述信息：
 
 ```
 root@xxx:~# lsb_release -a
@@ -53,7 +64,8 @@ Description:	Ubuntu 22.04.1 LTS
 Release:	22.04
 Codename:	jammy
 ```
-硬盘的分区信息：
+
+## 硬盘信息
 
 ```
 root@xxx:~# sudo parted -l
@@ -62,22 +74,24 @@ Disk /dev/sda: 1000GB
 Sector size (logical/physical): 512B/4096B
 Partition Table: msdos
 Disk Flags:
-
 Number  Start   End     Size    Type     File system  Flags
 1      1049kB  256MB   255MB   primary  fat32        boot, esp
 2      256MB   1000GB  1000GB  primary  ext4
 ```
+
 这是一个在`Ubuntu`系统中使用的命令，下面是每个组成部分的详细解释：
 
-* `parted`: 这是一个`Linux`分区工具，可用于对硬盘进行分区、格式化、重命名等操作。
-* `-l`: 这是`parted`命令的选项之一，用于显示当前系统上的所有硬盘和分区的详细信息。
+* parted: 这是一个 Linux 分区工具，可用于对硬盘进行分区、格式化、重命名等操作。
+*  -l : 这是 parted 命令的选项之一，用于显示当前系统上的所有硬盘和分区的详细信息。
+
+结果说明：
 * `Model`: `ATA ST10xxxxx-2E71 (scsi)`: 此行显示了硬盘的型号和接口类型。
 * `Disk /dev/sda: 1000GB`此行显示了硬盘的设备文件名和总容量，这里的硬盘是`/dev/sda`，总容量是1000GB。
 * `Sector size (logical/physical): 512B/4096B:` 此行显示了硬盘扇区的逻辑和物理大小，这里的逻辑大小是512B，物理大小是4096B。
 * `Partition Table: msdos: `此行显示了硬盘分区表的类型，这里使用的是传统的`msdos`分区表。
 * `Disk Flags:`此行显示了硬盘的标志，这里没有设置任何标志。
 
-下面是硬盘的分区信息：
+Disk Flags 分区信息：
 ```
 Number: 分区的编号。
 Start: 分区在硬盘上的起始位置。
@@ -88,7 +102,7 @@ File system: 分区的文件系统类型，这里分别为fat32和ext4。
 Flags: 分区的标志，这里分别为boot（引导分区）和esp（EFI系统分区）。
 ```
 
-查看 CPU 核数和 CPU 信息：
+## CPU 核数和 CPU 信息
 
 ```
 root@xxx:~# cat /proc/cpuinfo
@@ -119,7 +133,62 @@ cache_alignment	: 64
 address sizes	: 3x bits physical, 4x bits virtual
 power management:
 ```
+下面是每个参数的详细解释：
 
+* processor：处理器的编号，表示当前信息所描述的是第几个处理器。
+
+* vendor_id：处理器的制造商标识，这里是 "GenuineIntel"，表示是英特尔公司的处理器。
+
+* cpu family：处理器系列的代号，这里是 6，表示是第六代处理器。
+
+* model：处理器型号，这里是 42。
+
+* model name：处理器的完整型号名称，这里是 "Intel(R) Core(TM) i5-2x00 CPU @ 3.x0GHz"，表示是一款型号为 Core i5-2x00，主频为 3.x0GHz 的英特尔处理器。
+
+* stepping：处理器的步进信息，表示在制造过程中的版本或修订号。
+
+* microcode：微码版本，用于修复或改进处理器的操作。
+
+* cpu MHz：处理器的实际工作频率，这里是 3288.426 MHz。
+
+* cache size：处理器的缓存大小，这里是 6144 KB。
+
+* physical id：物理标识符，用于区分不同物理处理器。
+
+* siblings：与当前处理器连接到相同物理处理器的处理器数量。
+
+* core id：核心标识符，用于区分同一物理处理器上的不同核心。
+
+* cpu cores：物理处理器上的核心数，这里是 4，表示有 4 个物理核心。
+
+* apicid：高级可编程中断控制器 (APIC) 的标识符。
+
+* initial apicid：初始 APIC 标识符。
+
+* fpu：浮点数单元 (FPU) 是否可用。
+
+* fpu_exception：FPU 异常是否支持。
+
+* cpuid level：处理器的 CPUID 级别。
+
+* wp：写保护 (Write Protect) 是否启用。
+
+* flags：处理器的特性标志位，表示处理器支持的功能和指令集。
+
+* bugs：处理器存在的错误或缺陷，这里是 "cpu_meltdown"，表示处理器受到了 Meltdown 漏洞的影响。
+
+* bogomips：处理器的 BogoMIPS 值，这是一个用于表示处理器性能的指标。
+
+* clflush size：缓存行刷新的大小，以字节为单位。
+
+* cache_alignment：缓存对齐的大小，以字节为单位。
+
+* address sizes：地址位数，分别表示物理地址位数和虚拟地址位数。
+
+* power management：处理器的电源管理功能。
+
+
+## 硬盘使用（G）
 以G为单位，显示硬盘的使用情况：
 
 ```
@@ -134,7 +203,7 @@ tmpfs          tmpfs    785M   76K  785M   1% /run/user/127
 tmpfs          tmpfs    785M   60K  785M   1% /run/user/0
 overlay        overlay  916G   33G  837G   4% /
 ```
-
+## 内存使用（G）
 以G为单位，显示内存的使用情况：
 
 ```

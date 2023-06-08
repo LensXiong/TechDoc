@@ -34,28 +34,19 @@ chmod u-w /etc/sudoers
 
 系统信息包含：Ubuntu 服务器发行版本、CPU 型号、CPU 核数、硬盘大小和内存大小。
 
-Ubuntu:
+Ubuntu 或者 Centos :
 ```
 uname -m | awk -F"\t" '{print "系统架构: "$0}';\
-lsb_release -d | awk -F"\t" '{print "发行版本: "$2}';\
-lscpu | awk '/^Vendor ID/ {print "发型厂商:" $3}';\
-cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号:"$2}';\
-lscpu | awk '/^CPU\(s\)/ {print "CPU(s):" $2}';\
-cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "cpu cores:"$2}';\
-lsblk -o NAME,SIZE -n -d | awk '{disk = $1; size = $2; total += size; print "硬盘", disk, "大小: ", size, size/1024 " TB"}; END {print "总硬盘数量: ", NR, "总硬盘大小: ", total, "G", total/1024 " TB"}';\
-free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
+lsb_release -d 2>/dev/null | awk -F"\t" '{print "Ubuntu 发行版本: " $2}';\
+cat /etc/redhat-release 2>/dev/null | awk -F'"' '{print "CentOS 发行版本: " $0}';\
+LANG=C lscpu | awk '/^Vendor ID/ {print "发型厂商:" $3}';\
+LANG=C cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号:"$2}';\
+LANG=C lscpu | awk '/^CPU\(s\)/ {print "CPU(s):" $2}';\
+LANG=C cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "cpu cores:"$2}';\
+LANG=C lsblk -o NAME,SIZE -n -d | awk '!/^loop/ {disk = $1; size = $2; total += size; print "硬盘", disk, "大小: ", size, size/1024 " TB"}; END {print "总硬盘数量: ", NR, "总硬盘大小: ", total, "G", total/1024 " TB"}';\
+LANG=C free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
 ```
-Centos示例:
-```
-uname -m | awk -F"\t" '{print "系统架构: "$0}';\
-cat /etc/redhat-release |  awk -F'"' '{print "发行版本: " $0}';\
-lscpu | awk '/^Vendor ID/ {print "发型厂商: " $3}';\
-cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号: "$2}';\
-lscpu | awk '/^CPU\(s\)/ {print "CPU(s): " $2}';\
-cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "cpu cores: "$2}';\
-lsblk -o NAME,SIZE -n -d | awk '{disk = $1; size = $2; total += size; print "硬盘", disk, "大小: ", size, size/1024 " TB"}; END {print "总硬盘数量: ", NR, "总硬盘大小: ", total, "G", total/1024 " TB"}';\
-free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
-```
+
 
 示例结果：
 Ubuntu 22.04

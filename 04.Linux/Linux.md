@@ -34,23 +34,64 @@ chmod u-w /etc/sudoers
 
 系统信息包含：Ubuntu 服务器发行版本、CPU 型号、CPU 核数、硬盘大小和内存大小。
 
+Ubuntu:
 ```
+uname -m | awk -F"\t" '{print "系统架构: "$0}';\
 lsb_release -d | awk -F"\t" '{print "发行版本: "$2}';\
+lscpu | awk '/^Vendor ID/ {print "发型厂商:" $3}';\
+cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号:"$2}';\
+lscpu | awk '/^CPU\(s\)/ {print "CPU(s):" $2}';\
+cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "cpu cores:"$2}';\
+lsblk -o NAME,SIZE -n -d | awk '{disk = $1; size = $2; total += size; print "硬盘", disk, "大小: ", size, size/1024 " TB"}; END {print "总硬盘数量: ", NR, "总硬盘大小: ", total, "G", total/1024 " TB"}';\
+free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
+```
+Centos示例:
+```
+uname -m | awk -F"\t" '{print "系统架构: "$0}';\
+cat /etc/redhat-release |  awk -F'"' '{print "发行版本: " $0}';\
+lscpu | awk '/^Vendor ID/ {print "发型厂商: " $3}';\
 cat /proc/cpuinfo | grep "model name" | uniq | awk -F":" '{print "CPU型号: "$2}';\
-cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "CPU核数: "$2}';\
-sudo parted -l | grep "Disk /" | uniq | awk -F":" '{print "硬盘大小:" $2 " G",$2/1024 " TB"}';\
+lscpu | awk '/^CPU\(s\)/ {print "CPU(s): " $2}';\
+cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F":" '{print "cpu cores: "$2}';\
+lsblk -o NAME,SIZE -n -d | awk '{disk = $1; size = $2; total += size; print "硬盘", disk, "大小: ", size, size/1024 " TB"}; END {print "总硬盘数量: ", NR, "总硬盘大小: ", total, "G", total/1024 " TB"}';\
 free -h | awk '/Mem:/{printf "内存大小: %s\n", $2}'
 ```
 
 示例结果：
+Ubuntu 22.04
+```
+系统架构: x86_64
+发行版本: Ubuntu 22.04.2 LTS
+发型厂商:GenuineIntel
+CPU型号: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz
+CPU(s):8
+cpu cores: 4
+硬盘 sda 大小: 700G 0.683594 TB
+硬盘 sdb 大小: 500G 0.488281 TB
+总硬盘数量: 2 总硬盘大小: 1200 1.17188 TB
+内存大小: 15Gi
+```
+
+CentOS 7.4 
 
 ```
-发行版本: Ubuntu 22.04.1 LTS
-CPU型号:  Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz
-CPU核数:  4
-硬盘大小: 1000GB G 0.976562 TB
-内存大小: 8G
+系统架构: x86_64
+发行版本: CentOS Linux release 7.4.1708 (Core)
+发型厂商: GenuineIntel
+CPU型号: Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
+CPU(s): 4
+cpu cores: 1
+硬盘 sda 大小: 500G 0.488281 TB
+总硬盘数量: 1 总硬盘大小: 500 0.488281 TB
+内存大小: 7.6G
 ```
+
+为什么不是显示为 8G 呢？
+这是因为计算机中的内存容量通常是以二进制方式进行计算，其中 1GB 等于 2^30 字节（1,073,741,824 字节），而不是十进制的 1,000,000,000 字节。
+所以，当系统中有 8GB（8,000,000,000 字节）的内存时，它在以二进制方式表示时会略小于 8GB。在该例中，7.6GB 是以二进制方式表示的约数值。
+
+这是一个常见的差异，不仅适用于内存，还适用于其他存储单位（如硬盘容量）。
+因此，将 7.6G 视为接近 8GB 的数值是正常的。
 
 ## 发行版本
 
@@ -212,6 +253,76 @@ total        used        free      shared  buff/cache   available
 7.7Gi       1.9Gi       352Mi       9.0Mi       5.4Gi       5.4Gi
 ```
 
+# 64-bit PC (AMD64)和 32位的 x86 架构
+当前系统的机器硬件名称：
+```
+uname -m
+arch
+```
+检查输出结果：运行上述命令后，将在终端中看到一个字符串。常见的输出结果可能是：
+
+* 如果输出结果为 "x86_64"，则表示您的系统是基于 AMD64（也称为x86-64）架构。这是目前大多数桌面和服务器计算机所使用的64位架构。
+* 如果输出结果为 "i386" 或 "i686"，则表示您的系统是32位的 x86 架构，而不是 AMD64 架构。
+
+命名为"AMD64"是因为AMD（Advanced Micro Devices）是首家推出64位指令集扩展的处理器制造商。
+在过去，32位的x86架构（也称为IA-32）是主流，用于大多数个人计算机。
+然而，随着计算需求的增加和技术的发展，需要一种更强大、更高效的处理器架构来支持更大的内存容量和更复杂的计算任务。
+
+为了推进64位计算，AMD开发了一套64位的指令集扩展，将其称为"AMD64"。
+AMD64架构在2000年首次发布，并在随后的几年里得到广泛的采用和支持。
+这种架构不仅能够处理大量的内存和复杂的计算任务，还能提供更好的性能和兼容性。
+
+尽管"AMD64"命名中包含了AMD的名称，但实际上，这种64位架构是通用的，不仅适用于AMD处理器，也适用于其他支持该架构的厂商的处理器，如Intel的x86-64架构。
+
+由于AMD首先引入并推广了这种64位架构，因此它被广泛地称为"AMD64"。这个名字已经成为了一种通用的术语，用于描述基于该架构的64位系统和软件。
+
+# Ubuntu18.04 升级到 Ubuntu 22.04
+* 运行以下命令，确保系统已更新到最新版本：
+```
+sudo apt update
+sudo apt upgrade
+```
+运行 `sudo apt update` 更新软件包列表，它会连接到软件包源（如官方Ubuntu存储库或其他第三方存储库），检查可用的更新，并将更新信息下载到本地系统。
+
+运行`sudo apt upgrade`将检查系统中已安装的软件包，并将其与最新的可用版本进行比较。 
+如果有新的软件包版本可用，它将提示进行更新，并在确认后执行更新操作。
+这将系统保持最新，并修复可能存在的安全漏洞或错误。
+
+* 安装升级工具：
+```
+sudo apt install update-manager-core
+```
+
+* 打开升级配置文件，确保它设置为升级到新版本：
+```
+sudo nano /etc/update-manager/release-upgrades
+```
+在打开的文件中，确保Prompt值设置为"normal"或"lts"。
+
+* 运行升级命令，开始升级到 Ubuntu 22.04：
+```
+sudo do-release-upgrade -r 22.04
+```
+
+
+
+
+## 升级过程中出现的问题
+
+* 运行 `sudo apt upgrade` 报错的信息和解决办法：
+```
+xxx@xxx-S410:~$ sudo apt upgrade
+E: 无法获得锁 /var/lib/dpkg/lock-frontend - open (11: 资源暂时不可用)
+E: 无法获取 dpkg 前端锁 (/var/lib/dpkg/lock-frontend)，是否有其他进程正占用它？
+
+xxx@xxx-S410:~$ sudo apt upgrade
+E: 无法获得锁 /var/lib/dpkg/lock - open (11: 资源暂时不可用)
+E: 无法锁定管理目录(/var/lib/dpkg/)，是否有其他进程正占用它？
+xxxx@xxx-S410:~$ sudo rm /var/lib/dpkg/lock
+lock           lock-frontend  
+xxx@xxx-S410:~$ sudo rm /var/lib/dpkg/lock
+xxx@xxx-S410:~$ sudo apt upgrade
+```
 
 <span id="network_scripts_centos8">解决 CentOS8 查看网络管理服务配置，并设置开机自启。</span>
 

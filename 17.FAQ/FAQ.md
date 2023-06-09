@@ -1,5 +1,50 @@
 
 
+#  tar 在 OS和 Linux 上的不兼容
+
+出现问题：`Linux / OS X tar incompatibility – tarballs created on OS X give errors when untarred in Linux`
+解决办法：
+```
+xxx@xxx: brew install gnu-tar
+xxx@xxx: which gtar
+xxx@xxx: mv /opt/homebrew/bin/gtar /opt/homebrew/bin/tar
+xxx@xxx: tar --exclude xxxx/.git -zcvf xxxx.tar.gz xxxx
+```
+
+```
+xxx@xxx: tar --version
+tar (GNU tar) 1.34
+Copyright (C) 2021 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+```
+
+问题原因：
+在 Linux 和 macOS 操作系统之间，有时会出现 tar 文件不兼容的情况。
+当在 macOS 上创建的 tarball（tar文件）尝试在 Linux 上解压缩时，可能会出现错误。
+这是由于默认情况下，macOS 上的 tar 命令与 Linux 上的 tar 命令在一些参数和标志的处理上存在差异。
+
+主要的差异点包括：
+
+* tar命令选项： macOS上的tar命令使用-z选项来指示对gzip压缩的tarball进行解压缩，而Linux上的tar命令使用-z选项来指示对gzip压缩的tarball进行创建。因此，当您在macOS上使用-z选项创建tarball后，尝试在Linux上使用相同选项进行解压缩时，会出现错误。
+
+* 文件名编码：macOS使用HFS+文件系统，默认使用的是Unicode NFD（Normalization Form D）编码，而Linux使用的是UTF-8编码。这可能导致在Linux上解压缩时，文件名的字符编码不一致，从而出现错误或乱码。
+
+为了解决这些兼容性问题，可以采取以下几种方法：
+
+* 在macOS上创建tarball时，避免使用特定于Linux的tar选项。例如，不要使用-z选项来创建gzip压缩的tarball。
+
+* 在Linux上解压缩tarball时，指定正确的选项和标志以匹配tarball的创建方式。例如，使用-xzf选项来解压缩gzip压缩的tarball。
+
+* 在创建和解压缩tarball时，使用跨平台的tar工具，例如GNU tar（通常称为gtar）或BSD tar（通常称为bsdtar）。这些工具在不同操作系统之间提供更一致的行为。
+
+* 在macOS上创建tarball时，确保文件名使用的是UTF-8编码。这可以通过在终端中设置LANG环境变量来实现，例如：
+```
+export LANG=en_US.UTF-8
+```
+
+
 # goland 安装 plantuml 过程
 
 * brew install graphviz

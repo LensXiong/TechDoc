@@ -9,6 +9,38 @@
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
 
 
+# 安装 Ubuntu 22.04 系统
+
+## 前置条件
+安装 Ubuntu 22.04 LTS 的前置条件
+* 2GHz 双核处理器
+* 4GB 内存
+* 25GB 磁盘空间用于存储（最小安装，则更少）
+* USB 接口
+* 至少 4GB 的 U 盘。
+
+安装重要步骤：
+
+① 下载 Ubuntu 22.04 LTS 安装介质。
+
+[Ubuntu 22.04.2 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/22.04/)
+
+② 制作 Ubuntu 22.04 LTS 引导 U 盘。
+
+[rufus-for-mac](https://www.uubyte.com/rufus-for-mac.html)
+
+[rufus-for-windows](https://rufus.ie/zh/)
+
+![img.png](rufus.png)
+
+注意制作引导盘时候，分区类型选择 GPT类型，目标系统类型选择 UEFI(非CSM)。
+
+③ 进入计算机的BIOS（基本输入/输出系统）或UEFI（统一固件接口）设置。
+
+在计算机启动过程中，通常会在屏幕上显示一个提示，指示按下特定的按键以进入BIOS或UEFI设置。
+
+在不同的计算机品牌和型号中，可能会使用不同的按键。常见的按键包括：F2、F12、Delete、Esc等。
+
 # 免密切换到 root 用户的设置
 
 * 使用 `root` 用户登录。修改 `/etc/sudoers` 文件的写权限。
@@ -26,6 +58,11 @@ your_name ALL = (ALL:ALL)
 * 记得取消 `/etc/sudoers` 文件的写权限。
 ```
 chmod u-w /etc/sudoers
+```
+
+# Ubuntu 清除 history
+```
+history -c
 ```
 
 # Ubuntu 系统信息

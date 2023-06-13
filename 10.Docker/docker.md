@@ -1,4 +1,31 @@
 
+
+# docker 导入和导出相关数据
+## 导入数据
+```
+docker exec -i xxx_mysql sh -c 'mysql -uxxxx -pxxxxx -D database_name' </opt/xxxx/mysqldump_xxxxx.sql
+docker exec -i xxx_mongo sh -c 'mongorestore -u xxx -p xxxx --authenticationDatabase admin -d xxxx --drop --archive' </opt/xxxx/mongodump_xxxx.archive
+```
+
+* `sh -c`：调用 `shell (sh)` 并允许在其中执行一个命令 `(-c)`。
+* `--drop`：在还原之前删除目标数据库的现有数据。
+* `--archive`：指定还原的数据来源为归档文件。
+* `</opt/xxxx/mongodump_xxxx.archive`：这部分是输入重定向。它将 `mongodump_xxxx.archive` 文件的内容作为输入传递给容器内部的 `mongorestore` 命令.
+
+## 导出数据
+
+```
+docker exec -i xxx_mysql sh -c 'mysqldump -uxxx -pxxxx --skip-add-locks --single-transaction -q xxxx' >/opt/mysqldump_$(date '+%Y%m%d').sql
+docker exec -i xxx_mongo sh -c 'mongodump -u admin -p xxxx --authenticationDatabase admin -d xxxx --archive' >/opt/mongodump_$(date '+%Y%m%d').archive
+```
+
+* `--skip-add-locks`：在导出期间跳过添加锁定语句。
+* `--single-transaction`：使用单个事务导出数据，确保一致性。
+* -q：使用"快速"模式导出数据，以减少导出时的负载。
+* 
+
+
+
 # Docker 中与 MTU 相关的信息
 ## 什么是 MTU ?
 
@@ -113,9 +140,9 @@ source xxx
 
 # 查看容器映射目录
 ```
-[root@v merged]# docker inspect skygo_mysql | grep Merge
-                "MergedDir": "/opt/skygo/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged",
-[root@ merged]# cd /opt/skygo/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged
+[root@v merged]# docker inspect xxxx_mysql | grep Merge
+                "MergedDir": "/opt/xxxx/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged",
+[root@ merged]# cd /opt/xxxx/data/docker/overlay2/ba607d1a14f0ea9e6ae1734a87543e494fb0f431520e2b889f75965166a5c5f6/merged
 [root@v merged]# ll etc/mysql
 total 12K
 drwxr-xr-x 1 root root   94 Dec 21  2021 ./

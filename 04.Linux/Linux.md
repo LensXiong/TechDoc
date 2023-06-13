@@ -485,7 +485,7 @@ NetworkManager.service                        enabled
 问题：telnet 内网下另一台服务中某个端口无法访问。
 ```
 networks:
-skygo_net:
+xxxx_net:
 driver: bridge
 enable_ipv6: false
 ipam:

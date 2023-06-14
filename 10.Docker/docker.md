@@ -22,8 +22,6 @@ docker exec -i xxx_mongo sh -c 'mongodump -u admin -p xxxx --authenticationDatab
 * `--skip-add-locks`：在导出期间跳过添加锁定语句。
 * `--single-transaction`：使用单个事务导出数据，确保一致性。
 * -q：使用"快速"模式导出数据，以减少导出时的负载。
-* 
-
 
 
 # Docker 中与 MTU 相关的信息

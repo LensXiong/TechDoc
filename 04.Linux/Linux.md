@@ -53,7 +53,7 @@ vim /etc/sudoers
 ```
 * 修改为
 ```
-wangxiong ALL=(ALL:ALL) NOPASSWD:ALL
+your_name ALL=(ALL:ALL) NOPASSWD:ALL
 ```
 * 记得取消 `/etc/sudoers` 文件的写权限。
 ```

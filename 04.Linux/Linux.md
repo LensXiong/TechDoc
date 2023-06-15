@@ -43,13 +43,21 @@
 
 # 免密切换到 root 用户的设置
 
+编辑sudoers文件要用visudo，不要直接编辑，有语法错误会提示。
+
+visudo 是一个用于编辑和管理 /etc/sudoers 文件的命令行工具。/etc/sudoers 文件包含了关于系统上哪些用户或用户组具有特权执行特定命令的配置信息。
+
+通过运行 visudo 命令，您可以以安全的方式编辑 /etc/sudoers 文件，以便添加、修改或删除授权用户的 sudo 访问权限。
+
+运行 visudo 命令后，将会使用默认文本编辑器（通常是 Vi 或 Vim）打开 /etc/sudoers 文件。注意，sudo 权限将被要求以修改该文件。
+
 * 使用 `root` 用户登录。修改 `/etc/sudoers` 文件的写权限。
 ```
 chmod u+w /etc/sudoers
 ```
 * 使用 `root` 权限编辑 `sudoers` 文件。
 ```
-vim /etc/sudoers
+sudo visudo
 ```
 * 修改为
 ```
@@ -59,6 +67,10 @@ your_name ALL=(ALL:ALL) NOPASSWD:ALL
 ```
 chmod u-w /etc/sudoers
 ```
+
+登录完不要着急退出root账户，重新开一个tab登录验证，万一语法错误登不上去，原来的root用户还可以修正。
+如果确实退出了， 也不小心把文件语法输入错误了，需要重装系统。如果有重要文件，需要虚拟机关了，把盘从虚拟化上卸下来，然后挂到宿主机上，
+从上边找到 sudo 文件，修改好后，再装回虚拟机上。
 
 # Ubuntu 清除 history
 ```

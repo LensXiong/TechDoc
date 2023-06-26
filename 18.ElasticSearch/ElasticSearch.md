@@ -1,4 +1,118 @@
 # API 调用
+## 脚本
+
+### 模板示例
+```
+{
+    "index_patterns": [
+        "*-xxx-tags"
+    ],
+    "settings": {
+        "index": {
+            "number_of_shards": 3,
+            "number_of_replicas": 1,
+            "refresh_interval": "1s",
+            "translog.flush_threshold_size": "1g",
+            "max_result_window": 2147483647,
+            "max_inner_result_window": 100000000
+        }
+    },
+    "mappings": {
+        "properties": {
+            "xxx_tags": {
+                "type": "object",
+                "properties": {
+                    "leaf": {
+                        "type": "keyword"
+                    },
+                    "all": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "xxx_tags": {
+                "type": "object",
+                "properties": {
+                    "leaf": {
+                        "type": "keyword"
+                    },
+                    "all": {
+                        "type": "keyword"
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+### 索引示例
+```
+{
+    "mappings": {
+        "properties": {
+            "xxx_date": {
+                "type": "date",
+                "format": "yyyy-MM-dd"
+            },
+            "xxxx_desc": {
+                "type": "text"
+            }
+        }
+    }
+}
+```
+### 批量创建模板
+es_template.sh
+```
+#!/bin/bash
+
+url=$1
+readDir=$2
+user=$3
+password=$4
+
+auth=""
+if [ -n "$user" ]; then
+    auth="-u $user:$password"
+fi
+
+for df in `ls $readDir`
+do
+    if [ -f $readDir"/"$df ]; then
+        indexName="${df/%.txt/}"
+        echo ${indexName}
+        filePath="@$readDir/$df"
+        echo ${filePath}
+        curl $auth -k -XPUT  ${url}/_template/${indexName} -H 'Content-Type: application/json'  --data $filePath
+    fi
+done
+```
+### ## 批量创建索引
+```
+#!/bin/bash
+
+url=$1
+readDir=$2
+user=$3
+password=$4
+
+auth=""
+if [ -n "$user" ]; then
+    auth="-u $user:$password"
+fi
+
+for df in `ls $readDir`
+do
+    if [ -f $readDir"/"$df ]; then
+        indexName="${df/%.txt/}"
+        echo ${indexName}
+        filePath="@$readDir/$df"
+        echo ${filePath}
+        curl $auth -k -XPUT  ${url}/${indexName} -H 'Content-Type: application/json'  --data $filePath
+    fi
+done 
+```
 
 ## 模板
 

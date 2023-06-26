@@ -86,13 +86,14 @@ http://xx.xx.xx.xx:9200/index
 
 ### 获取索引
 ```
-DELETE
+GET
 http://xx.xx.xx.xx:9200/index
 ```
 
 ### 删除索引
 ```
-{{kd_pre}}/kd-base-attack-cases-knowledge-tags
+DELETE
+http://xx.xx.xx.xx:9200/index
 ```
 
 ## 查询
@@ -101,6 +102,7 @@ http://xx.xx.xx.xx:9200/index
 
 使用 Postman 示例(term)：
 ```
+GET
 http://xx.xx.xx.xx:9200/index/_search
 {
   "query": {
@@ -116,6 +118,7 @@ http://xx.xx.xx.xx:9200/index/_search
 
 使用 Postman 示例(match)：
 ```
+GET
 http://xx.xx.xx.xx:9200/index/_search
 {
     "query": {

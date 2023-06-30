@@ -1,4 +1,8 @@
 # API 调用
+## 备份
+
+## 迁移
+
 ## 脚本
 
 ### 模板示例
@@ -88,7 +92,7 @@ do
     fi
 done
 ```
-### ## 批量创建索引
+### 批量创建索引
 ```
 #!/bin/bash
 
@@ -270,12 +274,26 @@ curl -XGET "http://xx.xx.xx.xx:9200/index/_search" -H 'Content-Type: application
 
 ## 删除
 
-### 删除指定文档数据
+### 删除单条指定文档数据
 
 使用 Postman 示例：
 ```
 DELETE
 http://xx.xx.xx.xx:9200/index/_doc/6fmI9YgBgpI27JNqrBV9
+```
+
+### 删除查询匹配的文档数据
+使用 Postman 示例：
+```
+POST
+http://xx.xx.xx.xx:9200/index/_delete_by_query
+{
+  "query": {
+    "match": {
+      "name": ""
+    }
+  }
+}
 ```
 
 ### 删除全部文档但不删除索引结构

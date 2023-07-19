@@ -1,8 +1,11 @@
 #  XML 大文件上传解析
-
 背景：1个G以上的XML文件数据进行导入并解析，要求提高解析速度的同时显示进度百分比。
+
 思路：
-![WX20230719-175048.png](WX20230719-175048.png)
+* [Go 中的流式 XML 解析器](https://github.com/dps/go-xml-parse/tree/master)
+
+
+![](img/WX20230719-175048.png)
 ## 并发协程池
 ```
 package routine_pool
@@ -41,7 +44,6 @@ func NewRoutinePoll(workers int) *RoutinePool {
 	}
     // 通过p.wg.Add(p.workNum)将等待组的计数器设置为工作协程数量，表示需要等待这些协程完成任务。
 	p.wg.Add(p.workNum)
-	//根据指定的并发量去读取管道并执行
 	for i := 0; i < p.workNum; i++ {
 		go func() {
 			// 每个工作协程都使用defer关键字来捕获异常，防止waitGroup阻塞。当协程发生异常时，会调用recover()函数恢复异常并进行处理

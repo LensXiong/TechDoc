@@ -1,4 +1,58 @@
 
+# MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案
+[MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案](https://blog.csdn.net/u012660464/article/details/113977173)
+```
+Error 1055: Expression #1 of ORDER BY clause is not in GROUP BY clause and contains nonaggregated column 'xx_xxx.xxxx.create_time'
+which is not functionally dependent on columns in GROUP BY clause; 
+this is incompatible with sql_mode=only_full_group_by
+```
+临时解决方案：
+```
+SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+```
+永久解决方案：
+```
+
+```
+
+# 添加认证
+* 复制公钥到认证文件中
+普通用户：
+```
+vim /home/xxxx/.ssh/authorized_keys 
+```
+root用户：
+```
+vim /root/.ssh/authorized_keys
+```
+* 设置文件访问权限
+
+sshd为了安全，对属主的目录和文件权限有所要求。如果权限不对，则ssh的免密码登陆不生效。
+```
+chmod 700 /home/xxx/ 
+chmod 700 /home/xxxx/.ssh 
+chmod 600 /home/xxxx/.ssh/authorized_keys
+```
+
+* 配置sshd
+
+确认远程服务器的sshd配置中允许免密登录、 查看远程服务器的`/etc/ssh/sshd_config` 文件，使用命令：
+`sudo vim /etc/ssh/sshd_config`
+```
+// 去掉以下2行的 “#” 注释：
+PubkeyAuthentication yes 
+AuthorizedKeysFile .ssh/authorized_keys 
+// 如果是CentOS7.4以下的系统，还需要放开RSAAuthentication的设置
+RSAAuthentication yes 
+// 如果想要使用root账户认证登录，还需要放开PermitRootLogin的设置
+PermitRootLogin yes
+```
+
+* 必要时重启sshd服务
+```
+sudo systemctl restart sshd
+```
+
 # goland编辑器中正则替换
 
 在goland编辑器中使用正则替换注释内容。

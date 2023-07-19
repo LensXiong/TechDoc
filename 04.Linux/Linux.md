@@ -8,7 +8,26 @@
 * [ 解决 CentOS8 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos8)
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
 
-
+# 安装常用工具
+```
+yum install tree nmap dos2unix lrzsz nc lsof wget tcpdump htop iftop iotop sysstat nethogs -y
+```
+相关介绍：
+```
+tree：tree以树形结构显示文件和目录
+nmap：nmap扫描端口的工具
+dos2unix 转换脚本格式的工具
+lrzsz 包含上传（rz）下载（sz）文件工具
+nc 文件传输、端口检查
+lsof 反查端口进程，以及服务开发文件工具
+wget 下载软件包工具
+tcpdump 抓包、监听等重要排错工具
+htop 系统进程相关信息查看工具
+iftop 查看主机网卡带宽工具
+iotop 
+sysstat 含有sar，iostat等重要系统性能查看工具
+nethogs 显示进程的网络流量
+```
 # 安装 Ubuntu 22.04 系统
 
 ## 前置条件

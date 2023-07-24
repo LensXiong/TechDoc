@@ -6,7 +6,41 @@
 ## 脚本
 
 ## FQA
+### 配置 JVM 的初始堆大小和最大堆大小
+问题：导入大量数据的时候代码中报错如下信息。
+```
+err:elastic: Error 429 (Too Many Requests): [parent] Data too large, 
+data for [<http_request>] would be [510313990/486.6mb],
+which is larger than the limit of [510027366/486.3mb], real usage: [510313840/486.6mb], 
+new bytes reserved: [150/150b], usages [request=49152/48kb, fielddata=0/0b, 
+in_flight_requests=3035484/2.8mb, model_inference=0/0b, 
+eql_sequence=0/0b, accounting=6200196/5.9mb] [type=circuit_breaking_exception]
+```
+原因：
+```
+jvm.options 文件是 Elasticsearch 中用于配置 Java 虚拟机 (JVM) 参数的文件。
+在该文件中，-Xms1g 和 -Xmx1g 是用来配置 JVM 的初始堆大小和最大堆大小的参数。
 
+-Xms1g: 这个参数设置 JVM 的初始堆大小为 1GB。初始堆大小是 JVM 启动时分配给堆内存的初始大小，也就是 Elasticsearch 在启动时会预留 1GB 的堆内存。
+-Xmx1g: 这个参数设置 JVM 的最大堆大小为 1GB。最大堆大小是 JVM 堆内存的上限，JVM 在运行时会尝试将堆内存扩展到最大堆大小，但不会超过这个限制。
+设置初始堆大小和最大堆大小的值可以根据你的 Elasticsearch 集群的实际情况进行调整。
+如果你的集群处理大量数据或者有较多的查询负载，可能需要增大堆内存大小来提供更好的性能。当然，增大堆内存大小也会占用更多的系统资源，包括服务器的内存。
+```
+解决：
+```
+1、找到 Elasticsearch 的 JVM 配置文件： JVM 配置文件通常是 jvm.options，在 Elasticsearch 安装目录的 config 文件夹中。
+2、修改堆内存设置： 打开 jvm.options 文件，查找以下两行。
+-Xms1g
+-Xmx1g
+3、默认情况下，这两行表示初始堆大小 (-Xms) 和最大堆大小 (-Xmx) 都为 1GB。你可以根据实际情况将这两个值增大，例如：
+-Xms4g
+-Xmx4g
+这样将初始堆和最大堆大小都设置为 4GB。请确保服务器有足够的物理内存支持你所设置的堆内存大小。
+4、保存文件并重启 Elasticsearch： 保存 jvm.options 文件并重新启动 Elasticsearch 使配置生效。
+注意： 在重启 Elasticsearch 之前，确保没有正在进行的重要操作，以免造成数据丢失或不可预料的情况。
+5、监控 Elasticsearch 性能： 完成以上步骤后，监控 Elasticsearch 的性能，确保不再出现 "Too Many Requests" 错误。
+同时，观察服务器的资源使用情况，确保服务器有足够的内存和其他资源来支持 Elasticsearch 运行。
+```
 
 ### 模板示例
 ```

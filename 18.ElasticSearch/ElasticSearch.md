@@ -1,4 +1,20 @@
 # API 调用
+## 编译 pb.go 文件
+```
+protoc --plugin=protoc-gen-guardian=/Users/xxxx/go/bin/protoc-gen-guardian --guardian_out=plugins=grpc:. xx.xxx.proto
+```
+命令解释：
+protoc: 这是 `Protocol Buffers` 编译器的命令。`Protocol Buffers` 是一种用于序列化结构化数据的语言和平台无关的技术。
+
+`--plugin=protoc-gen-guardian=/Users/xxxx/go/bin/protoc-gen-guardian`: 这是指定编译器插件的选项。
+`--plugin` 后面是插件的名称和路径。在这里，`protoc-gen-guardian` 是一个编译器插件，
+它的执行文件位于当前工作目录（`/Users/xxxx/go/bin/protoc-gen-guardian`）。
+
+`--guardian_out=plugins=grpc:.`: 这是指定编译器插件的参数。`--guardian_out` 后面的内容告诉编译器如何使用 `protoc-gen-guardian` 插件。
+在这里，我们使用 grpc 插件，并且输出目录设置为当前工作目录（.）。
+
+`xx.xxx.proto`: 这是要编译的 `Protocol Buffers` 文件的路径和名称。在这个例子中，我们要编译 `xx.xxx.proto` 这个文件。
+
 ## 备份
 
 ## 迁移
@@ -71,7 +87,7 @@ jvm.options 文件是 Elasticsearch 中用于配置 Java 虚拟机 (JVM) 参数�
                     }
                 }
             },
-            "xxx_tags": {
+            "xxx_data_tags": {
                 "type": "object",
                 "properties": {
                     "leaf": {
@@ -86,6 +102,39 @@ jvm.options 文件是 Elasticsearch 中用于配置 Java 虚拟机 (JVM) 参数�
     }
 }
 ```
+详细讲解：
+
+这是一个示例的`Elasticsearch（ES）`索引模板配置：
+
+`index_patterns`: 这个配置指定了哪些索引名称符合该模板的规则。 索引名称必须以 "-xxx-tags" 结尾，例如 "my-index-xxx-tags" 或 "another-index-xxx-tags" 等。
+
+`settings`: 这是索引级别的设置部分，用于配置索引的一些基本参数。
+
+`number_of_shards`: 定义索引被分成多少个分片。在这个示例中，索引将会有3个主分片。
+
+`number_of_replicas`: 定义每个分片的副本数量。在这个示例中，每个主分片将会有1个副本，总共会有3个主分片和3个副本。
+
+`refresh_interval`: 定义索引的刷新间隔，即将内存中的数据刷新到磁盘的频率。在这里设置为"1s"，表示每秒刷新一次，以便实时性更高的搜索结果。
+
+`translog.flush_threshold_size`: 定义事务日志的大小阈值，当事务日志大小达到1GB时，将触发强制刷新操作，将数据持久化到磁盘上的索引文件中。
+
+`max_result_window`: 定义一个搜索请求可以从该索引中获取的最大文档数量。在这个示例中，设置为2147483647，允许获取非常大的搜索结果集。
+
+`max_inner_result_window`: 定义嵌套聚合结果窗口的大小。在这个示例中，设置为100000000，适用于处理大量嵌套聚合结果。
+
+`mappings`: 这是索引的映射（mapping）配置部分，用于定义索引中字段的类型和属性。
+
+`xxx_tags` 和 `xxx_data_tags`: 这两个字段分别被定义为 "object" 类型，这表示它们是嵌套对象。 每个对象有两个子字段：leaf 和 all。
+
+`leaf`: 这些子字段被定义为 "keyword" 类型，这表示它们是精确值类型，不会被分词，用于精确匹配搜索。
+
+`all`: 同样，这些子字段也被定义为 "keyword" 类型，它们用于存储一组关键字，同样不会被分词。
+
+总结：
+以上的配置示例是为了创建一个名为 "xxx-tags" 的索引模板。该模板用于匹配所有以 "-xxx-tags" 结尾的索引名称。
+每个匹配的索引将有3个主分片和1个副本，索引将会每秒刷新一次，并设置了事务日志大小的阈值。
+索引中包含两个嵌套对象字段 `xxx_tags` 和 `xxx_data_tags`，每个对象包含 leaf 和 all 两个关键字字段。
+根据实际需求，可以根据这个模板创建多个匹配的索引，并且它们都会应用这个模板定义的配置和映射结构。
 
 ### 索引示例
 ```

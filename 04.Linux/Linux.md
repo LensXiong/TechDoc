@@ -8,6 +8,101 @@
 * [ 解决 CentOS8 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos8)
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
 
+
+# FQA
+
+## supervisor.sock no such file
+报错内容：
+```
+supervisorctl status
+unix:///var/run/supervisor/supervisor.sock no such file
+```
+解决办法：
+```
+sudo systemctl start supervisord
+```
+
+##  invalid PID number
+报错内容：
+```
+/usr/sbin/nginx -s reload
+nginx: [error] invalid PID number "" in "/var/run/nginx.pid"
+```
+解决办法：
+```
+/usr/sbin/nginx -c /etc/nginx/nginx.conf
+```
+
+# Centos 中 Nginx 和 Supervisor 开机自启动
+1、安装 Nginx 和 Supervisor： 如果尚未安装 Nginx 和 Supervisor，可以使用以下命令安装它们：
+
+```
+sudo yum install nginx
+sudo yum install supervisor
+```
+配置 Nginx 自启动：Nginx 在安装时通常会自动创建一个 systemd 服务单元。你只需要启用它，让它在开机时自动启动。
+
+```
+sudo systemctl enable nginx
+```
+
+配置 Supervisor 自启动： Supervisor 需要手动配置才能在开机时自动启动。以下是配置步骤：
+
+2、创建 Supervisor 配置文件（如果尚未创建）：
+```
+sudo nano /etc/supervisord.conf
+```
+
+2.1 在配置文件中添加你想要管理的进程的配置。例如，如果你想要管理一个名为 "myapp" 的进程，可以添加类似以下的内容：
+```
+[program:myapp]
+command=/path/to/your/app
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/myapp.err.log
+stdout_logfile=/var/log/myapp.out.log
+```
+请将 /path/to/your/app 替换为你的应用程序的实际路径。
+
+2.2 启用 Supervisor 自启动： 创建一个 Supervisor systemd 服务单元文件：
+```
+sudo nano /etc/systemd/system/supervisord.service
+```
+
+在文件中添加以下内容：
+```
+[Unit]
+Description=Supervisor daemon
+[Service]
+ExecStart=/usr/bin/supervisord -c /etc/supervisord.conf
+ExecStop=/usr/bin/supervisorctl shutdown
+ExecReload=/usr/bin/supervisorctl reload
+KillMode=process
+Restart=on-failure
+RestartSec=5s
+[Install]
+WantedBy=multi-user.target
+```
+保存文件后，启用 Supervisor 自启动：
+```
+sudo systemctl enable supervisord
+```
+重启系统并验证：
+
+在完成上述步骤后，你可以重启系统并验证 Nginx 和 Supervisor 是否在启动后自动运行。
+```
+sudo reboot
+```
+在系统重启后，使用以下命令验证 Nginx 和 Supervisor 是否正在运行：
+```
+sudo systemctl status nginx
+sudo systemctl status supervisord
+```
+确保根据你的实际配置和路径进行相应的替换。
+
+Nginx 和 Supervisor 应该会在开机时自动启动并管理你的应用程序。
+
+
 # 安装常用工具
 ```
 yum install tree nmap dos2unix lrzsz nc lsof wget tcpdump htop iftop iotop sysstat nethogs -y

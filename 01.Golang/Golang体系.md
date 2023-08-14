@@ -48,6 +48,24 @@
 * [Mutex 正常模式和饥饿模式分别是什么？](#mutex_model)
 
 ## 专题相关
+### 常用命令
+```
+// 更新 go.mod 文件和模块依赖
+go mod tidy  
+// 更新 vendor 目录
+go mod vendor
+
+// 从 Go 1.16 版本开始，默认情况下，go mod tidy 会保留 vendor 目录中存在但在 go.mod 中未使用的依赖项。
+// 如果你想要删除不再使用的依赖项，可以在执行 go mod tidy 时加上 -v 参数，如下：
+go mod tidy -v
+
+// 清理 Go 模块缓存的命令
+go clean -modcache
+// 根据 go.mod 文件中的依赖列表，重新下载所有的模块并将它们存放在模块缓存中。
+go mod download
+```
+
+
 
 ### make && new
 

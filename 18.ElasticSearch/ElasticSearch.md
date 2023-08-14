@@ -4,7 +4,7 @@
 protoc --plugin=protoc-gen-guardian=/Users/xxxx/go/bin/protoc-gen-guardian --guardian_out=plugins=grpc:. xx.xxx.proto
 ```
 命令解释：
-protoc: 这是 `Protocol Buffers` 编译器的命令。`Protocol Buffers` 是一种用于序列化结构化数据的语言和平台无关的技术。
+`protoc`: 这是 `Protocol Buffers` 编译器的命令。`Protocol Buffers` 是一种用于序列化结构化数据的语言和平台无关的技术。
 
 `--plugin=protoc-gen-guardian=/Users/xxxx/go/bin/protoc-gen-guardian`: 这是指定编译器插件的选项。
 `--plugin` 后面是插件的名称和路径。在这里，`protoc-gen-guardian` 是一个编译器插件，

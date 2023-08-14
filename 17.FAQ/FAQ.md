@@ -15,6 +15,29 @@ SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_F
 
 ```
 
+# terminal prompts disabled 
+问题：
+运行  go mod tidy 时候报错：
+致命错误：could not read Username for 'https://github.com': terminal prompts disabled.
+
+解决：
+
+配置全局用户名和邮箱地址：
+打开终端，运行以下命令来配置全局的用户名和邮箱地址，这样 Git 就可以在没有终端提示的情况下使用它们：
+```
+git init
+git config --global user.name "YourUsername"
+git config --global user.email "youremail@example.com"
+```
+
+为当前项目设置特定的用户名和邮箱地址，可以在项目目录下使用以下命令来配置：
+
+```
+git init
+git config user.name "YourUsername"
+git config user.email "youremail@example.com"
+```
+
 # 添加认证
 * 复制公钥到认证文件中
 普通用户：

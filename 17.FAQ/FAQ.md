@@ -1,29 +1,96 @@
-
 # MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案
+
 [MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案](https://blog.csdn.net/u012660464/article/details/113977173)
+
 ```
 Error 1055: Expression #1 of ORDER BY clause is not in GROUP BY clause and contains nonaggregated column 'xx_xxx.xxxx.create_time'
 which is not functionally dependent on columns in GROUP BY clause; 
 this is incompatible with sql_mode=only_full_group_by
 ```
+
 临时解决方案：
+
 ```
 SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 ```
+
 永久解决方案：
-```
 
 ```
 
-# terminal prompts disabled 
+```
+
+# 什么是TDP设计，如何看CPU性能，i7-13700H 与 i7-13700T 有什么区别？
+
+## TDP
+
+TDP（Thermal Design Power，热设计功耗）： TDP是一个用来描述处理器在最大负载下产生的热量和所需的散热能力的指标。
+TDP通常以瓦特（W）为单位表示，这是处理器在工作时所消耗的能量。
+处理器的实际功耗可以在不同的负载情况下有所变化，但TDP是设计冷却解决方案和散热器的参考值。
+
+TDP（热设计功耗）： 根据型号中的字母 "T" 和 "H"，通常 "T" 型号表示低功耗版本，而 "H" 型号表示高性能版本。
+因此，"i7-13700T" 可能具有较低的TDP，适用于需要节能的场景，而 "i7-13700H" 可能具有较高的TDP，适用于要求更高性能的任务。
+
+1、时钟频率： "H" 型号通常会在时钟频率上提供更高的性能，但这并不是唯一的区别。高性能型号可能在时钟频率上略有不同。
+
+2、核心/线程数： 这两个型号可能在核心数和线程数方面有所不同，其中一个可能具有更多的核心和线程，从而提供更好的多任务处理能力。
+
+3、集成显卡： 如果这两个型号都有集成显卡，它们的性能和规格可能有所不同。"H" 型号可能会更加关注性能，因此其集成显卡性能可能会更高。
+
+4、适用场景： 由于 "T" 型号注重低功耗，适用于节能环境，而 "H" 型号注重高性能，适用于需要更大计算能力的任务，因此适用场景可能有所不同。
+
+5、扩展性： 高性能型号可能具有更高的扩展性，支持更多的外设和功能，适用于需要更多I/O 需求的应用。
+
+## i7-13700H 与 i7-13700T
+
+i7-13700H 与 i7-13700T 区别： 这两个型号可能代表Intel Core i7的不同变体，可能具有以下差异：
+
+性能： 通常情况下，H型号（如i7-13700H）可能会具有更高的时钟频率、更多的核心和线程，以实现更高的计算性能。
+T型号（如i7-13700T）则可能以降低的时钟频率和功耗为代价，追求更好的节能性能。
+
+功耗和散热： H型号可能具有较高的TDP，需要更强大的散热解决方案来处理产生的热量。
+T型号通常具有更低的TDP，适合于对电池寿命和散热要求较高的移动设备。
+
+适用场景： H型号适合于需要高性能的任务，如游戏、视频编辑和其他计算密集型工作。
+T型号适用于更注重电池寿命、轻负载任务和节能需求的场景。
+
+## CPU性能
+
+CPU性能衡量： 评估CPU性能需要考虑多个因素，包括核心数、线程数、时钟频率、架构、缓存等。
+性能的衡量因素因任务而异，例如多任务处理、单线程应用、游戏等都会受不同的因素影响。
+
+核心数量和线程数： 虽然核心数量并不是唯一的衡量标准，但对于多线程任务，更多的核心和线程通常可以提供更好的性能。
+考虑到你的应用是否能够充分利用多核心。
+
+1、主频和睿频： 主频是CPU的基本工作频率，而睿频是在负载较轻时可以自动提升的频率。较高的主频和睿频可以提升单线程性能。
+
+2、缓存大小和层次： 缓存大小和层次结构会影响数据访问速度。更大的缓存可以提高访问效率，尤其是对于频繁访问的数据。
+
+3、架构： 不同的CPU架构会影响性能和能效。一些新的架构可能具有更好的指令集、内存管理和运算效率。
+
+4、单线程性能和多线程性能： 考虑你的使用情景，如果应用更多地依赖于单一线程性能，那么高的单线程性能可能更重要。
+
+5、功耗和散热： 高性能的CPU通常会消耗更多的功耗，因此在选择时要考虑电脑的散热能力和功耗限制。
+
+6、厂商和代代产品： 不同厂商（如Intel、AMD）的CPU性能和架构有所不同。同一厂商不同代代产品之间也会有差异。
+
+7、基准测试和评测： 参考基准测试和独立评测可以提供有关CPU性能的客观数据。一些常见的基准测试包括Cinebench、Geekbench、PassMark等。
+
+8、应用需求： 最重要的是，选择CPU要考虑你的实际应用需求。如果你主要进行游戏、图形设计、视频编辑等任务，那么你可能需要不同类型的性能。
+
+9、未来可升级性： 考虑CPU是否适合未来的需求，是否可以轻松升级。
+
+# terminal prompts disabled
+
 问题：
-运行  go mod tidy 时候报错：
+运行 go mod tidy 时候报错：
 致命错误：could not read Username for 'https://github.com': terminal prompts disabled.
 
 解决：
 
 配置全局用户名和邮箱地址：
 打开终端，运行以下命令来配置全局的用户名和邮箱地址，这样 Git 就可以在没有终端提示的情况下使用它们：
+
 ```
 git init
 git config --global user.name "YourUsername"
@@ -39,18 +106,24 @@ git config user.email "youremail@example.com"
 ```
 
 # 添加认证
+
 * 复制公钥到认证文件中
-普通用户：
+  普通用户：
+
 ```
 vim /home/xxxx/.ssh/authorized_keys 
 ```
+
 root用户：
+
 ```
 vim /root/.ssh/authorized_keys
 ```
+
 * 设置文件访问权限
 
 sshd为了安全，对属主的目录和文件权限有所要求。如果权限不对，则ssh的免密码登陆不生效。
+
 ```
 chmod 700 /home/xxx/ 
 chmod 700 /home/xxxx/.ssh 
@@ -61,6 +134,7 @@ chmod 600 /home/xxxx/.ssh/authorized_keys
 
 确认远程服务器的sshd配置中允许免密登录、 查看远程服务器的`/etc/ssh/sshd_config` 文件，使用命令：
 `sudo vim /etc/ssh/sshd_config`
+
 ```
 // 去掉以下2行的 “#” 注释：
 PubkeyAuthentication yes 
@@ -72,6 +146,7 @@ PermitRootLogin yes
 ```
 
 * 必要时重启sshd服务
+
 ```
 sudo systemctl restart sshd
 ```
@@ -83,15 +158,16 @@ sudo systemctl restart sshd
 注释的正则：`// ([\u4e00-\u9fa5]+)(\w)*\n`
 ![](file/WX20230630-102924@2x.png)
 
-
 # 在 Ubuntu 上配置本地使用域名
 
 * 打开终端：在Ubuntu上打开终端应用程序。
 
 * 编辑hosts文件：输入以下命令以使用文本编辑器打开hosts文件：
+
 ```
 sudo vim /etc/hosts
 ```
+
 这将使用sudo权限打开hosts文件，输入管理员密码以进行授权。
 
 * 添加域名映射：在打开的hosts文件中，可以看到已有的条目，每个条目都包含一个IP地址和相关的主机名。在文件的最后，可以添加自定义的域名映射。每行的格式为：
@@ -101,17 +177,21 @@ sudo vim /etc/hosts
 ```
 
 例如，如果想将域名example.com映射到本地IP地址127.0.0.1，则可以添加以下行：
+
 ```
 127.0.0.1   example.com
 ```
+
 可以根据需要添加多个域名映射，每行一个。
 
 * 保存并关闭文件：在编辑完hosts文件后，关闭编辑器。
 
 * 刷新DNS缓存：为了使修改生效，需要刷新DNS缓存。在终端中，输入以下命令刷新DNS缓存：
+
 ```
 sudo systemctl restart systemd-resolved
 ```
+
 这将重新启动系统的DNS解析服务。
 
 现在，可以在Ubuntu本地系统中使用您配置的域名，它们将被解析为指定的IP地址。
@@ -121,27 +201,32 @@ sudo systemctl restart systemd-resolved
 此外，如果使用的是本地开发服务器（如Apache或Nginx），还需要相应地配置虚拟主机和服务器设置以匹配您的域名。
 
 # Linux Md5sum 和Macos Md5
+
 md5sum是一个常用的命令行工具，用于计算文件的MD5哈希值。
 MD5（Message Digest Algorithm 5）是一种广泛使用的哈希函数，用于对数据进行唯一标识和校验。
 md5sum命令通过对文件内容应用MD5算法，生成一个128位的哈希值，用于验证文件的完整性或进行数据比较。
+
 ```
 md5sum ./xxx.tar.gz
 ec612504a09830ea7a0f26e44cf86991 ./xxx.tar.gz
 ```
 
 在macOS中，可以使用md5命令来计算文件的MD5哈希值，它在功能上与md5sum命令类似。
+
 ```
 md5 ./xxx.tar.gz
 ec612504a09830ea7a0f26e44cf86991 ./xxx.tar.gz
 ```
+
 与md5sum命令类似，通过比较两个文件的MD5哈希值，可以验证这两个文件是否相同。
 如果两个文件的哈希值相同，则可以高度确信它们的内容相同。
 如果哈希值不同，则可以确定文件在传输或存储过程中发生了改变或损坏。
 
-#  tar 在 OS和 Linux 上的不兼容
+# tar 在 OS和 Linux 上的不兼容
 
 出现问题：`Linux / OS X tar incompatibility – tarballs created on OS X give errors when untarred in Linux`
 解决办法：
+
 ```
 xxx@xxx: brew install gnu-tar
 xxx@xxx: which gtar
@@ -165,9 +250,11 @@ There is NO WARRANTY, to the extent permitted by law.
 
 主要的差异点包括：
 
-* tar命令选项： macOS上的tar命令使用-z选项来指示对gzip压缩的tarball进行解压缩，而Linux上的tar命令使用-z选项来指示对gzip压缩的tarball进行创建。因此，当您在macOS上使用-z选项创建tarball后，尝试在Linux上使用相同选项进行解压缩时，会出现错误。
+* tar命令选项：
+  macOS上的tar命令使用-z选项来指示对gzip压缩的tarball进行解压缩，而Linux上的tar命令使用-z选项来指示对gzip压缩的tarball进行创建。因此，当您在macOS上使用-z选项创建tarball后，尝试在Linux上使用相同选项进行解压缩时，会出现错误。
 
-* 文件名编码：macOS使用HFS+文件系统，默认使用的是Unicode NFD（Normalization Form D）编码，而Linux使用的是UTF-8编码。这可能导致在Linux上解压缩时，文件名的字符编码不一致，从而出现错误或乱码。
+* 文件名编码：macOS使用HFS+文件系统，默认使用的是Unicode NFD（Normalization Form
+  D）编码，而Linux使用的是UTF-8编码。这可能导致在Linux上解压缩时，文件名的字符编码不一致，从而出现错误或乱码。
 
 为了解决这些兼容性问题，可以采取以下几种方法：
 
@@ -178,10 +265,10 @@ There is NO WARRANTY, to the extent permitted by law.
 * 在创建和解压缩tarball时，使用跨平台的tar工具，例如GNU tar（通常称为gtar）或BSD tar（通常称为bsdtar）。这些工具在不同操作系统之间提供更一致的行为。
 
 * 在macOS上创建tarball时，确保文件名使用的是UTF-8编码。这可以通过在终端中设置LANG环境变量来实现，例如：
+
 ```
 export LANG=en_US.UTF-8
 ```
-
 
 # goland 安装 plantuml 过程
 
@@ -191,27 +278,28 @@ export LANG=en_US.UTF-8
 * GoLand 中配置 Graphviz settings 路径
 
 在 `GoLand` 中配置 `Graphviz` 路径：
+
 ```
 a. 打开 GoLand 并转到 File > Settings > Languages & Frameworks > Diagrams > PlantUML。
 b. 在 "PlantUML settings" 部分，找到 "Path to plantuml.jar" 字段，然后输入 plantuml.jar 的路径。
 c. 在 "Graphviz settings" 部分，找到 "Path to Graphviz dot executable" 字段，然后输入 dot 可执行文件的路径。
 d. 单击 "Apply" 或 "OK" 以保存更改并关闭设置窗口。
 ```
+
 ![](file/plantuml.png)
 
 # frpc
 
-
-
 # MAC 下移动硬盘无法写入
+
 当移动硬盘插入可以识别，无法写入的时候，是因为移动硬盘使用了NTFS格式而 Mac 系统原生是不支持这种格式的。
 只需要把硬盘格式化为 exfat 就可以在 Mac 和 Windows 下用了。
 点击启动台（LAUNCH PAD）-其他-磁盘工具，点击之后，选择你要的盘进行抹掉（慎重），成 exfat。
 
 【Mac 挂载硬盘命令：让mac写入硬盘更轻松】https://juejin.cn/post/7148295961021054983
 
-
 # 去除 goland 代码中的波浪线(黄色警告线)
+
 搜索关键词：Weak Warning
 ![](file/weak_warning.png)
 
@@ -219,16 +307,21 @@ d. 单击 "Apply" 或 "OK" 以保存更改并关闭设置窗口。
 
 [mac系统终端sudo免输入密码技能get](https://www.cnblogs.com/princesong/p/10293885.html)
 `/etc/sudoers` 这个文件的权限是`r/r/n`，配置之前需要加写权限。
+
 ```
 sudo chmod u-w /etc/sudoers
 ```
+
 添加 `NOPASSWD`：
+
 ```
 sudo vi /etc/sudoers
 // 将 #%admin ALL=(ALL) ALL
 // 替换为 %admin ALL=(ALL) NOPASSWD: ALL
 ```
+
 修改完后配置为原来的读权限：
+
 ```
 sudo chmod u-w /etc/sudoers
 ```

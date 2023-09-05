@@ -20,6 +20,10 @@ SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_F
 
 ```
 
+# 解决Mac M1 debug报错（could not launch process: can not run under Rosetta）
+解决方案：
+
+
 # 什么是TDP设计，如何看CPU性能，i7-13700H 与 i7-13700T 有什么区别？
 
 ## TDP

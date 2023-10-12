@@ -1,5 +1,23 @@
 
 
+# 初始化mysql数据备份迁移到另一台mysql
+
+docker 启动 mysql 容器时报错：
+```
+[System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.30) initializing of server in progress as process 81
+[ERROR] [MY-010457] [Server] --initialize specified but the data directory has files in it. Aborting.
+[ERROR] [MY-013236] [Server] The designated data directory /var/lib/mysql/ is unusable. You can remove all files that the server added to it.
+[ERROR] [MY-010119] [Server] Aborting
+```
+原因：
+```
+xxx/data/db/mysql下应该是所需要的mysql初始化数据。包括表结构、数据库、日志数据等。
+```
+解决：
+```
+保证xxx/data/db/mysql下的初始化数据正常。之前遇到xxx/data/db/mysql/里面还有一层data数据，将data数据移出来即可。
+```
+
 # docker 导入和导出相关数据
 ## 导入数据
 ```

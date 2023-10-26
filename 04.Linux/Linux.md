@@ -8,8 +8,57 @@
 * [ 解决 CentOS8 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos8)
 * [ 解决 CentOS7 查看网络管理服务配置，并设置开机自启。](#network_scripts_centos7)
 
+# 命令汇总
+```
+apt install openssh-server
+apt install lrzsz
+```
+
 
 # FQA
+
+## 配置ssh 服务
+```
+apt install ssh-server 
+sudo systemctl start ssh
+systemctl enable ssh
+sudo systemctl status ssh
+```
+
+## 配置国内清华镜像源
+
+将系统的APT软件包管理器的源列表配置为清华大学TUNA镜像站的Ubuntu软件包仓库，包括主要、更新、后备和安全性仓库。
+之后，它立即运行apt update以确保软件包信息是最新的。这对于加速软件包管理器的操作，特别是在中国境内访问Ubuntu软件包时非常有用。
+
+运行以下命令：
+```
+bash -c "cat << EOF > /etc/apt/sources.list && apt update
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-security main restricted universe multiverse
+EOF"
+```
+
+详细解释：
+```
+bash -c: 这部分启动一个新的Bash shell，并通过-c选项告诉Bash执行后面的命令。在这里，后面的命令是一个包含多个行的字符串。
+
+"cat << EOF > /etc/apt/sources.list && apt update ... EOF": 这是一个文本块，使用Here文档语法（<< EOF和EOF之间的文本会被传递给cat命令）。
+这个文本块包含多个行，每行以deb开头，然后是一个Ubuntu软件包仓库的URL，以及该仓库的组件（main、restricted、universe、multiverse）。
+
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse: 
+这是一个Ubuntu软件包仓库的源，其中https://mirrors.tuna.tsinghua.edu.cn/ubuntu/是仓库的URL，focal是Ubuntu 20.04 LTS版本的代号，
+而后面的main restricted universe multiverse是软件包仓库的组件，分别包含主要软件、受限软件、宇宙软件和多元软件。
+类似的行还有三个，分别对应Ubuntu的更新、后备和安全性软件包仓库。
+
+> /etc/apt/sources.list: >符号将Here文档的内容重定向到文件/etc/apt/sources.list中，这个文件是APT包管理器用来获取软件包信息的配置文件。
+通过这个命令，已有的源列表将被替换为新的内容。
+
+&& apt update: &&表示在前一个命令成功执行后，才会执行后面的命令。
+在这里，一旦源列表被更新后，立即执行apt update命令，这个命令会下载最新的软件包信息，以便系统可以安装或更新软件包。
+```
+
 
 ## supervisor.sock no such file
 报错内容：

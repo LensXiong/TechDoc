@@ -14,6 +14,121 @@ apt install openssh-server
 apt install lrzsz
 ```
 
+# 解除53端口占用
+[彻底解决 Linux 系统下 systemd-resolve 占用 53 端口的问题](https://www.otakusay.com/866.html)
+
+53端口是 DNS（Domain Name System）服务的默认端口。
+DNS是互联网上的一项关键服务，它负责将人类可读的域名（例如 www.example.com）映射到与之对应的IP地址（例如 192.0.2.1）。
+通过DNS，用户可以使用便于记忆的域名来访问网站，而无需记住复杂的IP地址。
+
+当计算机或设备需要解析域名以确定其对应的IP地址时，它会发送DNS查询请求到53端口。DNS服务器接收这些请求并返回相应的IP地址信息。
+
+因此，53端口是DNS通信的默认端口，用于传输DNS请求和响应。在上述情景中，释放53端口是为了确保其他程序或服务可以正常使用它，而不受 systemd-resolved 服务的占用。
+
+具体步骤：
+* 查看端口占用情况，看看 53 端口是不是被 `systemd-resolved` 占用了。`sudo netstat -nultp`
+* 修改 `/etc/systemd/resolved.conf` ，添加配置：`DNSStubListener=no`。
+* 软连接配置：`ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf`。
+* 重新启动`systemd-resloved`服务：`systemctl restart systemd-resolved.service`（可解除53端口占用，且不影响服务器DNS解析服务）
+
+# 替换5.8内核
+
+* 查看系统中所有安装相关的软件包。`sudo dpkg --get-selections | grep linux-image`。
+* 清除对应版本的软件包。`apt remove --purge linux-image-unsigned-5.15.x-88-generic`。
+* 查看内核信息。`uname -r`或者`uname -a`。
+
+```
+sudo apt update
+sudo apt install linux-image-5.8.0-63-generic linux-headers-5.8.0-63-generic linux-hwe-5.8-headers-5.8.0-63 linux-modules-5.8.0-63-generic linux-modules-extra-5.8.0-63-generic
+
+### 安装好新内核后需要修改grub引导配置文件，设置等待时间，手动指向5.8内核后，启动系统，再autoremove旧的内核，后续即可自动进入5.8内核
+sudo vim /etc/default/grub
+
+### 修改下面两个参数，保存后退出
+GRUB_TIMEOUT_STYLE=
+GRUB_TIMEOUT=2
+
+# 执行下述命令后重启系统，开机过程在grub界面暂停，此时手动在高级选项里选择5.8内核，回车进入，即可引导进入5.8内核
+sudo update-grub
+reboot
+
+# 开机后，使用 uname -a命令检查，若为5.8证明切换成功，执行 sudo apt autoremove卸载旧的内核，后续开机便会自动进入5.8内核
+sudo apt autoremove
+
+#此时也可将grub的配置改为默认配置，后执行 sudo update-grub，可再次隐藏grub界面，提升安全性
+```
+
+若更换内核后无法进入系统，提示内核签名不通过。对内核进行签名或者禁用安全启动
+```
+# 选择之前版本内核进入系统，禁用安全启动
+apt install mokutil
+mokutil --disable-validation
+reboot
+# 重启后选择 Change Secure Boot State 禁用
+```
+
+关于 `/etc/default/grub`文件详解：
+```
+# If you change this file, run 'update-grub' afterwards to update
+# /boot/grub/grub.cfg.
+# For full documentation of the options in this file, see:
+#   info -f grub -n 'Simple configuration'
+
+GRUB_DEFAULT=0
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_TIMEOUT=0
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX=""
+
+# Uncomment to enable BadRAM filtering, modify to suit your needs
+# This works with Linux (no patch required) and with any kernel that obtains
+# the memory map information from GRUB (GNU Mach, kernel of FreeBSD ...)
+#GRUB_BADRAM="0x01234567,0xfefefefe,0x89abcdef,0xefefefef"
+
+# Uncomment to disable graphical terminal (grub-pc only)
+#GRUB_TERMINAL=console
+
+# The resolution used on graphical terminal
+# note that you can use only modes which your graphic card supports via VBE
+# you can see them in real GRUB with the command `vbeinfo'
+#GRUB_GFXMODE=640x480
+
+# Uncomment if you don't want GRUB to pass "root=UUID=xxx" parameter to Linux
+#GRUB_DISABLE_LINUX_UUID=true
+
+# Uncomment to disable generation of recovery mode menu entries
+#GRUB_DISABLE_RECOVERY="true"
+
+# Uncomment to get a beep at grub start
+#GRUB_INIT_TUNE="480 440 1"
+```
+
+`/etc/default/grub` 是一个文本文件，通常位于Linux系统中，特别是基于Debian的发行版（如Ubuntu）中。
+它包含有关GRUB（GRand Unified Bootloader）引导加载程序的配置选项。
+GRUB是用于多重引导系统的引导加载程序，它允许您选择要引导的操作系统或内核镜像。
+
+* `GRUB_DEFAULT`: 指定默认启动的菜单项索引。可以是一个数字（表示菜单项的位置，从0开始），也可以是菜单项的标签。默认情况下，通常设置为0，表示默认启动第一个菜单项。
+
+* `GRUB_TIMEOUT`: 指定GRUB菜单的显示时间（以秒为单位）。如果没有进行选择，GRUB将在超时后自动启动默认菜单项。
+
+* `GRUB_TIMEOUT_STYLE`: 指定如何显示超时的倒计时。可以设置为 "menu"（显示倒计时和菜单）或 "hidden"（隐藏倒计时，但按下 Shift 键将显示菜单）。
+
+* `GRUB_CMDLINE_LINUX`: 指定Linux内核引导参数。您可以在这里添加内核参数，例如设置根文件系统、调整内核参数等。这是一个非常重要的选项，特别是在需要自定义内核启动参数时。
+
+* `GRUB_HIDDEN_TIMEOUT`: 如果 GRUB_TIMEOUT_STYLE 设置为 "hidden"，则可以通过此选项指定在按下 Shift 键之前的等待时间。
+
+* `GRUB_HIDDEN_TIMEOUT_QUIET`: 如果 GRUB_TIMEOUT_STYLE 设置为 "hidden"，此选项可控制是否在隐藏模式下显示启动信息。
+
+* `GRUB_DISABLE_OS_PROBER`: 如果设置为 "true"，将禁用OS探测，不会自动检测其他操作系统的安装。
+
+* `GRUB_SAVEDEFAULT`: 如果设置为 "true"，GRUB将记住上一次选择的菜单项，并使其成为默认菜单项。
+
+* 其他选项：还有其他一些选项，用于配置GRUB的外观、语言和其他行为。
+
+一旦对 `/etc/default/grub` 文件进行了更改，通常需要运行 `sudo update-grub` 命令来生成新的`GRUB`配置文件，以使更改生效。
+这将在 `/boot/grub/grub.cfg` 中生成新的配置，`GRUB`会使用该文件来显示菜单和引导操作系统。
+
 
 # FQA
 

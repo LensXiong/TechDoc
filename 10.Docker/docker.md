@@ -1,8 +1,55 @@
 
 
 
+# 配置Elasticsearch容器的Java虚拟机
+现象：后台系统请求响应比较慢。
+environment字段中包含了ES_JAVA_OPTS环境变量，并将其值设置为-Xms3g -Xmx3g，
+这将使Elasticsearch容器的Java虚拟机使用3GB的初始堆大小和3GB的最大堆大小。
 
+Java虚拟机（JVM）的初始堆大小（-Xms参数）是指JVM启动时分配的初始堆内存大小，而不是硬盘空间。 这是用于存储Java应用程序运行时数据的内存区域。
 
+具体来说，-Xms参数控制了Java应用程序启动时分配给堆的内存空间。
+堆是用于存储Java对象实例的内存区域，包括对象的实例变量和数组元素。
+初始堆大小指定了JVM在启动时分配给堆的内存量，但堆的大小会根据应用程序的需求进行动态调整，直到达到最大堆大小（-Xmx参数）为止。
+
+如果你将-Xms参数设置为3GB，那么JVM启动时将分配3GB的内存作为初始堆空间。这并不是硬盘上的空间，而是RAM（内存）上的分配。
+-Xmx参数则控制了堆的最大大小，即JVM在任何时候都不会分配超过这个大小的堆内存。
+所以，-Xms参数和-Xmx参数都用于控制JVM在运行时所使用的内存，而不是硬盘上的存储空间。硬盘上的存储空间通常不由JVM的堆大小参数来控制，而是由操作系统和文件系统来管理。
+
+示例：在Docker容器中运行Elasticsearch，并为其提供持久化存储、网络连接和管理界面。
+同时，es-head容器用于监控和管理Elasticsearch，依赖于xxxx_es容器。
+```
+  xxxx_es:
+    image:  elasticsearch:7.17.x
+    container_name: xxxx_es
+    restart: always
+    networks:
+      xxxx_net:
+        ipv4_address: 17x.16.1.x
+    volumes:
+      - xxxx/db/es/data:/usr/share/elasticsearch/data:rw
+      - xxxx/db/es/conf/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - xxxx/db/es/conf/jvm.options:/usr/share/elasticsearch/config/jvm.options
+      - xxxx/db/es/data/logs:/user/share/elasticsearch/logs:rw
+    ports:
+      - 9x00:9x00
+      - 9x00:9x00
+    environment:
+      - discovery.type=single-node
+      - TZ=Asia/Shanghai
+      - "ES_JAVA_OPTS=-Xms3g -Xmx3g"
+  es-head:
+      image: mobz/elasticsearch-head:5
+      container_name: es-head
+      restart: always
+      networks:
+        xxxx_net:
+          ipv4_address: 17x.16.1.x
+      ports:
+        - "9x00:9x00"
+      depends_on:
+        - xxxx_es
+```
 
 # 使用 docker-compose 启动 kafka 报错
 

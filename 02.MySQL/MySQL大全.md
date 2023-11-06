@@ -1,100 +1,143 @@
+
+# FAQ
+## incompatible with sql_mode=only_full_group_by
+MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案。
+问题还原：
+```
+Expression #1 of SELECT list is not in GROUP BY clause and contains
+nonaggregated column ‘数据库名.表名.字段名’ which is not functionally dependent
+on columns in GROUP BY clause; this is incompatible with
+sql_mode=only_full_group_by
+```
+原因分析：
+这个错误是因为MySQL的sql_mode配置中启用了"only_full_group_by"，该模式要求在使用GROUP BY子句时，
+SELECT中的列必须要么在GROUP BY中出现，要么使用聚合函数进行处理。
+如果SELECT中的列不符合这个规则，就会出现上述错误。
+
+解决办法：
+1、临时修改，重启mysql会失效。
+```
+select @@GLOBAL.sql_mode;
+SET sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+select @@GLOBAL.sql_mode;
+```
+2、永久修改，配置文件加入，重启mysql 不会失效。
+docker-composer中映射配置文件。
+```
+volumes:
+      - xxx/db/mysql:/var/lib/mysql
+      - xxx/db/mysql/conf/my.cnf:/etc/my.cnf
+```
+my.cnf 配置文件：
+```
+# 只需要添加这个模式配置即可
+sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+```
+my.cnf 完整示例：
+```
+# For advice on how to change settings please see
+# http://dev.mysql.com/doc/refman/8.0/en/server-configuration-defaults.html
+
+[mysqld]
+#
+# Remove leading # and set to the amount of RAM for the most important data
+# cache in MySQL. Start at 70% of total RAM for dedicated server, else 10%.
+# innodb_buffer_pool_size = 128M
+#
+# Remove leading # to turn on a very important data integrity option: logging
+# changes to the binary log between backups.
+# log_bin
+#
+# Remove leading # to set options mainly useful for reporting servers.
+# The server defaults are faster for transactions and fast SELECTs.
+# Adjust sizes as needed, experiment to find the optimal values.
+# join_buffer_size = 128M
+# sort_buffer_size = 2M
+# read_rnd_buffer_size = 2M
+
+# Remove leading # to revert to previous value for default_authentication_plugin,
+# this will increase compatibility with older clients. For background, see:
+# https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_default_authentication_plugin
+# default-authentication-plugin=mysql_native_password
+skip-host-cache
+skip-name-resolve
+datadir=/var/lib/mysql
+socket=/var/run/mysqld/mysqld.sock
+secure-file-priv=/var/lib/mysql-files
+user=mysql
+
+pid-file=/var/run/mysqld/mysqld.pid
+
+# 只需要添加这个模式配置即可
+sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+
+[client]
+socket=/var/run/mysqld/mysqld.sock
+
+!includedir /etc/mysql/conf.d/
+```
+3、修改程序，调整查询语句。更安全的方法是根据需求重新编写查询语句，以符合"only_full_group_by"的规则。
+可以使用聚合函数对非GROUP BY列进行计算，或者将这些列包含在GROUP BY子句中，以便使查询合法。
+
+例如，有一个查询：
+```
+SELECT column1, column2, SUM(column3) FROM your_table GROUP BY column1;
+```
+可以修改为：
+```
+SELECT column1, SUM(column3) FROM your_table GROUP BY column1;
+```
+这样就符合"only_full_group_by"的规则了。
+
 #  问题列表
 
 1、一条SQL查询语句是如何执行的？如果查询不存在的字段，是在哪个阶段报的错？
-
 2、每天一千万订单，要求用户查自己的订单，商家查自己家的订单，怎么设计订单表？
-
 3、MySQL的事务隔离级别是什么?
-
 4、MySQL有哪几种锁机制，每种锁都做了些什么？
-
 5、为什么MySQL的索引要使用B+树，而不是其它树？比如B树？
-
 6、什么是数据库设计的三大范式？范式设计和反范式设计的优缺点？
-
 7、MySQL中 MyISAM 与 InnoDB 的区别，至少5点？
-
 8、MySQL中 VARCHAR 与 CHAR 的区别以及 VARCHAR(50) 中的50代表的涵义？int(20)中20的涵义？
-
 9、 InnoDB 的事务与日志的实现方式？
-
 10、MySQL数据库 CPU 飙升到500%的话怎么处理？
-
 11、Explain 执行计划包含的字段及说明？
-
 12、什么是索引？MySQL 索引都有哪些类型？索引的优缺点是什么？
-
 13、MySQL 优化的方式具体都有哪些？至少10种。
-
 14、什么是最左前缀原则？什么是最左匹配原则？
-
 15、内连接INNER JOIN，左连接LEFT JOIN，右连接RIGHT JOIN，全连接FULL OUTER JOIN等SQL JOINS的文氏图解？
-
 16、MySQL InnoDB的索引结构（画图说明） ？
-
 17、B+ tree在索引 where id = 100 的索引过程？
-
 18、为什么MongoDB索引用B树，而MySQLB+树?
-
 19、为SQL建立索引 where a = 1 and b > 10 and c =1 。
-
 20、手写SQL 用户表 包含 id name password score 。
-
 21、进行MySQL慢查询优化的基本步骤是什么？
-
 22、建立索引的原则有哪些？至少五点。
-
 23、给如下慢SQL建立索引进行查询速度优化。
-
 24、MySQL是否支持JSON类型？
-
 25、B+ tree在索引 where id = 50 的索引过程 ？
-
 26、请解释下`select * from t where id>7` 是否会走索引？为什么？`select * from t where id<7`是否也会走索引。
-
 27、请说明下字段bcd联合索引的结构，画图说明。
-
 28、什么是聚族索引，什么是非聚族索引？
-
 29、什么是回表？什么是覆盖索引？什么是索引下推？什么是最左前缀匹配？
-
 30、什么是局部性原理？什么是磁盘预读？
-
 31、MySQL的索引一般有几层？创建的索引字段是长了好还是短了好？
-
 32、我们在创建表的时候使用代理主键还是自然主键？主键设置好了之后，要不要自增？在分布式应用场景中，自增id还适用么？
-
 33、什么是事务？事务的ACID特性是什么？
-
 34、什么是脏读、不可重复读和幻读？
-
 35、为什么MySQL用B+树做索引而不用B树?
-
 36、请介绍下 B+ Tree 结构？当如下高度为三层树的节点撑满后能放多少索引？
-
 37、为什么建议 InnoDB 表必须建主键，并且推荐使用整型的自增主键？
-
 38、为什么非主键索引结构叶子节点存储的是主键值（一致性和节省存储空间）？
-
 39、联合索引的底层存储结构长什么样子（画图说明）？
-
 40、联合索引字段A、B、C，查询A、C、B会走索引吗？为什么？
-
 41、慢SQL查询如何优化？
-
 42、可重复读是怎么实现的？
-
 43、做过分库分表吗？基于什么进行拆分，拆分后出现了什么问题，怎么解决的？
-
 44、为什么建议主键ID是递增的，和B+tree有什么关联？为什么不建议使用UUID。
-
 45、二叉树、AVL树、B-树、B+树的特点和缺点？
-
 46、针对如下表结构创建的索引，哪个SQL的执行效率高？
-
 48、[写一条SQL要求去除一个学生的最高分和最低分，然后算出平均分。](#48)
-
-
 
 # 问题解答
 

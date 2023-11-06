@@ -18,7 +18,7 @@ apt install lrzsz
 [彻底解决 Linux 系统下 systemd-resolve 占用 53 端口的问题](https://www.otakusay.com/866.html)
 
 53端口是 DNS（Domain Name System）服务的默认端口。
-DNS是互联网上的一项关键服务，它负责将人类可读的域名（例如 www.example.com）映射到与之对应的IP地址（例如 192.0.2.1）。
+DNS是互联网上的一项关键服务，它负责将人类可读的域名（例如 `www.example.com`）映射到与之对应的IP地址（例如 192.0.2.1）。
 通过DNS，用户可以使用便于记忆的域名来访问网站，而无需记住复杂的IP地址。
 
 当计算机或设备需要解析域名以确定其对应的IP地址时，它会发送DNS查询请求到53端口。DNS服务器接收这些请求并返回相应的IP地址信息。

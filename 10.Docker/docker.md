@@ -1,5 +1,36 @@
 
 
+
+
+
+
+# 使用 docker-compose 启动 kafka 报错。
+
+报错信息：
+```
+ERROR Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)
+kafka.common.InconsistentClusterIdException: The Cluster ID ZfQZirUQRua6RnLVYiz_rA doesn't match stored clusterId Some(iFvDhNp5TP2jnCpEai461Q) in meta.properties. The broker is trying to join the wrong cluster. Configured zookeeper.connect may be wrong.
+	at kafka.server.KafkaServer.startup(KafkaServer.scala:223)
+	at kafka.server.KafkaServerStartable.startup(KafkaServerStartable.scala:44)
+	at kafka.Kafka$.main(Kafka.scala:82)
+	at kafka.Kafka.main(Kafka.scala)
+```
+报错原因：
+Kafka Broker 尝试加入了一个错误的集群，原因是其集群ID（Cluster ID）与之前存储在meta.properties文件中的集群ID不匹配。这通常发生在以下情况下：
+* Kafka配置文件更改：如果你更改了Kafka Broker的配置文件，尤其是broker.id或zookeeper.connect等配置项，可能导致集群ID不匹配。
+* ZooKeeper连接配置错误：zookeeper.connect配置项指定了Kafka Broker连接ZooKeeper的信息。确保这个配置正确，并且Kafka Broker可以连接到正确的ZooKeeper集群。
+
+解决办法：
+* 检查Kafka配置文件：检查Kafka Broker的配置文件，特别是broker.id和zookeeper.connect的值是否正确。确保broker.id是唯一的，并且zookeeper.connect指向正确的ZooKeeper集群。
+* 删除错误的Cluster ID：在Kafka数据目录中，有一个meta.properties文件，其中存储了Cluster ID。如果你确定配置正确，你可以尝试删除这个文件，然后重新启动Kafka Broker。Kafka将会重新生成正确的Cluster ID。
+* 清除ZooKeeper数据：如果上述步骤没有解决问题，可能需要清除ZooKeeper中的一些数据。在做任何数据清除之前，务必备份数据以防万一。你可以尝试删除ZooKeeper数据目录中与Kafka相关的节点，然后重新启动Kafka Broker。
+
+具体步骤：
+```
+rm -rf /opt/xxxx/data/db/kafka/data/meta.properties
+docker-compose restart skygo_kafka
+```
+
 # 初始化mysql数据备份迁移到另一台mysql
 
 docker 启动 mysql 容器时报错：

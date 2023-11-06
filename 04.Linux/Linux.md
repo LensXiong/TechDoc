@@ -34,7 +34,7 @@ apt install lrzsz
 
 每个进程都有相关的信息，包括进程ID、用户、CPU使用率、内存使用量、进程状态、启动时间以及命令行参数（如果使用了 `-c` 选项）。
 
-你可以使用交互式命令来对进程列表进行排序、过滤、结束进程等操作。一些常用的交互式命令包括：
+可以使用交互式命令来对进程列表进行排序、过滤、结束进程等操作。一些常用的交互式命令包括：
 
 - 使用 `k` 键来结束选定的进程。
 - 使用 `P` 键按CPU使用率排序进程。
@@ -72,6 +72,27 @@ top 命令中的进程状态（S列）通常可以包括以下值：
 * X: 死亡（Dead） - 进程已经终止，但其状态尚未清理。
 * I: 空闲（Idle）-表示进程处于 "Idle"（空闲）状态。
 
+load average 通常以三个数值表示，比如 "0.53, 0.43, 0.36"。这三个数字分别代表了不同时间段内的系统负载情况。
+
+这三个数字分别表示了过去 1 分钟、过去 5 分钟和过去 15 分钟内的平均系统负载。
+系统负载是指系统中正在执行或等待执行的进程的数量。通常，系统负载是一个介于 0 和无穷大之间的浮点数。
+
+```
+%Cpu(s):  1.1 us,  1.3 sy,  0.0 ni, 97.4 id,  0.0 wa,  0.0 hi,  0.0 si,  0.2 st
+```
+
+`%Cpu(s)` 行是 Linux `top` 命令输出的一部分，用于显示系统的 CPU 使用情况。
+
+1. `us`（用户空间）：这个字段显示了 CPU 时间百分比，用于执行用户进程（应用程序）。它表示 CPU 时间被用户进程占用的百分比。在这个示例中，1.1% 的 CPU 时间用于执行用户进程。
+2. `sy`（系统内核）：这个字段显示了 CPU 时间百分比，用于执行系统内核任务。它表示 CPU 时间被内核操作占用的百分比，例如系统调用和中断处理。在这个示例中，1.3% 的 CPU 时间用于执行系统内核任务。
+3. `ni`（Nice值）：这个字段显示了 CPU 时间百分比，用于执行被用户附加的优先级（nice）任务。通常情况下，它是 0，表示没有附加优先级的任务。在这个示例中，0.0% 的 CPU 时间用于执行附加优先级的任务。
+4. `id`（空闲）：这个字段显示了 CPU 时间百分比，表示 CPU 处于空闲状态的时间百分比。在这个示例中，97.4% 的 CPU 时间处于空闲状态，没有执行任何任务。
+5. `wa`（I/O等待）：这个字段显示了 CPU 时间百分比，用于等待I/O操作完成的时间百分比。如果系统上存在磁盘或其他I/O瓶颈，这个值可能会上升。在这个示例中，0.0% 的 CPU 时间用于等待I/O操作完成。
+6. `hi`（硬中断）：这个字段显示了 CPU 时间百分比，用于处理硬中断（hardware interrupts）的时间百分比。硬中断通常与硬件设备（如网卡或磁盘控制器）相关。在这个示例中，0.0% 的 CPU 时间用于处理硬中断。
+7. `si`（软中断）：这个字段显示了 CPU 时间百分比，用于处理软中断（software interrupts）的时间百分比。软中断通常与内核任务相关，但不像硬中断那么紧急。在这个示例中，0.0% 的 CPU 时间用于处理软中断。
+8. `st`（虚拟化的CPU时间）：这个字段显示了 CPU 时间百分比，被虚拟机监控程序（hypervisor）用于虚拟机的时间百分比。如果在虚拟化环境中运行，这个值可能会有意义。在这个示例中，0.2% 的 CPU 时间用于虚拟化任务。
+
+通常，`%Cpu(s)` 行的总和应该接近100%。可以使用这些信息来了解系统上 CPU 的使用情况，以确定是否存在性能瓶颈或其他问题。
 
 # 解除53端口占用
 [彻底解决 Linux 系统下 systemd-resolve 占用 53 端口的问题](https://www.otakusay.com/866.html)
@@ -165,7 +186,7 @@ GRUB_CMDLINE_LINUX=""
 
 `/etc/default/grub` 是一个文本文件，通常位于Linux系统中，特别是基于Debian的发行版（如Ubuntu）中。
 它包含有关GRUB（GRand Unified Bootloader）引导加载程序的配置选项。
-GRUB是用于多重引导系统的引导加载程序，它允许您选择要引导的操作系统或内核镜像。
+GRUB是用于多重引导系统的引导加载程序，它允许选择要引导的操作系统或内核镜像。
 
 * `GRUB_DEFAULT`: 指定默认启动的菜单项索引。可以是一个数字（表示菜单项的位置，从0开始），也可以是菜单项的标签。默认情况下，通常设置为0，表示默认启动第一个菜单项。
 
@@ -173,7 +194,7 @@ GRUB是用于多重引导系统的引导加载程序，它允许您选择要引�
 
 * `GRUB_TIMEOUT_STYLE`: 指定如何显示超时的倒计时。可以设置为 "menu"（显示倒计时和菜单）或 "hidden"（隐藏倒计时，但按下 Shift 键将显示菜单）。
 
-* `GRUB_CMDLINE_LINUX`: 指定Linux内核引导参数。您可以在这里添加内核参数，例如设置根文件系统、调整内核参数等。这是一个非常重要的选项，特别是在需要自定义内核启动参数时。
+* `GRUB_CMDLINE_LINUX`: 指定Linux内核引导参数。可以在这里添加内核参数，例如设置根文件系统、调整内核参数等。这是一个非常重要的选项，特别是在需要自定义内核启动参数时。
 
 * `GRUB_HIDDEN_TIMEOUT`: 如果 GRUB_TIMEOUT_STYLE 设置为 "hidden"，则可以通过此选项指定在按下 Shift 键之前的等待时间。
 
@@ -263,7 +284,7 @@ nginx: [error] invalid PID number "" in "/var/run/nginx.pid"
 sudo yum install nginx
 sudo yum install supervisor
 ```
-配置 Nginx 自启动：Nginx 在安装时通常会自动创建一个 systemd 服务单元。你只需要启用它，让它在开机时自动启动。
+配置 Nginx 自启动：Nginx 在安装时通常会自动创建一个 systemd 服务单元。只需要启用它，让它在开机时自动启动。
 
 ```
 sudo systemctl enable nginx
@@ -276,7 +297,7 @@ sudo systemctl enable nginx
 sudo nano /etc/supervisord.conf
 ```
 
-2.1 在配置文件中添加你想要管理的进程的配置。例如，如果你想要管理一个名为 "myapp" 的进程，可以添加类似以下的内容：
+2.1 在配置文件中添加想要管理的进程的配置。例如，如果想要管理一个名为 "myapp" 的进程，可以添加类似以下的内容：
 ```
 [program:myapp]
 command=/path/to/your/app
@@ -285,7 +306,7 @@ autorestart=true
 stderr_logfile=/var/log/myapp.err.log
 stdout_logfile=/var/log/myapp.out.log
 ```
-请将 /path/to/your/app 替换为你的应用程序的实际路径。
+请将 /path/to/your/app 替换为应用程序的实际路径。
 
 2.2 启用 Supervisor 自启动： 创建一个 Supervisor systemd 服务单元文件：
 ```
@@ -312,7 +333,7 @@ sudo systemctl enable supervisord
 ```
 重启系统并验证：
 
-在完成上述步骤后，你可以重启系统并验证 Nginx 和 Supervisor 是否在启动后自动运行。
+在完成上述步骤后，可以重启系统并验证 Nginx 和 Supervisor 是否在启动后自动运行。
 ```
 sudo reboot
 ```
@@ -321,9 +342,9 @@ sudo reboot
 sudo systemctl status nginx
 sudo systemctl status supervisord
 ```
-确保根据你的实际配置和路径进行相应的替换。
+确保根据实际配置和路径进行相应的替换。
 
-Nginx 和 Supervisor 应该会在开机时自动启动并管理你的应用程序。
+Nginx 和 Supervisor 应该会在开机时自动启动并管理应用程序。
 
 
 # 安装常用工具
@@ -384,7 +405,7 @@ nethogs 显示进程的网络流量
 
 visudo 是一个用于编辑和管理 /etc/sudoers 文件的命令行工具。/etc/sudoers 文件包含了关于系统上哪些用户或用户组具有特权执行特定命令的配置信息。
 
-通过运行 visudo 命令，您可以以安全的方式编辑 /etc/sudoers 文件，以便添加、修改或删除授权用户的 sudo 访问权限。
+通过运行 visudo 命令，可以以安全的方式编辑 /etc/sudoers 文件，以便添加、修改或删除授权用户的 sudo 访问权限。
 
 运行 visudo 命令后，将会使用默认文本编辑器（通常是 Vi 或 Vim）打开 /etc/sudoers 文件。注意，sudo 权限将被要求以修改该文件。
 
@@ -638,8 +659,8 @@ arch
 ```
 检查输出结果：运行上述命令后，将在终端中看到一个字符串。常见的输出结果可能是：
 
-* 如果输出结果为 "x86_64"，则表示您的系统是基于 AMD64（也称为x86-64）架构。这是目前大多数桌面和服务器计算机所使用的64位架构。
-* 如果输出结果为 "i386" 或 "i686"，则表示您的系统是32位的 x86 架构，而不是 AMD64 架构。
+* 如果输出结果为 "x86_64"，则表示系统是基于 AMD64（也称为x86-64）架构。这是目前大多数桌面和服务器计算机所使用的64位架构。
+* 如果输出结果为 "i386" 或 "i686"，则表示系统是32位的 x86 架构，而不是 AMD64 架构。
 
 命名为"AMD64"是因为AMD（Advanced Micro Devices）是首家推出64位指令集扩展的处理器制造商。
 在过去，32位的x86架构（也称为IA-32）是主流，用于大多数个人计算机。
@@ -865,7 +886,7 @@ br-xxxxxxxxxxx: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 ```
 ifconfig br-xxxxxx down
 ```
-注：`ifconfig eth0 up` 为启动网卡`eth0` ；`ifconfig eth0 down` 为关闭网卡 `eth0`。`ssh`登陆`linux`服务器操作要小心，关闭了就不能开启了，除非你有多网卡。
+注：`ifconfig eth0 up` 为启动网卡`eth0` ；`ifconfig eth0 down` 为关闭网卡 `eth0`。`ssh`登陆`linux`服务器操作要小心，关闭了就不能开启了，除非有多网卡。
 
 
 <span id="centos_static_ip">Centos 静态IP设置。</span>

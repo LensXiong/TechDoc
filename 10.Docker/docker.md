@@ -4,7 +4,7 @@
 
 
 
-# 使用 docker-compose 启动 kafka 报错。
+# 使用 docker-compose 启动 kafka 报错
 
 报错信息：
 ```
@@ -16,6 +16,7 @@ kafka.common.InconsistentClusterIdException: The Cluster ID ZfQZirUQRua6RnLVYiz_
 	at kafka.Kafka.main(Kafka.scala)
 ```
 报错原因：
+
 Kafka Broker 尝试加入了一个错误的集群，原因是其集群ID（Cluster ID）与之前存储在meta.properties文件中的集群ID不匹配。这通常发生在以下情况下：
 * Kafka配置文件更改：如果你更改了Kafka Broker的配置文件，尤其是broker.id或zookeeper.connect等配置项，可能导致集群ID不匹配。
 * ZooKeeper连接配置错误：zookeeper.connect配置项指定了Kafka Broker连接ZooKeeper的信息。确保这个配置正确，并且Kafka Broker可以连接到正确的ZooKeeper集群。
@@ -28,7 +29,7 @@ Kafka Broker 尝试加入了一个错误的集群，原因是其集群ID（Clust
 具体步骤：
 ```
 rm -rf /opt/xxxx/data/db/kafka/data/meta.properties
-docker-compose restart skygo_kafka
+docker-compose restart xxx_kafka
 ```
 
 # 初始化mysql数据备份迁移到另一台mysql

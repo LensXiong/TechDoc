@@ -2,6 +2,7 @@
 # FAQ
 ## incompatible with sql_mode=only_full_group_by
 MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案。
+
 问题还原：
 ```
 Expression #1 of SELECT list is not in GROUP BY clause and contains

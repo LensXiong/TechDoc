@@ -2,10 +2,15 @@
 # frp
 
 [frp官方文档](https://gofrp.org/zh-cn/)  
+
 [frp Github](https://github.com/fatedier/frp/blob/dev/README_zh.md)  
+
 [版本下载](https://github.com/fatedier/frp/releases)
+
 [conf/frps_full_example.toml](https://github.com/fatedier/frp/blob/dev/conf/frps_full_example.toml)
+
 [conf/frpc_full_example.toml](https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml)
+
 [frp 内网穿透 实现MAC远程桌面](https://yuqiangcoder.com/2019/11/22/frp-%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F-%E5%AE%9E%E7%8E%B0MAC%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2.html)
 
 frp 采用 C/S 模式，将服务端部署在具有公网 IP 的机器上，客户端部署在内网或防火墙内的机器上，通过访问暴露在服务器上的端口，反向代理到处于内网的服务。
@@ -71,12 +76,15 @@ vnc：5900
 
 ### 1、通过 SSH 访问内网机器
 * 在有公网IP的机器(已部署frps服务)，配置frps.toml文件。如果配置文件如下，注意对应服务器安全组规则放行17000、16000端口。
+
+
 ```
 # 设置frp服务器用户接收客户端连接的端口
 bindPort = 17000
 auth.method = "token"
 auth.token = "xxx"
 ```
+
 配置好之后，运行相关命令，启动服务端
 ```
 ./frps -c ./frps.toml
@@ -149,7 +157,9 @@ httpUser = "xxx"
 httpPassword = "xxx"
 ```
 ###  frp 实现 Microsoft remote desktop 远程桌面连接
+
 为什么使用 RDP？
+
 RDP 是 Windows 自带的协议。相比市面上的远程桌面软件，如 Todesk、Anydesk、向日葵等，有以下优势：
 
 * 兼容性更佳，根据设备自适应分辨率，可连接键鼠使用。
@@ -180,7 +190,9 @@ User account：PC机的账号
 ```
 
 ### frp 实现MAC远程桌面
+
 什么是VNV?
+
 VNC（Virtual Network Computing），为一种使用RFB协议的屏幕画面分享及远程操作软件。
 此软件借由网络，可发送键盘与鼠标的动作及即时的屏幕画面。
 

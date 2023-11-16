@@ -14,6 +14,274 @@ apt install openssh-server
 apt install lrzsz
 ```
 
+# 磁盘分区、文件系统创建并挂载
+
+通过执行 `df -Th` 命令获取的文件系统信息：
+
+```
+root@xxx:~# df -Th
+Filesystem     Type   Size  Used Avail Use% Mounted on
+tmpfs          tmpfs  794M  732K  794M   1% /run
+/dev/sda1      ext4   493G   64G  409G  14% /
+tmpfs          tmpfs  3.2G     0  3.9G   0% /dev/shm
+tmpfs          tmpfs  5.0M     0  5.0M   0% /run/lock
+/dev/sdb       ext4   246G   24K  234G   1% /mnt
+tmpfs          tmpfs  794M     0  794M   0% /run/user/62xx
+```
+
+在 `df -Th` 输出中，"Type" 表示文件系统的类型。以下是一些常见的文件系统类型及其含义：
+
+* ext4: 是 Linux 下的一种文件系统类型，是 ext3 文件系统的后继版本。它支持更大的文件和分区大小，并提供更好的性能和稳定性。
+* tmpfs: 是一种在内存中创建临时文件系统的机制，通常用于存储临时文件。数据存在于RAM中，因此读写速度较快。然而，它的数据会在系统重新启动时丢失。
+* vfat: VFAT（Virtual File Allocation Table）是一种用于在 Windows 系统和其他操作系统之间共享文件的文件系统。它支持较小的文件和较短的文件名。
+* iso9660: ISO 9660 是一种用于光盘文件系统的标准。这种文件系统通常用于光盘（如 CD-ROM、DVD-ROM）。
+* nfs: NFS（Network File System）是一种用于在网络上共享文件系统的协议。它允许一个计算机上的程序通过网络透明地访问另一台计算机上的文件系统，就像它们是本地的一样。
+* cifs: CIFS（Common Internet File System）是一种用于在计算机之间共享文件和打印机的网络文件系统协议。通常与 Windows 共享文件夹一起使用。
+
+这只是一小部分可能在 Linux 系统上遇到的文件系统类型。 实际上，还有其他文件系统类型，每种类型都有其特定的用途和特性。 
+可以使用 man fstab 命令查看更多有关文件系统和 fstab 文件的信息。
+
+`/dev/sda1` 和 `/dev/sdb` 是Linux系统中表示硬盘分区或磁盘的设备文件的命名方式。
+
+`/dev/sda1`: sda 表示系统中的第一个 SATA 硬盘。 1 表示该硬盘上的第一个分区。因此，/dev/sda1 是第一个 SATA 硬盘的第一个分区。
+`/dev/sdb`: sdb 表示系统中的第二个 SATA 硬盘。没有数字（如 1）表示整个硬盘而不是分区。所以，/dev/sdb 代表整个第二个 SATA 硬盘。
+
+这种命名方式通常在Linux系统上用于表示硬盘和其分区。设备文件位于 /dev 目录下，而硬盘和分区的命名规则是从 a 开始递增，例如 sda、sdb、sdc，
+以及每个硬盘上的分区是 sda1、sda2、sdb1、sdb2 等。
+
+运行 `fdisk -l` 命令获取的磁盘信息。
+
+```
+root@xx:~# fdisk -l
+Disk /dev/sda: 500 GiB, xxx bytes, xxx sectors
+Disk model: QEMU HARDDISK
+Units: sectors of 1 * xxx = xxx bytes
+Sector size (logical/physical): xxx bytes / xxx bytes
+I/O size (minimum/optimal): xxx bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: xxxx
+
+Device     Boot Start        End    Sectors  Size Id Type
+/dev/sda1  *     xx xxx xxx  500G xxx Linux
+
+Disk /dev/sdb: 250 GiB, xxx bytes, xxxx sectors
+Disk model: QEMU HARDDISK
+Units: sectors of 1 * xxx = xxx bytes
+Sector size (logical/physical): xxx bytes / xxx bytes
+I/O size (minimum/optimal): xxx bytes / xxx bytes
+```
+
+要求：在 `/dev/sdb` 上创建一个 ext4 文件系统的分区 `/dev/sdb1`，并将其挂载到 /opt 目录。
+
+最后，通过修改 `/etc/fstab` 文件，确保系统在启动时自动挂载这个分区。详细示例如下：
+
+```
+fdisk /dev/sdb
+mkfs.ext4 /dev/sdb1
+echo "/dev/sdb1 /opt ext4 defaults 1 2" >> /etc/fstab
+mount -a
+```
+
+具体解释说明：
+* `fdisk /dev/sdb`: fdisk 是一个用于磁盘分区的命令行工具。 `/dev/sdb` 表示第二个磁盘。 这个命令启动了一个交互式的界面，
+允许对 `/dev/sdb` 进行分区操作，如创建新的分区、删除分区等。在这里并没有具体的操作，只是运行了 fdisk 工具。
+
+* `mkfs.ext4 /dev/sdb1`: mkfs.ext4 用于创建 ext4 文件系统。这个命令将 `/dev/sdb1` 这个分区格式化为 ext4 文件系统。 
+`/dev/sdb1` 表示磁盘 `/dev/sdb` 上的第一个分区。
+
+* `echo "/dev/sdb1 /opt ext4 defaults 1 2" >> /etc/fstab`: echo 命令用于输出文本，这里输出的内容是将 `/dev/sdb1` 分区挂载到 /opt 目录上，
+并指定了一些挂载选项。`>> /etc/fstab` 将这条挂载信息追加到 `/etc/fstab`文件中，该文件包含了系统引导时需要挂载的文件系统信息。
+* `mount -a`:`mount` 命令用于挂载文件系统。 -a 选项表示挂载 `/etc/fstab` 文件中定义的所有文件系统。
+这会导致系统读取 `/etc/fstab` 文件，找到刚刚添加的 `/dev/sdb1` 分区，并将其挂载到 /opt 目录上。
+
+磁盘分区，运行`fdisk /dev/sdb` 后:
+```
+root@xxxv:~# fdisk /dev/sdb
+
+Welcome to fdisk (util-linux 2.xx.2).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+This disk is currently in use - repartitioning is probably a bad idea.
+It's recommended to umount all file systems, and swapoff all swap
+partitions on this disk.
+
+# 这个消息说明当前磁盘 /dev/sdb 正在使用，而且可能包含 ext4 文件系统的签名。
+在执行 write 命令前，需要谨慎操作，因为该命令会将更改写入磁盘并可能导致数据丢失。
+以下是一些步骤来进行分区并挂载：
+
+The device contains 'ext4' signature and it will be removed by a write command. See fdisk(8) man page and --wipe option for more details.
+
+Device does not contain a recognized partition table.
+Created a new DOS disklabel with disk identifier 0xc5db38e1.
+```
+
+fdisk 参数命令详解：
+```
+Help:
+
+  DOS (MBR)
+       # 切换引导标志 (bootable flag)。可以将引导标志切换为或从分区，用于指示该分区是否可以引导操作系统。
+   a   toggle a bootable flag 
+       # 编辑嵌套的 BSD 磁盘标签 (nested BSD disklabel)。
+   b   edit nested BSD disklabel
+       # 切换 DOS 兼容标志 (dos compatibility flag)。
+   c   toggle the dos compatibility flag
+
+  Generic
+       # 删除分区 (delete a partition)。删除选定的分区。
+   d   delete a partition
+       # 列出空闲的未分区空间 (list free unpartitioned space)。
+   F   list free unpartitioned space
+       # 列出已知的分区类型 (list known partition types)。
+   l   list known partition types
+       # 添加新分区 (add a new partition)。允许你创建新的分区。
+   n   add a new partition
+       # 打印分区表 (print the partition table)。显示当前分区表的信息。
+   p   print the partition table
+       # 更改分区类型 (change a partition type)。用于更改选定分区的文件系统类型。
+   t   change a partition type
+       # 验证分区表 (verify the partition table)。检查分区表是否有效。
+   v   verify the partition table
+       # 打印关于分区的信息 (print information about a partition)。显示特定分区的详细信息。
+   i   print information about a partition
+
+  Misc
+       # 打印帮助菜单 (print this menu)。显示 fdisk 工具的帮助菜单。
+   m   print this menu
+       # 更改显示/输入单位 (change display/entry units)。
+   u   change display/entry units
+       # 提供额外的功能 (extra functionality)。通常是供专业人士使用的高级选项。
+   x   extra functionality (experts only)
+
+  Script
+       # 从 sfdisk 脚本文件中加载磁盘布局 (load disk layout from sfdisk script file)。
+   I   load disk layout from sfdisk script file
+       # 将磁盘布局转储到 sfdisk 脚本文件 (dump disk layout to sfdisk script file)。
+   O   dump disk layout to sfdisk script file
+
+  Save & Exit
+       # 将表写入磁盘并退出 (write table to disk and exit)。保存你所做的更改。
+   w   write table to disk and exit
+       # 不保存更改而退出 (quit without saving changes)。退出而不保存对分区表的修改。
+   q   quit without saving changes
+
+  Create a new label
+       # 创建新的空 GPT 分区表 (create a new empty GPT partition table)。 
+   g   create a new empty GPT partition table
+       # 创建新的空 SGI (IRIX) 分区表 (create a new empty SGI (IRIX) partition table)。
+   G   create a new empty SGI (IRIX) partition table
+       # 创建新的空 DOS 分区表 (create a new empty DOS partition table)。
+   o   create a new empty DOS partition table
+       # 创建新的空 Sun 分区表 (create a new empty Sun partition table)。
+   s   create a new empty Sun partition table
+```
+
+创建新分区的四个步骤：
+
+* 输入 n 创建新分区。
+* 选择分区类型，通常是主分区（输入 p）或扩展分区（输入 e）。
+* 输入分区号（例如，1）。
+* 输入起始扇区和结束扇区，或者直接使用默认值以使用整个磁盘空间。
+
+```
+root@xxxv:~# fdisk /dev/sdb
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (1-4, default 1): 1
+First sector (2048-524287999, default 2048):
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-524287999, default 524287999):
+Created a new partition 1 of type 'Linux' and of size 250 GiB.
+```
+如何选择分区类型：
+```
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+```
+
+在选择分区类型时，fdisk 提供了几种选项，其中包括 p（主分区）和 e（扩展分区）。以下是对这两个选项的解释：
+
+* p: Primary Partition (主分区): 主分区是直接位于硬盘上的分区，用于存储文件系统和操作系统。
+MBR（Master Boot Record）分区表最多可以包含四个主分区，或者三个主分区和一个扩展分区。
+
+* e: Extended Partition (扩展分区): 扩展分区不用于存储数据，而是充当容器，可以包含多个逻辑分区。 
+如果你已经有四个主分区，并且希望创建更多的分区，可以选择创建一个扩展分区，然后在扩展分区中创建逻辑分区。
+在 MBR 分区表中，只能有一个扩展分区。
+
+如果只需创建一个新分区并没有特殊的需求，可以选择默认的 p（主分区）。
+如果计划在未来需要创建更多的分区，你可以选择 e（扩展分区），然后在扩展分区中创建逻辑分区。
+如果不输入任何内容，系统将选择默认值，通常是 p（主分区）。
+
+在 fdisk 中，当你创建一个新分区时，它会要求你输入新分区的起始扇区（First sector）。
+这个值表示新分区在磁盘上的开始位置，即从哪个扇区开始分配磁盘空间给这个分区。
+
+`First sector (2048-524287999, default 2048)`:
+
+* 2048: 这是最小的允许起始扇区。在 MBR 分区表中，前面的一些扇区可能被用于存储分区表等信息，因此实际数据分区的起始位置通常从扇区 2048 开始。
+* 524287999: 这是最大的允许起始扇区。这是磁盘上的最后一个扇区，因此你不能选择一个大于此值的起始扇区。
+* default 2048: 如果你直接按 Enter 键，系统将使用默认值 2048 作为新分区的起始扇区。
+
+可以选择使用默认值（按 Enter），或者根据需要输入其他值。通常情况下，使用默认值是安全的，因为它通常是操作系统建议的合理值，确保不会与其他分区发生冲突。
+
+创建 ext4 文件系统是报错，实际上其他信息未使用该分区：
+```
+root@xx04v:~# mkfs.ext4 /dev/sdb1
+mke2fs 1.46.5 (30-Dec-2021)
+/dev/sdb1 is apparently in use by the system; will not make a filesystem here
+root@xxx:~# lsof | grep /dev/sdb1
+root@xxx:~# df -Th 
+/dev/sdb       ext4   246G   24K  234G   1% /mnt
+root@xxx:~# umount -v /mnt
+```
+这是一个 umount 命令的变体，其中 -v 选项用于启用详细模式（verbose mode）。
+umount 命令用于卸载（解除挂载）文件系统。在这种情况下，使用 umount 命令来卸载挂载在 /mnt 目录下的文件系统。
+
+
+输入文本到` /etc/fstab`，该文件包含了系统引导时需要挂载的文件系统信息：
+```
+root@xx04v:~# echo "/dev/sdb1 /opt ext4 defaults 1 2" >> /etc/fstab
+# 如果命令执行失败，vim /etc/fstab 删除对应的信息。
+```
+
+详细讲解下 /etc/fstab：
+
+`/etc/fstab`（文件系统表）是Linux系统上的一个重要配置文件，用于定义系统在启动时应该如何挂载文件系统。
+这个文件包含了一系列用于描述文件系统和挂载参数的条目。
+
+每一行代表一个文件系统的挂载信息，具体格式如下：
+```
+<设备路径> <挂载点> <文件系统类型> <挂载选项> <dump> <pass>
+<设备路径>：指定要挂载的设备的路径，可以是硬盘分区、软件RAID、NFS网络共享等。
+<挂载点>：指定设备要挂载到的目录路径，即挂载点。
+<文件系统类型>：指定设备上的文件系统类型，例如ext4、ntfs、xfs等。
+<挂载选项>：指定挂载时的选项，例如defaults、rw（读写）、ro（只读）、noexec（禁止执行二进制文件）等。
+<dump>：用于确定是否备份该文件系统。通常设置为0表示不备份，1表示备份。
+<pass>：用于指定文件系统检查的顺序，通常设置为0表示不检查，1表示先检查，2表示后检查。
+```
+
+以下是一个 `/etc/fstab` 文件的简单示例：
+
+```
+UUID=xxxx--xxxxxx-xxxx  /     ext4    errors=remount-ro 0       1
+/dev/sdb1               /opt  ext4    defaults          1       2
+/swapfile                none  swap    sw                0       0
+```
+这个示例表示：
+
+* 指定了根目录 / 的挂载信息。errors=remount-ro 选项表明如果发生错误，将文件系统重新挂载为只读。0 和 1 分别表示不进行备份，但在启动时检查文件系统。
+* 挂载了 /dev/sdb1 到 /opt。defaults 表示使用默认的挂载选项。1 和 2 表示在启动时检查文件系统并备份。
+* `交换文件的条目，sw 表示文件系统类型是交换。0 0 表示不检查也不备份。
+
+编辑 `/etc/fstab` 文件时，请小心，确保了解每个字段的含义，并谨慎地进行修改。错误的 `/etc/fstab` 可能导致系统无法正常启动。
+
+`mount -a`:
+
+mount 命令用于挂载文件系统。 -a 选项表示挂载 `/etc/fstab` 文件中定义的所有文件系统。
+这会导致系统读取 `/etc/fstab` 文件，找到刚刚添加的 `/dev/sdb1` 分区，并将其挂载到 `/opt` 目录上。
 
 # top -c 命令
 

@@ -75,6 +75,9 @@ vnc：5900
 |8	|点对点内网穿透	|将会演示一种不通过服务器中转流量的方式来访问内网服务|
 
 ### 1、通过 SSH 访问内网机器
+
+* 可以安全的暴露内网服务。对于某些服务来说如果直接暴露于公网上将会存在安全隐患。
+* 使用 stcp(secret tcp) 类型的代理可以避免让任何人都能访问到要穿透的服务，但是访问者也需要运行另外一个 frpc 客户端。
 * 在有公网IP的机器(已部署frps服务)，配置frps.toml文件。如果配置文件如下，注意对应服务器安全组规则放行17000、16000端口。
 
 
@@ -116,6 +119,21 @@ type = "tcp"
 localIP = "127.0.0.1"
 localPort = 22
 remotePort = 16000
+```
+如果要考虑安全的方式，可以配置以下信息：
+```
+[[proxies]]
+name = "secret_tcp"
+# If the type is secret tcp, remotePort is useless
+# Who want to connect local port should deploy another frpc with stcp proxy and role is visitor
+type = "stcp"
+# secretKey is used for authentication for visitors
+secretKey = "xxxx"
+localIP = "127.0.0.1"
+localPort = 22
+# If not empty, only visitors from specified users can connect.
+# Otherwise, visitors from same user can connect. '*' means allow all users.
+allowUsers = ["*"]
 ```
 配置好之后，运行相关命令，启动客户端
 ```

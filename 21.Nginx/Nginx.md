@@ -1,6 +1,6 @@
-﻿# Nginx 配置
+﻿# Nginx 参数
 
-基础配置参考：
+基础参数：
 
 ```
 user nginx;
@@ -85,14 +85,17 @@ http {
 }
 ```
 
-配置说明：
+参数说明：
 
 * `user nginx;`: 指定Nginx worker进程的运行用户，这里是"nginx"。
 * `worker_processes 6;`: 指定Nginx启动时创建的worker进程的数量，这里是6个。通常，可以将其设置为机器的CPU核心数。
 * `worker_rlimit_nofile 1024;`: 设置每个Nginx worker进程能够打开的最大文件描述符数量。这对于限制Nginx的资源使用是有用的。
 * `include /etc/nginx/modules-enabled/*.conf;`: 包含指定目录下的所有以".conf"为后缀的文件。通常，这个目录用于启用或禁用Nginx模块。
 * `error_log /xxx/nginx/log/nginx_error.log error;`: 配置错误日志的路径和级别，将错误日志记录到指定文件中。
-* `events {...}`: 配置Nginx处理事件的模块，这里使用了epoll作为事件模型。worker_connections 1024; 指定每个worker进程能够处理的最大连接数。
+* `events {...}`: 配置Nginx处理事件的模块，这里使用了epoll作为事件模型。
+* `use epoll;` #参考事件模型，`use [ kqueue | rtsig | epoll | /dev/poll | select | poll ]`; 
+`#epoll`模型是Linux 2.6以上版本内核中的高性能网络I/O模型，如果跑在FreeBSD上面，推荐使用kqueue模型。
+* `worker_connections 1024`; 指定每个worker进程能够处理的最大连接数。
 * `http {...}`: 定义HTTP模块的配置块，包含了Nginx的主要HTTP配置。
 * `include mime.types;`: 包含MIME类型配置文件，用于指定文件扩展名和相应的MIME类型。
 * `default_type application/octet-stream;`: 设置默认的MIME类型，如果无法从文件扩展名中确定。
@@ -111,7 +114,6 @@ http {
 * `include /etc/nginx/conf.d/*.conf;`: 包含所有在指定目录下以".conf"为后缀的文件。
 * `include /etc/nginx/sites-enabled/*;`: 包含指定目录下的所有符号链接文件，通常用于包含虚拟主机配置。
 * `include /xxx/nginx/conf/*.conf;`: 包含指定目录下的所有以".conf"为后缀的文件。
-
 
 日志格式详解：
 
@@ -138,8 +140,8 @@ log_format main "$remote_addr\t$remote_user\t[$time_local]\t$request_method\t$ho
 
 请求示例：
 ```
-xx.xx.xxx.xx	-	[24/Nov/2023:16:10:35 +0800]	GET	xxx.xx.xx.xx	/api/v1/xxx/xxx	
-0.039 200	658	'https://xx.xx.xx.xx/' 
+xx.xx.xxx.xx - [24/Nov/2023:16:10:35 +0800]	GET	xxx.xx.xx.xx /api/v1/xxx/xxx	
+0.039 200 658 'https://xx.xx.xx.xx/' 
 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/xx.36 (KHTML, like Gecko) Chrome/11x.0.0.0 Safari/537.36' '-' 0.040	200
 ```
 
@@ -178,7 +180,7 @@ server {
             proxy_read_timeout 300s;
             proxy_send_timeout 60s;
         }
-        location ~^/(message*) {
+        location ~^/(info*) {
             proxy_pass http://xx.xx.xx.xx:xxxx;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection $connection_upgrade;
@@ -225,7 +227,7 @@ location  / {
 * `proxy_read_timeout 300s;`: 设置从后端服务器读取响应的超时时间为300秒。如果在指定的时间内没有从后端服务器读取到响应，则Nginx将认为读取超时。
 * `proxy_send_timeout 60s;`: 设置向后端服务器发送请求的超时时间为60秒。如果在指定的时间内无法将请求发送到后端服务器，则Nginx将认为发送超时
 
-`location ~^/(message*)`配置：主要用于反向代理WebSocket请求到指定的后端服务器，并且通过设置一些请求头字段，
+`location ~^/(info*)`配置：主要用于反向代理WebSocket请求到指定的后端服务器，并且通过设置一些请求头字段，
 使得后端服务器能够获取到客户端的真实IP地址。这对于一些需要获取客户端IP的应用场景非常有用，例如在日志中记录客户端的真实IP。
 
 ```
@@ -240,8 +242,8 @@ location ~^/(info*) {
 }
 ```
 
-* `location ~^/(message*) {`: 这是一个`Nginx`的`location`块，使用正则表达式匹配以"`/message`"开头的URL路径。
-`~^`表示正则表达式要从字符串的开头匹配。`/message*`表示匹配以`"/message"`开头的路径，*表示匹配零个或多个's'字符。
+* `location ~^/(info*) {`: 这是一个`Nginx`的`location`块，使用正则表达式匹配以"`/info`"开头的URL路径。
+`~^`表示正则表达式要从字符串的开头匹配。`/info*`表示匹配以`"/info"`开头的路径，*表示匹配零个或多个's'字符。
 * `proxy_set_header Upgrade $http_upgrade;`: 设置请求头中的Upgrade字段，用于实现WebSocket协议的升级。这对于支持WebSocket的应用程序很重要。
 * `proxy_set_header Connection $connection_upgrade;`: 设置请求头中的`Connection`字段，也用于WebSocket协议的升级。
 * `proxy_set_header X-Real-IP $remote_addr;`: 将客户端的真实IP地址添加到请求头中的X-Real-IP字段。这在后端服务器需要获取客户端真实IP时非常有用。

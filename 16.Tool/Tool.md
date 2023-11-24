@@ -1,4 +1,31 @@
 
+# adb
+
+adb（Android Debug Bridge），安卓平台调试桥，是连接Android手机与PC端的桥梁。
+通过adb可以管理、操作模拟器和设备，如安装软件、查看设备软硬件参数、系统升级、运行shell命令等。
+
+相关日志：
+```
+brew install --cask android-platform-tools
+adb version
+adb devices
+adb shell
+adb root
+# 查看日志
+adb logcat
+setenforce 0
+```
+
+蓝牙抓包：
+```
+// ubuntu 22.04 上安装 ubertooth 
+sudo apt install ubertooth
+// 
+adb pull PATH
+// ubertooth-rx 是抓取命令 -t 20 表示抓 20s 然后退出 -r <file> 表示抓到的包在本地存储的文件名是什么。
+ubertooth-rx -t 20 -r traffic.pcapng
+```
+
 # frp
 
 [frp官方文档](https://gofrp.org/zh-cn/)  

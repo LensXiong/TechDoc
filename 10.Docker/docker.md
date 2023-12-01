@@ -1,5 +1,70 @@
 
 
+# 插拔设备后，在 Ubuntu22.04 的 Docker 中使用 adb devices 识别不到。
+
+现象：使用Ubuntu22.04系统，在容器中使用adb 映射，宿主机执行 `adb devices` 时候 adb 不可用（已卸载），
+宿主机与容器之间也映射了关系`/dev/bus/usb:/dev/bus/usb`，但是进入容器中后发现使用 `adb devices` 没有找到相应的设备信息。
+手动 `adb kill-server` 和 `adb start-server` 也无法找到，重新插拔手机使用 `adb devices`也没有找到设备。
+重新重启容器后使用`adb devices`正常找到设备。
+
+问题：`adb server`在容器内外的通信和设备重新连接的管理。
+
+最终解决办法：
+
+* 重建容器。`docker-compose up -d --force-recreate xxx_tool_xxx`。
+
+排查原因：
+
+检查`docker-compose`的映射关系：
+```
+xxx_xxx:
+    image: xxxx
+    container_name: xxx
+    restart: unless-stopped
+    working_dir: /root/
+    tty: true
+    privileged: true
+    command: /sbin/init
+    ports:
+      - "xxxx:xxxx"
+    networks:
+      xxx_net:
+        ipv4_address: xxx.xx.xx.xx
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /etc/docker:/etc/docker
+```
+
+① 检查adb server状态： 在容器内执行 adb devices 之前，确保adb server正在运行。可以使用以下命令检查：
+```
+adb kill-server
+adb start-server
+```
+这将杀死现有的adb server并重新启动一个。确保在容器内执行这些命令。
+
+② 检查udev规则： 确保在宿主机上设置了正确的udev规则，以便在设备连接时正确配置权限。在宿主机上，
+可以检查 `/etc/udev/rules.d/` 目录中的相关规则。确保设备有适当的规则，类似于：
+```
+SUBSYSTEM=="usb", ATTR{idVendor}=="your_vendor_id", ATTR{idProduct}=="your_product_id", MODE="0666"
+```
+
+你需要替换 `your_vendor_id` 和 `your_product_id` 为设备的实际值。然后重新加载`udev`规则：
+
+```
+sudo udevadm control --reload-rules
+sudo service udev restart
+```
+
+检查USB设备映射： 确保正确地将USB设备从宿主机映射到容器。你提到已经映射了 `/dev/bus/usb:/dev/bus/usb`，确保这个映射是正确的。
+
+③ 查看 `adb log`： 在容器中运行 `adb logcat` 来查看adb日志，这可能提供一些关于为什么adb无法找到设备的信息。
+
+④ 尝试使用其他工具： 如果adb仍然无法找到设备，尝试使用其他工具如 fastboot 或 lsusb 来确认设备是否正确连接到容器。
+
+⑤ 确认网络连接： 确保容器内外的网络连接正常，有时adb server可能会通过网络连接。
+
 
 # 配置Elasticsearch容器的Java虚拟机
 现象：后台系统请求响应比较慢。

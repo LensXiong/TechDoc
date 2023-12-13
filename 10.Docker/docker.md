@@ -1,4 +1,11 @@
 
+# 相关命令
+```
+# 查看Docker系统的磁盘空间使用情况.
+docker system df -v
+# 在指定目录及其子目录中查找大小大于1GB的文件，并使用du -h命令以人类可读的格式显示这些文件的磁盘使用情况。
+sudo find /opt/xxx -type f -size +1G -exec du -h {} +
+```
 
 # 插拔设备后，在 Ubuntu22.04 的 Docker 中使用 adb devices 识别不到。
 

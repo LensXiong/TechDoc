@@ -437,7 +437,7 @@ Compression yes: 这个参数指定是否启用数据压缩功能。在网络带
 
 # ChatGPT
 
-[国外接码平台 sms-activate.org 官网]https://sms-activate.org/getNumber
+[国外接码平台 sms-activate.org 官网](https://sms-activate.org/getNumber)
 
 [VPN-ClashX](https://github.com/yichengchen/clashX)
 

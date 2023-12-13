@@ -3,9 +3,57 @@
 ```
 # 查看Docker系统的磁盘空间使用情况.
 docker system df -v
+
 # 在指定目录及其子目录中查找大小大于1GB的文件，并使用du -h命令以人类可读的格式显示这些文件的磁盘使用情况。
 sudo find /opt/xxx -type f -size +1G -exec du -h {} +
+
+# 将容器保存为镜像
+docker commit -m "xxx 1.1.0" -a "author" container-id xxx:1.1.0
+
+# 导出镜像（未压缩）
+docker save -o xxx_1.1.0.tar xxx:1.1.0
+
+# 保存镜像的同时进行压缩
+docker save xxxx:1.3.1 | gzip > xxx_1.3.1.tar.gz
+
+# 导入镜像
+docker load --input xxx_1.1.0.tar
+
+# 运行容器
+docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/xxxx/xxx:/opt/xxx/xxx/xxx xxx:1.1.0 /usr/sbin/init
 ```
+
+# 镜像导出保存
+```
+# 导出镜像（未压缩）
+docker save -o xxx_1.1.0.tar xxx:1.1.0
+
+# 保存镜像的同时进行压缩
+docker save xxxx:1.3.1 | gzip > xxx_1.3.1.tar.gz
+```
+
+当您使用 Docker 来保存和导出容器镜像时，有两种常见的方法：
+
+使用管道结合 gzip 命令和直接使用 `docker save` 命令。这两种方法的主要区别在于它们如何输出和压缩镜像文件。
+```
+docker save xxxx:1.3.1 | gzip > xxx_1.3.1.tar.gz：
+```
+
+这条命令首先使用 `docker save` 命令导出 `xxxx:1.3.1` 镜像。
+然后，通过管道 (|) 将镜像数据传递给 gzip 命令，用于压缩数据。
+压缩后的数据被重定向 (>) 到一个以 .tar.gz 结尾的文件（在这个例子中是 `xxx_1.3.1.tar.gz`），这是一个标准的压缩格式。
+这种方法的优点是可以直接生成压缩过的镜像文件，节省存储空间。
+```
+docker save -o xxx_1.1.0.tar xxx:1.1.0：
+```
+这条命令同样使用 `docker save` 命令来导出镜像，但它直接使用 -o 选项指定输出文件。
+这里，`xxx:1.1.0` 镜像被保存到一个名为 `xxx_1.1.0.tar` 的文件中。
+注意这个文件不是压缩格式，它是一个普通的 tar 归档文件。
+如果需要压缩，您需要在这之后使用额外的步骤（例如再运行一个 gzip 命令）。
+
+总结来说，第一种方法在保存镜像的同时进行压缩，而第二种方法则先保存未压缩的 tar 归档文件，之后可以根据需要进行压缩。
+选择哪种方法取决于您是否需要直接生成压缩文件，以及是否对存储空间有特定的要求。
+
 
 # 插拔设备后，在 Ubuntu22.04 的 Docker 中使用 adb devices 识别不到。
 

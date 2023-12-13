@@ -29,7 +29,7 @@
 
 # ChatGPT 注册
 
-[国外接码平台 sms-activate.org 官网]https://sms-activate.org/getNumber
+[国外接码平台 sms-activate.org 官网](https://sms-activate.org/getNumber)
 
 [VPN-ClashX](https://github.com/yichengchen/clashX)
 

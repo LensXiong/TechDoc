@@ -1,6 +1,9 @@
 
 # 相关命令
 ```
+# 定期执行 ls -alh 命令
+watch -n 1 ls -alh
+
 # 查看Docker系统的磁盘空间使用情况.
 docker system df -v
 
@@ -21,6 +24,44 @@ docker load --input xxx_1.1.0.tar
 
 # 运行容器
 docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/xxxx/xxx:/opt/xxx/xxx/xxx xxx:1.1.0 /usr/sbin/init
+```
+
+# docker 容器磁盘空间占用过大
+使用 docker 命令`docker system df -v`查看，其中一项为:
+
+```
+5643xxx115  mongo:4.x  "docker-entrypoint.s…"  1  814GB  6 months ago  Up 3 hours xxx_mongo 
+```
+
+原因：进入容器中，查看文件系统的使用情况。发现 `/var/tmp/mongod.log`文件过大。
+
+[Configuration File Options](https://www.mongodb.com/docs/manual/reference/configuration-options/)
+
+设置日志级别：
+```
+在 MongoDB 的配置文件中，systemLog.verbosity 设置用于定义日志的详细程度，其级别从 0 到 5 不等。
+下面是每个级别代表的含义：
+
+0: 这是 MongoDB 的默认日志详细程度级别。在此级别，日志将包括信息性（Informational）消息。这些消息提供了正常操作期间的基本信息，但不包括调试信息。
+1: 这个级别增加了一些调试（Debug）消息。这些消息有助于了解系统的内部工作情况，尤其是在诊断问题时。调试级别为 1 的消息通常包含一般的调试信息。
+2: 在这个级别，日志中将包括更详细的调试信息。适用于更深入的问题调查。在日志中，这些消息会被标记为 D2。
+3: 这一级别提供了比级别 2 更详细的调试信息。通常用于更专业的问题解决，可能包括系统的深层次工作细节。
+4: 在这个级别，日志将记录极其详细的调试信息。这对于常规操作来说通常是过度的，但在调试极其复杂的问题时非常有用。
+5: 这是最高的日志详细程度级别，提供最详尽的调试信息。仅在需要非常详细的系统内部运行信息时使用。
+
+每个级别都在前一个级别的基础上增加了更多的细节。随着级别的升高，日志文件的大小和日志活动的频率也会相应增加，这可能对系统性能产生影响。
+因此，在生产环境中，建议仅在需要时临时增加日志详细程度级别，并在问题解决后将其恢复到默认或较低的级别。
+```
+
+关闭日志：将 `systemLog.destination` 设置为 file 并将 `systemLog.path` 指向 `/dev/null`：
+```
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  #path: /var/tmp/mongod.log
+  path: /dev/null
+  verbosity: 0
 ```
 
 # 镜像导出保存

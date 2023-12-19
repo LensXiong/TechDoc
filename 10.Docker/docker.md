@@ -424,7 +424,7 @@ docker load < xxx.tar.gz
 ```
 
 
-## cp
+## docker cp
 `docker cp` :用于容器与主机之间的数据拷贝。
 从容器中拷贝至主机：
 ```

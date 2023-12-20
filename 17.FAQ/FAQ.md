@@ -1,3 +1,43 @@
+
+# .hex文件与.hex.bin文件
+
+现象：当一个 `.hex` 文件在上传后变成了 `.hex.bin` 文件，并且其大小从 41MB 增加到 756MB。
+```
+~：ls -all -h | grep .hex
+-rw-r--r--@  1 xxx  526858981    41M 12 20 10:49 0aae8db5d4f34fbb660cf90cf09fd124.hex
+-rw-r--r--@  1 xxxx 526858981   756M 12 20 11:32 demo.hex.bin
+```
+
+解释：文件格式转换：.hex 文件通常是文本格式的，用于表示二进制数据，比如固件或程序的十六进制编码。
+当它被转换为 .bin 文件时，它变成了一个纯二进制格式。
+这种转换可能导致文件大小的变化，尤其是如果原始 .hex 文件包含了大量的非数据字符（如地址标记、格式化符号等）。
+
+mac 电脑上将`.hex`文件转换成`.hex.bin`文件。
+
+① 使用Homebrew安装Binutils：
+```
+brew install binutils
+```
+② 使用objcopy转换文件：一旦安装了Binutils，就可以使用objcopy命令来将.hex文件转换为.hex.bin文件。在终端中运行以下命令：
+```
+gobjcopy -I ihex yourfile.hex -O binary yourfile.hex.bin
+```
+如果找不到命令使用绝对地址:
+```
+/opt/homebrew/opt/binutils/bin/gobjcopy -I ihex yourfile.hex -O binary yourfile.hex.bin
+```
+查看两个对比：
+
+![./file/hex.png](./file/hex.png)
+
+![./file/文件.hex和.hex.bin对比.png](./file/文件.hex和.hex.bin对比.png)
+
+从图中看到两种文件格式之间的差异:
+* 在左侧是.hex文件，显示为可读的十六进制代码和文本注释；
+* 在右侧是.hex.bin文件，以二进制格式显示，由0和1的流组成。
+
+
+
 # MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案
 
 [MySQL错误-this is incompatible with sql_mode=only_full_group_by完美解决方案](https://blog.csdn.net/u012660464/article/details/113977173)

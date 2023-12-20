@@ -61,7 +61,6 @@ systemLog:
   logAppend: true
   #path: /var/tmp/mongod.log
   path: /dev/null
-  verbosity: 0
 ```
 
 # 镜像导出保存

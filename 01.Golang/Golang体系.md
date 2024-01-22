@@ -48,6 +48,45 @@
 * [Mutex 正常模式和饥饿模式分别是什么？](#mutex_model)
 
 ## 专题相关
+
+### FAQ
+#### go私有仓库
+① 设置必要的`go env`，以中国大陆访问私有库为例：
+```
+go env -w export GOPROXY=https://goproxy.cn
+go env -w GOPRIVATE="a.coding.net,b.coding.net"
+go env -w GONOPROXY="a.coding.net,b.coding.net"
+go env -w GONOSUMDB="a.coding.net,b.coding.net"
+```
+② git url规则配置
+```
+# Linux Or Macos
+git config --global url."git@e.coding.net:".insteadOf "https://e.coding.net"
+
+# Windows
+git config --global url."ssh://e.coding.net:".instanceOf "https://e.coding.net"
+
+```
+
+* `GOPATH` 是 Go 语言的工作区。它是一个环境变量，指向 Go 工作目录，这个目录包含了源代码（src），编译后的二进制文件（bin），以及依赖包（pkg）。
+* `GOROOT` 是 Go 语言编译器和标准库所在的位置。通常在安装 Go 语言时被设置。
+* `GOPROXY` 指定 Go 模块的代理服务器地址。这对于提高模块下载速度、确保模块可用性非常有用。
+可以设置为官方的 `https://proxy.golang.org` 或者其他信任的代理。在中国大陆，由于网络问题，通常会设置为 https://goproxy.cn。
+* `GONOPROXY` 是 GOPROXY 的补充，用于指定不走代理的模块路径的模式。通常用于私有或内部模块，这些模块不应该从公共代理下载。
+它的格式是一个逗号分隔的模式列表（支持 glob 模式）。例如，`*.corp.example.com`。
+* `GOPRIVATE` 用于指定不应该被 Go 公共代理索引或校验的模块路径的模式。这对于私有库非常有用。它的格式同样是一个逗号分隔的模式列表。通常设置与 GONOPROXY 相同的值。
+* `GONOSUMDB` 用于指定哪些模块路径不应该被校验和服务（如 `sum.golang.org`）校验其校验和使用: 这对于私有或内部模块很有用，其设置通常与 GOPRIVATE 相同。
+* `GOSUMDB` 指定用于验证模块校验和的服务器。使用: 默认情况下，它指向 `sum.golang.org`，这是 Go 团队提供的公共校验和数据库。
+
+总结：① 在使用私有库或内部库时，需要配置 `GOPRIVATE`, `GONOPROXY`, 和 `GONOSUMDB` 来确保这些库不通过公共代理获取，也不通过公共服务校验校验和。
+② GOPROXY 和 GOSUMDB 被用来提高公共模块的获取速度和安全性。
+③ 快速下载镜像并且能够访问私有仓库中的模块配置：`GOPROXY=https://goproxy.cn,direct`。
+
+mac系统踩坑：
+```
+git config --global url."git@w.src.corp.xxxxx.net:".insteadOf "https:/wangxiong3@/w.src.corp.xxxxx.net"
+```
+
 ### 常用命令
 ```
 // 更新 go.mod 文件和模块依赖

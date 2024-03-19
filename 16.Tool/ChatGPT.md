@@ -3,8 +3,9 @@
 
 ## 订阅清单
 
-1、梯子
-2、美区信用卡
+1、[梯子-DuangCloud](https://portal.dc-site5.com/#/register?code=9dHaUWlM)
+
+2、[美区信用卡-信用卡申请注册 fomepay](https://gpt.fomepay.com/)
 
 ### 申请美区信用卡
 

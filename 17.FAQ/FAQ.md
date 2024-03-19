@@ -1,4 +1,32 @@
 
+
+# 文件上传大小限制
+* 代码限制。
+* PHP 参数。
+* Nginx 参数。
+
+PHP中：
+查找php.ini文件：`/usr/local/php/etc/php.ini`
+* `upload_max_filesize`：这个参数设置了通过PHP脚本可以上传的单个文件的最大大小。如果上传的文件超过了这个设置的值，文件将不会被上传。
+
+* `post_max_size`：这个参数限制了通过POST方法发送的数据的最大值。这包括了上传的文件以及其他POST数据。
+通常这个值应该设置得比 `upload_max_filesize` 大，以确保能够上传最大尺寸的文件。
+
+```
+upload_max_filesize = 150M
+post_max_size = 100M
+```
+
+查看状态：`/etc/init.d/php-fpm status`
+重启状态：`/etc/init.d/php-fpm restart`
+
+Nginx中：
+在 Nginx 中，限制文件上传大小的参数是 `client_max_body_size`。这个参数定义了客户端请求的最大允许的消息体大小，包括文件上传的大小。
+```
+client_max_body_size 100M;
+```
+重启：`/usr/local/nginx/sbin/nginx -s reload`
+
 # .hex文件与.hex.bin文件
 
 现象：当一个 `.hex` 文件在上传后变成了 `.hex.bin` 文件，并且其大小从 41MB 增加到 756MB。

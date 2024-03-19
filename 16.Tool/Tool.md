@@ -1,4 +1,57 @@
 
+# Excel转Json
+
+
+# JSON文本处理工具jq
+
+[Linux下JSON文本处理工具jq](https://gitbook.curiouser.top/origin/linux-jq.html)
+
+Mac安装jq工具：
+```
+brew install jq
+```
+使用示例：
+```
+curl 'https://xx.xx.cn/xxx-api/apiz/xxz/cloud?key=xxx' \
+  -H 'Accept: */*' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Cookie: .' \
+  -H 'Pragma: no-cache' \
+  -H 'Referer: https://xxx.xxx.cn/chat/xxx' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' \
+  -H 'access-token;' \
+  -H 'device-platform: Web' \
+  -H 'func-ver: 1' \
+  -H 'sec-ch-ua: "Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'timestamp: 2024-03-19T17:05:22+08:00' \
+  -H 'zm-token: xxxx' \
+  -H 'zm-ua: xxxxx' \
+  -H 'zm-ver: 1.2' | jq '.data.brain_spec_robots.list[] | select(.index_id!="") |{"target","index_id"}'
+```
+示例1：
+```
+| jq '.data.brain_spec_robots.list[] | select(.index_id!="") |{"target","index_id"}'  
+```
+从输入的 `JSON` 数据中遍历 `data.brain_spec_robots.list` 数组，筛选出那些 `index_id` 不为空字符串的元素，
+并为这些元素构造一个新的 JSON 对象，该对象仅包含每个元素的 `target` 和 `index_id` 字段。
+如果在 `{"target","index_id"}` 这一部分有误解，正常情况应该是提取具体的值，
+比如 `{"target": .target, "index_id": .index_id}`。
+
+```
+| jq '.data.brain_spec_robots.list[] | select(.index_id!="") | "\(.target),\(.index_id)"'
+```
+从输入的 `JSON` 数据中，遍历 `data.brain_spec_robots.list` 数组，筛选出 `index_id` 字段不为空字符串的元素。
+对于每个筛选后的元素，它会输出一个由该元素的 `target` 字段和 `index_id` 字段的值组成的字符串，这两个值之间以逗号分隔。
+这种输出格式可能用于需要这种特定格式的场景，如生成 `CSV` 文件的一部分。
+
+
 # adb
 
 adb（Android Debug Bridge），安卓平台调试桥，是连接Android手机与PC端的桥梁。

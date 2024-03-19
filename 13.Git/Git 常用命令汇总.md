@@ -1,6 +1,6 @@
 
 # 连接远程仓库需要输入密码
-当在Mac电脑上使用 git pull命令时，如果看到提示输入git@w.src.corp.qihoo.net的密码，
+当在Mac电脑上使用 git pull命令时，如果看到提示输入git@w.src.xxx.xxx.net的密码，
 这通常意味着git正在尝试通过SSH方式连接到远程仓库，但没有找到或使用正确的SSH密钥。
 
 要解决这个问题，可以按照以下步骤操作：
@@ -14,10 +14,10 @@ eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_rsa
 ```
 这里假设你的私钥文件是`~/.ssh/id_rsa`。
-4、添加公钥到Git服务器：将`~/.ssh/id_rsa.pub`（或你的公钥文件）的内容添加到Git服务器（在这个例子中是`w.src.corp.qihoo.net`）上你的用户账户中。
+4、添加公钥到Git服务器：将`~/.ssh/id_rsa.pub`（或你的公钥文件）的内容添加到Git服务器（在这个例子中是`w.src.xxx`）上你的用户账户中。
 通常，这可以在Git服务器的用户设置或SSH密钥部分中完成。
 5、检查SSH配置：确保你的`~/.ssh/config`文件（如果存在）配置正确。如果你的远程仓库地址使用了别名，它应该正确地映射到服务器地址和你的用户名。
-6、测试SSH连接：通过运行`ssh -T git@w.src.corp.qihoo.net`来测试SSH连接。如果连接成功，你应该不再需要输入密码。
+6、测试SSH连接：通过运行`ssh -T git@w.src.xxxx`来测试SSH连接。如果连接成功，你应该不再需要输入密码。
 
 确保在整个过程中，你使用的是与你的Git账户相关联的邮箱地址生成SSH密钥。
 完成以上步骤后，git pull应该可以无密码直接通过SSH密钥进行身份验证。

@@ -1,4 +1,89 @@
 
+# PHP 使用textarea后，点击提交，无法获取备注这个的值
+input 标签是用于输入文本的，这个标签有一个 name 属性设定为 "beizhu"。
+如果你想把这个 input 标签换成 textarea 并且仍然能够提交相应的值，你需要确保 textarea 也具有相同的 name 属性值。
+
+一个正确配置的 textarea 应该是这样的：
+```
+<textarea name="beizhu" class="form-control"><?php echo isset($formdb['beizhu']) ? $formdb['beizhu'] : ''; ?></textarea>
+```
+请确保当你替换成 `textarea` 后：
+
+name 属性保持一致，即 `name="beizhu"`。
+如果你在 textarea 中使用 PHP echo 输出内容（比如填充之前提交的数据），
+确保它位于 textarea 标签的开始和结束标签之间，不要在 value 属性中使用，因为 textarea 不像 input 标签那样有 value 属性。
+确认你的表单 method（POST 或 GET）与服务器端接收数据的方法相匹配。
+如果提交后无法获取值，请检查表单的其它部分以确保没有其他错误，
+比如是否每个表单元素都正确闭合了，是否存在同名的 input 或 textarea 元素。
+
+如果你在使用 `<textarea>` 后遇到了字数限制的问题，这通常不是 `<textarea>` 元素本身的问题，因为 `<textarea>` 默认情况下没有字数限制。这种限制可能是由以下原因造成的：
+
+客户端脚本：在页面上的 JavaScript 或其他客户端脚本可能对 `<textarea>` 进行了字数限制。请检查是否有脚本绑定了事件来限制输入长度。
+
+服务器端限制：在 PHP 或其他服务器端代码中可能有逻辑来检查提交的文本长度并据此作出决策。
+
+数据库限制：如果你的备注内容被存储在数据库中，数据库字段的类型或长度可能会造成限制。例如，如果字段类型为 VARCHAR(255)，则不能存储超过 255 个字符。
+
+浏览器插件或扩展：有些浏览器插件或扩展可能会对表单输入进行限制。
+
+HTML5 属性：虽然你没有提到在 `<textarea>` 标签中使用了 maxlength 属性，但如果使用了，这个属性会限制能输入的最大字符数。
+
+例如，一个设置了 maxlength 属性的`<textarea>`可能看起来像这样：
+```
+<textarea name="beizhu" maxlength="500">...</textarea>
+```
+这个例子中，用户只能输入最多500个字符。
+
+为了诊断和解决问题，请检查：
+
+1、页面的 `HTML`代码，看是否有 `maxlength` 属性。
+2、任何客户端代码（如 `JavaScript`），确认是否有功能来限制 `<textarea>` 的内容。
+3、服务器端处理表单提交的代码。
+4、数据库结构，特别是备注内容所对应的字段。
+通过这些检查，你应该能够确定字数限制的原因，并相应地进行调整。
+
+
+
+# pkg-config 问题
+问题描述：使用`mac`本地电脑，在`goland`中运行`assemblyai 中的Transcribe streaming audio from a microphone in Go`。
+运行realtime中的main函数报错如下：
+```
+go build github.com/gordonklaus/portaudio:
+# pkg-config --cflags  -- portaudio-2.0
+pkg-config: exec: "pkg-config": executable file not found in $PATH
+```
+解决：
+这个错误指出了一个在编译或配置环境时常见的问题。
+
+pkg-config 是一个工具，用于帮助编译器找到库的头文件和链接时需要的库文件。
+
+这个错误表明 pkg-config 工具没有被安装在你的系统上，或者没有被正确地添加到环境变量 $PATH 中，导致编译器无法找到它。
+
+为了解决这个问题，你可以按照以下步骤操作：
+
+安装 `pkg-config`：
+
+如果你还没有安装 pkg-config，你需要首先安装它。在 macOS 上，你可以使用 Homebrew 来安装：
+```
+brew install pkg-config
+```
+安装完成后，你可以通过运行 `pkg-config --version` 来检查是否成功安装。
+安装 portaudio 库：
+
+因为错误信息中提到了 `portaudio-2.0`，这意味着你还需要在你的系统上安装 `portaudio` 库。你同样可以使用 `Homebrew` 来安装 `portaudio`：
+```
+brew install portaudio
+```
+安装完成后，`pkg-config` 应该能够找到 `portaudio` 的配置信息了。
+确保 pkg-config 路径正确：
+
+确保 pkg-config 的路径被正确添加到了环境变量 `$PATH` 中。你可以通过运行 `echo $PATH` 来检查当前的 $PATH 设置。如果 pkg-config 的安装路径没有出现在列表中，你需要将其添加进去。
+如果你使用的是 bash shell，你可以通过在你的 `~/.bash_profile` 或 `~/.bashrc` 文件中添加如下行来永久添加路径：
+```
+export PATH=$PATH:/path/to/pkg-config
+```
+确保将 `/path/to/pkg-config` 替换为 `pkg-config` 实际的安装路径。更改后，重新加载配置文件或重新启动终端。
+按照这些步骤操作后，再次尝试编译你的 Go 程序。如果仍然遇到问题，可能需要检查你的 Go 环境设置或查看 `portaudio` 和 `pkg-config` 是否正确安装和配置。
 
 # 文件上传大小限制
 * 代码限制。

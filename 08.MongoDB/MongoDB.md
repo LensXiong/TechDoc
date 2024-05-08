@@ -1,5 +1,29 @@
 # 基础命令
 
+`mongodb` 查询：
+```
+db.getCollection("message_history").find().limit(1000).skip(0)
+db.message_history.aggregate([
+   { $limit: 1000 },
+   { $skip: 0 }
+])
+db.message_history.aggregate([
+{
+      $match: {
+         role_id: "xxx",
+         create_time: { $gt: 1650211200 }
+      }
+   },
+   {
+      $group: {
+         _id: null,
+         total: { $sum: { $toInt: "$len" } }
+      }
+   }
+])
+```
+
+
 连接 mongodb 命令：
 
 ```shell

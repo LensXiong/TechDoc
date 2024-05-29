@@ -1,4 +1,78 @@
 
+# txt转csv
+```
+/*
+*
+将以下txt的格式转化成csv表格形式
+May 21, 2024 @ 19:26:47.700	chat.onSuccess, qid:xxx, cid:xxxx, mid:xxxx, roleID:xxxx, query:你是AR。, msg:对不起。
+
+	*
+*/
+type Record struct {
+	Time  string
+	QID   string
+	Query string
+	Msg   string
+}
+
+func Txt(ctx *gin.Context) {
+	// 打开文件
+	file, err := os.Open("1.txt")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	defer file.Close()
+
+	// 正则表达式用于匹配和提取信息
+	re := regexp.MustCompile(`(.+?)\s+chat\.onSuccess, qid:(\d+),.*?query:(.*?), msg:(.*)`)
+
+	var records []Record
+
+	// 逐行读取文件内容
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := re.FindStringSubmatch(line)
+		if len(matches) > 4 {
+			record := Record{
+				Time:  matches[1],
+				QID:   matches[2],
+				Query: matches[3],
+				Msg:   matches[4],
+			}
+			records = append(records, record)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error reading file:", err)
+		return
+	}
+
+	// 创建输出CSV文件
+	outputFile, err := os.Create("output.csv")
+	if err != nil {
+		fmt.Println("Error creating CSV file:", err)
+		return
+	}
+	defer outputFile.Close()
+
+	writer := csv.NewWriter(outputFile)
+	defer writer.Flush()
+
+	// 写入表头
+	writer.Write([]string{"Time", "QID", "Query", "Msg"})
+
+	// 写入记录
+	for _, record := range records {
+		writer.Write([]string{record.Time, record.QID, record.Query, record.Msg})
+	}
+
+	fmt.Println("CSV file has been created successfully.")
+}
+```
+
 # Excel转Json
 
 

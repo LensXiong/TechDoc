@@ -1,4 +1,85 @@
-﻿# Nginx 参数
+﻿# 配置新域名
+```
+server {
+    listen 443 ssl;
+    server_name mkt.xxx.cn;
+    
+    add_header Last-Modified $date_gmt;
+    add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+    if_modified_since off;
+    expires off;
+    etag off;
+
+    location / {
+        proxy_pass https://xx.xxx.xxx.cn/managepage/;
+    }
+
+    location /managepage {
+        proxy_pass https://xx.xxx.xxx.cn/;
+    }
+}
+
+```
+
+* add_header Last-Modified $date_gmt;: 添加Last-Modified头，值为当前的GMT时间。这告诉客户端资源的最后修改时间。
+* add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';: 添加Cache-Control头，指示客户端和代理服务器不要缓存响应。
+* if_modified_since off;: 禁用If-Modified-Since请求头的处理。
+* expires off;: 禁用Expires头，以防止资源被缓存。
+* etag off;: 禁用ETag头，这也是用于缓存控制的一个HTTP头。
+* location / { ... }: 针对根路径（/）的请求，将它们反向代理到https://xx.xxx.xxx.cn/managepage/。即，所有对https://mkt.xxx.cn/的请求会被转发到https://xx.xxx.xxx.cn/managepage/。
+* location /managepage { ... }: 针对/managepage路径的请求，将它们反向代理到https://xx.xxx.xxx.cn/。即，所有对https://mkt.xxx.cn/managepage的请求会被转发到https://xx.xxx.xxx.cn/。
+
+# 使用自己的域名访问第三方网站
+例如：https://xx.xxx.xx/video
+```
+location ~* \.(js|png|jpg|css|mp4|svg|jpeg|html)$ {
+        root /home/xxx/xxxx/;
+        #如果是手机移动端访问内容
+        if ($http_user_agent ~* "^((.*android.*)|(.*Mobile Safari.*)|(.*Aphone.*)|(.*MeeGo; NokiaN9*.)|(.*blackberry.*)|(.*rim tablet os.*)|(.*iphone.*)|(.*ipod.*)|(.*IEMobile*.)|(.*opera mini.*)|(.*JUC.*)|(.*IUC.*)|(.*opera mobi.*)|avantgo|blazer|elaine|hiptop|palm|plucker|xiino|(windows ce; (iemobile|ppc|smartphone))|(.*windows phone os.*)|acer|zte|lenovo|moto|samu|nokia|sony|kindle|240x320|mobile|mmp|ucweb|midp|pocket|psp|symbian|smartphone|treo|up.browser|up.link|vodafone|wap)") {
+            root  /home/xxx/xxxx/react-m/;
+        }
+        
+        if ($arg_h5 = "true") {
+            root  /home/xxx/xxxx/react-m/;
+        }
+
+        if ($http_referer ~ '/privacy|/agreement|/a/|/i/|/feedback') {
+            root /home/xxx/xxxx/;
+        }
+
+        if ($uri ~ '/secure.|/agree.|/feed_comment.') {
+            root /home/xxx/xxxx/;
+        }
+        
+        try_files $uri @static;
+    }
+    
+location /video {
+        proxy_pass http://xxx.xx.xxx.xx/;
+        proxy_set_header Host xxx.xx.xxx.xx;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /static {
+        proxy_pass http://xxx.xx.xxx.xx;
+    }
+    location /api/ {
+        proxy_pass http://xxx.xx.xxx.xx;
+    }
+    location /zhipu.json {
+        proxy_pass http://xxx.xx.xxx.xx;
+    }
+    
+    location @static {
+        proxy_pass http://xxx.xx.xxx.xx;
+    }
+```
+
+
+
+
+# Nginx 参数
 
 基础参数：
 

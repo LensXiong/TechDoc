@@ -149,3 +149,19 @@ case msg, ok := <-srcReply: 从 srcReply 通道接收消息。
 
 
 # 问题解答
+
+## Go 版本管理工具（Go Version Manager）
+用途：用于管理多个 Go 语言版本的安装和切换，解决开发中因版本不一致导致的编译或依赖问题512。
+
+主要功能：
+* 支持安装、切换不同 Go 版本（如 go1.20.14）。
+* 自动配置环境变量（如 GOPATH、GOROOT），避免多版本共存冲突。
+* 常用于解决类似 go tool version 与模块声明版本不匹配的问题
+
+```
+# 安装 gvm
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer) 
+# 安装指定版本并切换
+gvm install go1.20.14
+gvm use go1.20.14
+```

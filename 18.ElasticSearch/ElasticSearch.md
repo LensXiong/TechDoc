@@ -269,6 +269,91 @@ http://xx.xx.xx.xx:9200/_template/name
 
 ## 索引
 
+### 重建索引
+要更改 Elasticsearch (ES) 索引结构并增加 `ctime` 和 `utime` 字段，你需要执行以下步骤：
+
+### 1. 创建新的索引映射（mapping）：
+首先，你需要创建一个新的索引，包含你想要的新映射。这是因为 Elasticsearch 不允许在现有索引上直接修改映射结构。你可以通过 `PUT` 请求来创建新索引。
+
+```
+PUT /your_new_index
+{
+  "mappings": {
+    "properties": {
+      "ctime": {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss"
+      },
+      "utime": {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss"
+      },
+      // 其他字段...
+    }
+  }
+}
+```
+
+### 2. 将数据从旧索引迁移到新索引：
+创建好新的索引后，你需要将数据从旧索引迁移到新索引。你可以使用 `_reindex` API 来实现。
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "your_old_index"
+  },
+  "dest": {
+    "index": "your_new_index"
+  }
+}
+```
+
+### 3. 删除旧索引（可选）：
+如果你不再需要旧的索引，可以选择删除它。
+
+```
+DELETE /your_old_index
+```
+
+### 4. 重命名索引（可选）：
+如果你希望新索引拥有与旧索引相同的名称，可以删除旧索引并使用 alias（别名）进行重命名。
+
+```
+POST /_aliases
+{
+  "actions": [
+    {
+      "remove": {
+        "index": "your_old_index",
+        "alias": "your_index_alias"
+      }
+    },
+    {
+      "add": {
+        "index": "your_new_index",
+        "alias": "your_index_alias"
+      }
+    }
+  ]
+}
+```
+
+通过这些步骤，你可以成功地更改 Elasticsearch 索引结构并添加新的 `ctime` 和 `utime` 字段。
+
+### 新增索引
+更新映射（Mapping）
+
+```
+PUT /your_index/_mapping
+{
+    "properties": {
+      "ctime": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss"},
+      "utime": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss"}
+    }
+}
+```
+
 ### 创建索引
 ```
 PUT 

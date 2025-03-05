@@ -491,3 +491,74 @@ curl -XPOST "http://xx.xx.xx.xx:9200/index/_delete_by_query" -H 'Content-Type: a
 '
 ```
 
+查询不到数据：
+原代码：
+```
+	//组装DSL
+	must := []interface{}{}
+	//榜单类别
+	if params.HotlistName != "" {
+		must = append(must, map[string]interface{}{
+			"term": map[string]interface{}{
+				"hotlist_names.keyword": map[string]interface{}{
+					"value": params.HotlistName,
+				},
+			},
+		})
+	}
+```
+
+解决：
+```
+hotlist_names.keyword 改成 hotlist_names
+```
+原因：hotlist_names本身是keyword类型。
+
+✅ keyword类型的字段适合做精确匹配查询，也就是term或terms。
+
+✅ 不需要加.keyword，直接查hotlist_names就可以！
+
+keyword是Elasticsearch里最适合存储"标签"、"分类"、"榜单名"这种的字段类型。 特点：
+
+* 它是非分析的（not analyzed），存进去什么，查询就得拿一模一样的值去查。
+* 它的用途是做精确匹配。
+* 典型用法就是用来做过滤，比如： 查“榜单名等于‘爆款视频榜’” ；查“分类等于‘美妆’”
+
+text是用来存长文本（description、文章、评论）的，它的特点：
+
+* 存进去的文本会被分词，比如爆款视频榜可能会被拆成爆款、视频、榜。
+* 适合做全文搜索（match查询），比如： 搜“爆款”能搜到“爆款视频榜”
+
+hotlist_names本身就是keyword类型，它天生支持term和terms，可以直接查。
+
+.keyword一般是用在text+keyword双字段的情况，比如：
+```
+{
+    "hotlist_names": {
+        "type": "text",
+        "fields": {
+            "keyword": {
+                "type": "keyword"
+            }
+        }
+    }
+}
+```
+
+这种时候：
+
+* hotlist_names是text，可以做分词搜索。
+* hotlist_names.keyword是keyword，可以做精确匹配。
+
+结论总结:
+
+| 字段类型       | 查询字段名              | 查询方法               |
+|------------|----------------|------------------|
+| keyword    | hotlist_names  | ✅ term or terms |
+| text          | hotlist_names  | ❌ 不适合term，要用match |
+| text+keyword | hotlist_names.keyword | ✅ term or terms |
+
+
+* keyword	存储标签、分类、榜单名等，用来做过滤
+* text	存储长文本，用于全文搜索
+* text+keyword	既能全文搜索，又能精确过滤，两者兼得

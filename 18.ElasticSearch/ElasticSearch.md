@@ -491,7 +491,7 @@ curl -XPOST "http://xx.xx.xx.xx:9200/index/_delete_by_query" -H 'Content-Type: a
 '
 ```
 
-查询不到数据：
+### 字段是keyword类型时，不需要加.keyword
 原代码：
 ```
 	//组装DSL

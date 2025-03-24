@@ -23,6 +23,8 @@ alias python='/opt/homebrew/bin/python3'
 
 使用虚拟环境（推荐）
 
+```
+
 1. 在 PyCharm 中新建一个虚拟环境：
    打开 PyCharm 设置
 
@@ -50,6 +52,7 @@ File → Settings（Mac 上是 PyCharm → Preferences）
    一旦创建好虚拟环境，安装库时就不会再遇到 externally-managed-environment 的错误了：
 
 pip install requests
+```
 
 
 **为什么要在 PyCharm 新建虚拟环境？**

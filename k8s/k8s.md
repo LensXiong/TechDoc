@@ -18,7 +18,7 @@ Kubernetes中Service、Nginx Ingress与Nginx Ingress Controller有着以下关�
 
 Nginx Ingress Controller 通过 API Server 获取 Ingress 资源的变化，动态地生成 Load Balancer（例如Nginx）所需的配置文件（例如 nginx.conf），然后重新加载 Load Balancer（例如执行nginx -s load重新加载Nginx）来生成新的路由转发规则。
 
-![nginxingresscontroller.png](assets/nginx ingress controller.png)
+![nginxingresscontroller.png](./assets/nginx-ingress-controller.png)
 
 
 
@@ -26,4 +26,4 @@ Ingress 场景示例
 
 在常见的前后端分离的架构方式中，前后端的访问地址分别使用不同的访问路径。对应这种场景，可以采用 Ingress，根据7层的访问路径负载到不同的应用实例上。
 
-![image.png](assets/ingress scene.png)
+![image.png](./assets/ingress-scene.png)

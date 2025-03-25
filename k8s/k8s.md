@@ -4,6 +4,12 @@ Ingress
 
 什么是Ingress?
 
+![image.png](assets/image02.png)
+
+![image.png](assets/image01.png)
+
+![image.png](assets/image03.png)
+
 Ingress 是 Kubernetes 集群外部流量7层负载均衡，是集群内 Service 对外暴露7层的访问接入点，通过域名或者访问路径来路由到不同 Service 上，从而达到7层的负载均衡。
 
 什么是 Nginx Ingress Controller ？
@@ -19,8 +25,6 @@ Kubernetes中Service、Nginx Ingress与Nginx Ingress Controller有着以下关�
 Nginx Ingress Controller 通过 API Server 获取 Ingress 资源的变化，动态地生成 Load Balancer（例如Nginx）所需的配置文件（例如 nginx.conf），然后重新加载 Load Balancer（例如执行nginx -s load重新加载Nginx）来生成新的路由转发规则。
 
 ![nginxingresscontroller.png](./assets/nginx-ingress-controller.png)
-
-
 
 Ingress 场景示例
 

@@ -1,9 +1,75 @@
-﻿# 配置新域名
+﻿# 刷新移动端页面报404
+
+问题本质分析：
+
+根据配置和现象，根本原因在于 **`if`指令和`root`路径的优先级冲突**，导致移动端刷新时`try_files`未能正确继承`root`路径。Nginx的`if`属于rewrite模块，其内部作用域中修改的`root`不会传递到外层`location`的`try_files`逻辑，导致路径解析混乱（移动端刷新时实际仍使用PC端的`root`路径）。
+
+```
+# 在 http{} 级别定义一个 map
+map $http_user_agent $mobile_root {
+    default "/home/q/system/web.xxx.xxx.cn/CloudDrive/";  # 默认 PC 端目录
+    "~*android|mobile safari|openharmony|aphone|meego; nokian9|blackberry|rim tablet os|iphone|ipod|iemobile|opera mini|juc|iuc|opera mobi|avantgo|blazer|elaine|hiptop|palm|plucker|xiino|windows ce; (iemobile|ppc|smartphone)|windows phone os|acer|zte|lenovo|moto|samu|nokia|sony|kindle|240x320|mobile|mmp|ucweb|midp|pocket|psp|symbian|smartphone|treo|up.browser|up.link|vodafone|wap" "/home/q/system/web.xxx.xxx.cn/CloudDrive_m/";  # 移动端目录
+}
+
+server {
+    server_name 10.xxx.xxx.xxx;
+  
+    charset utf-8;
+    server_tokens off;
+
+    root $mobile_root;
+  
+    index index.html index.htm index.php;
+  
+    error_log  /dev/stderr;
+
+    location / {
+        add_header Last-Modified $date_gmt;
+        add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+        if_modified_since off;
+        expires off;
+        etag off;
+  
+        try_files $uri $uri/ /index.html;
+    }
+
+    if ($http_user_agent ~ ^$) {
+        return 403;
+    }
+
+    # 爬虫
+    if ($http_user_agent ~* (Scrapy|Curl|HttpClient|HeadlessChrome)) {
+        return 403;
+    }
+
+    location /status.html {
+        #  ngx.say("ok");
+    }
+
+    location /status.php {
+        try_files /not.exists /status.html;
+    }
+  
+    location /psp_jump.html {
+        root /home/q/system/web.xxx.xxx.cn/CloudDrive/;
+    }
+  
+    gzip               on;
+    gzip_min_length    1024;
+    gzip_buffers       4 16k;
+    gzip_comp_level    6;
+    gzip_types         text/plain application/javascript application/x-javascript text/css application/xml;
+    gzip_vary          on;
+}
+```
+
+# 配置新域名
+
 ```
 server {
     listen 443 ssl;
     server_name mkt.xxx.cn;
-    
+  
     add_header Last-Modified $date_gmt;
     add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
     if_modified_since off;
@@ -30,7 +96,9 @@ server {
 * location /managepage { ... }: 针对/managepage路径的请求，将它们反向代理到https://xx.xxx.xxx.cn/。即，所有对https://mkt.xxx.cn/managepage的请求会被转发到https://xx.xxx.xxx.cn/。
 
 # 使用自己的域名访问第三方网站
+
 例如：https://xx.xxx.xx/video
+
 ```
 location ~* \.(js|png|jpg|css|mp4|svg|jpeg|html)$ {
         root /home/xxx/xxxx/;
@@ -38,7 +106,7 @@ location ~* \.(js|png|jpg|css|mp4|svg|jpeg|html)$ {
         if ($http_user_agent ~* "^((.*android.*)|(.*Mobile Safari.*)|(.*Aphone.*)|(.*MeeGo; NokiaN9*.)|(.*blackberry.*)|(.*rim tablet os.*)|(.*iphone.*)|(.*ipod.*)|(.*IEMobile*.)|(.*opera mini.*)|(.*JUC.*)|(.*IUC.*)|(.*opera mobi.*)|avantgo|blazer|elaine|hiptop|palm|plucker|xiino|(windows ce; (iemobile|ppc|smartphone))|(.*windows phone os.*)|acer|zte|lenovo|moto|samu|nokia|sony|kindle|240x320|mobile|mmp|ucweb|midp|pocket|psp|symbian|smartphone|treo|up.browser|up.link|vodafone|wap)") {
             root  /home/xxx/xxxx/react-m/;
         }
-        
+    
         if ($arg_h5 = "true") {
             root  /home/xxx/xxxx/react-m/;
         }
@@ -50,10 +118,10 @@ location ~* \.(js|png|jpg|css|mp4|svg|jpeg|html)$ {
         if ($uri ~ '/secure.|/agree.|/feed_comment.') {
             root /home/xxx/xxxx/;
         }
-        
+    
         try_files $uri @static;
     }
-    
+  
 location /video {
         proxy_pass http://xxx.xx.xxx.xx/;
         proxy_set_header Host xxx.xx.xxx.xx;
@@ -70,14 +138,11 @@ location /video {
     location /zhipu.json {
         proxy_pass http://xxx.xx.xxx.xx;
     }
-    
+  
     location @static {
         proxy_pass http://xxx.xx.xxx.xx;
     }
 ```
-
-
-
 
 # Nginx 参数
 
@@ -174,8 +239,8 @@ http {
 * `include /etc/nginx/modules-enabled/*.conf;`: 包含指定目录下的所有以".conf"为后缀的文件。通常，这个目录用于启用或禁用Nginx模块。
 * `error_log /xxx/nginx/log/nginx_error.log error;`: 配置错误日志的路径和级别，将错误日志记录到指定文件中。
 * `events {...}`: 配置Nginx处理事件的模块，这里使用了epoll作为事件模型。
-* `use epoll;` #参考事件模型，`use [ kqueue | rtsig | epoll | /dev/poll | select | poll ]`; 
-`#epoll`模型是Linux 2.6以上版本内核中的高性能网络I/O模型，如果跑在FreeBSD上面，推荐使用kqueue模型。
+* `use epoll;` #参考事件模型，`use [ kqueue | rtsig | epoll | /dev/poll | select | poll ]`;
+  `#epoll`模型是Linux 2.6以上版本内核中的高性能网络I/O模型，如果跑在FreeBSD上面，推荐使用kqueue模型。
 * `worker_connections 1024`; 指定每个worker进程能够处理的最大连接数。
 * `http {...}`: 定义HTTP模块的配置块，包含了Nginx的主要HTTP配置。
 * `include mime.types;`: 包含MIME类型配置文件，用于指定文件扩展名和相应的MIME类型。
@@ -220,8 +285,9 @@ log_format main "$remote_addr\t$remote_user\t[$time_local]\t$request_method\t$ho
 * `$upstream_status`: 记录从上游服务器接收到的HTTP响应状态码。
 
 请求示例：
+
 ```
-xx.xx.xxx.xx - [24/Nov/2023:16:10:35 +0800]	GET	xxx.xx.xx.xx /api/v1/xxx/xxx	
+xx.xx.xxx.xx - [24/Nov/2023:16:10:35 +0800]	GET	xxx.xx.xx.xx /api/v1/xxx/xxx
 0.039 200 658 'https://xx.xx.xx.xx/' 
 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/xx.36 (KHTML, like Gecko) Chrome/11x.0.0.0 Safari/537.36' '-' 0.040	200
 ```
@@ -298,12 +364,12 @@ location  / {
 ```
 
 * `proxy_pass http://xx.xx.xx.xx;`: 当请求匹配上述location块时，Nginx会将请求代理到指定的后端服务器。
-`http://xx.xx.xx.xx`是后端服务器的地址。这是一个标准的反向代理配置，将客户端的请求转发给后端服务器。
+  `http://xx.xx.xx.xx`是后端服务器的地址。这是一个标准的反向代理配置，将客户端的请求转发给后端服务器。
 * `proxy_set_header HTTP_X_FORWARDED_FOR "$remote_addr:$remote_port";`: 设置请求头中的HTTP_X_FORWARDED_FOR字段，
-将客户端的IP地址和端口号添加到该字段中。这个字段通常用于标识客户端的原始IP地址，尤其是在经过多层代理时。
-在这里，它包含了客户端的IP地址和端口号，以提供更详细的信息。
+  将客户端的IP地址和端口号添加到该字段中。这个字段通常用于标识客户端的原始IP地址，尤其是在经过多层代理时。
+  在这里，它包含了客户端的IP地址和端口号，以提供更详细的信息。
 * `proxy_set_header Host $host:$server_port;`: 设置请求头中的Host字段，将其值设置为`$host:$server_port`。
-这个字段表示客户端原始请求的Host头部值。在反向代理的情况下，确保将正确的Host信息传递给后端服务器是很重要的，以便后端服务器能够正确处理请求。
+  这个字段表示客户端原始请求的Host头部值。在反向代理的情况下，确保将正确的Host信息传递给后端服务器是很重要的，以便后端服务器能够正确处理请求。
 * `proxy_connect_timeout 60s;`: 设置连接到后端服务器的超时时间为60秒。如果在指定的时间内无法建立连接，则Nginx将认为连接超时。
 * `proxy_read_timeout 300s;`: 设置从后端服务器读取响应的超时时间为300秒。如果在指定的时间内没有从后端服务器读取到响应，则Nginx将认为读取超时。
 * `proxy_send_timeout 60s;`: 设置向后端服务器发送请求的超时时间为60秒。如果在指定的时间内无法将请求发送到后端服务器，则Nginx将认为发送超时
@@ -324,7 +390,7 @@ location ~^/(info*) {
 ```
 
 * `location ~^/(info*) {`: 这是一个`Nginx`的`location`块，使用正则表达式匹配以"`/info`"开头的URL路径。
-`~^`表示正则表达式要从字符串的开头匹配。`/info*`表示匹配以`"/info"`开头的路径，*表示匹配零个或多个's'字符。
+  `~^`表示正则表达式要从字符串的开头匹配。`/info*`表示匹配以`"/info"`开头的路径，*表示匹配零个或多个's'字符。
 * `proxy_set_header Upgrade $http_upgrade;`: 设置请求头中的Upgrade字段，用于实现WebSocket协议的升级。这对于支持WebSocket的应用程序很重要。
 * `proxy_set_header Connection $connection_upgrade;`: 设置请求头中的`Connection`字段，也用于WebSocket协议的升级。
 * `proxy_set_header X-Real-IP $remote_addr;`: 将客户端的真实IP地址添加到请求头中的X-Real-IP字段。这在后端服务器需要获取客户端真实IP时非常有用。

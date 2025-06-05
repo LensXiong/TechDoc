@@ -1,4 +1,234 @@
-﻿# 刷新移动端页面报404
+﻿# Nginx 413 Request Entity Too Large
+
+前端nginx配置、Ingress配置、服务端代码配置 三者保持一致。
+
+方法一、前端Nginx配置文件中：`/etc/nginx/nginx.conf`
+
+解决步骤： 打开 Nginx 配置文件，通常在：
+
+```
+/etc/nginx/nginx.conf
+```
+
+或者某个 `server` 块中（比如 `/etc/nginx/sites-enabled/default`）
+
+增加或修改如下配置：
+
+```
+http {
+...
+client_max_body_size 50M;  # 或者更大，根据你的上传大小设置
+}
+```
+
+或者在 server 块里：
+
+```
+server {
+...
+client_max_body_size 50M;
+}
+```
+
+重启 Nginx：
+
+```
+sudo nginx -s reload
+```
+
+方法二： 后端服务（如 `PHP / Node.js / Go`）配置限制
+如果你已经修改了 Nginx，但问题仍存在，还需要检查后端服务本身的限制。
+
+PHP：php.ini 文件中
+```
+post_max_size = 50M
+upload_max_filesize = 50M
+```
+
+Express (Node.js)：
+```
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+```
+
+Gin (Go)：你需要手动读取 Body 并限制最大 size：
+
+```
+r.MaxMultipartMemory = 50 << 20 // 50 MB
+```
+
+方法三：Ingress 默认的 NGINX 配置中，`client_max_body_size` 默认值是 1MB 或 20MB 或 8MB，上传大文件时很容易触发 413 错误。
+
+需要在 Ingress 的 annotations 中增加配置：
+
+```
+metadata:
+annotations:
+nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+```
+
+在容器的ingress配置与编辑中，找到便签与注解，键 `nginx.ingress.kubernetes.io/proxy-body-size` 值 64m。
+
+
+
+
+# 实战中前端Nginx配置模板
+```
+user                 nobody;
+worker_processes     4;
+worker_rlimit_nofile 65535;
+
+error_log  /data/nginx/logs/error.log  notice;
+
+events {
+    use epoll;
+    worker_connections  4096;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    full_log_format  full  '$remote_addr $request_length $body_bytes_sent $request_time[s] - - [$time_local] '
+                           '"$request" $status $http_referer "-" "$http_user_agent" $http_host $server_addr '
+                           '$http_x_forwarded_for $http_x_real_ip';
+    full_access_log  /data/nginx/logs/allweb.log  full;
+
+    log_format       combinedio  '$remote_addr - $remote_user [$time_local] '
+                                 '"$request" $status $body_bytes_sent '
+                                 '"$http_referer" "$http_user_agent" $request_length $request_time $upstream_response_time';
+    access_log off;
+
+    sendfile                     on;
+    gzip                         on;
+    tcp_nopush                   on;
+    tcp_nodelay		         on;
+
+    keepalive_timeout            0;
+    client_body_timeout          10;
+    client_header_timeout        10;
+
+    client_header_buffer_size    1k;
+    large_client_header_buffers  4  4k;
+    output_buffers               1  32k;
+    client_max_body_size	 64m;
+    client_body_buffer_size      256k; 
+ 
+    #lua_package_path "/usr/local/luajit/share/lua/5.1/ngx_metric/?.lua;;";
+    #lua_shared_dict shared_dict 64M;
+    #log_by_lua_file /usr/local/luajit/share/lua/5.1/ngx_metric/ngx_metric.lua;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location /server-status {
+            stub_status  on;
+            allow        127.0.0.1;
+            deny         all;
+        }
+
+        location /status {
+            include      fastcgi.conf;
+            fastcgi_pass 127.0.0.1:9000;
+            allow        127.0.0.1;
+            deny         all;
+        }
+
+        #location /ngx/metric {
+        #    content_by_lua_file /usr/local/luajit/share/lua/5.1/ngx_metric/ngx_metric_output.lua;
+        #    allow 127.0.0.1;
+        #    deny all;
+        #}
+    }
+
+    include include/*/vhost.conf;
+}
+
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name test.x.xxx.xx;
+
+    root /home/q/system/fe/xxx-xxx/;
+    
+    # 协商缓存
+    add_header Cache-Control no-cache;
+    add_header Cache-Control public;
+    # 跨域处理
+    add_header Access-Control-Allow-Origin *;
+    add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS';
+    add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+
+    # 预检请求
+    if ($request_method = 'OPTIONS') {
+        return 204;
+    }
+
+    access_log /data/nginx/logs/test.xxx.xxx.xx/web/test.xxx.xxx.xx-access.log combinedio;
+    error_log /data/nginx/logs/test.xxx.xxx.xx/web/test.xxx.xxx.xx-error.log;
+
+    client_body_temp_path /data/nginx/client_body_temp/ 1 2;
+    proxy_temp_path /data/nginx/proxy_temp/ 1 2;
+    fastcgi_temp_path /data/nginx/fastcgi_temp/ 1 2;
+
+    # The 'ENV' file in document root contains various environment information,
+    # such as the path of document root, the location of log file, and so on.
+    # For security reason, you CAN NOT remove this location!!
+    location = /ENV {
+        allow 127.0.0.1;
+        deny all;
+    }
+    
+     #  service worker
+    location /xx-app/sw/ {
+        alias /home/q/system/fe/quick-clip/sw/;
+        try_files $uri $uri.js;
+        add_header Service-Worker-Allowed /;
+    }
+
+    # 
+    location /xx-app/ {
+        alias /home/q/system/fe/quick-clip/;
+        try_files $uri $uri.html $uri.htm;
+    }
+  
+    # 新服务接口，适用于爆款视频等
+    location /api/xxx/ {
+        proxy_pass http://testxxx.xxx.xx/xxx/;
+    }
+
+    # 旧服务接口，适用于如user/info等
+    location /api/brain/  {
+        proxy_pass http://testxxxapi.xxx.xx/api/;
+    }
+    
+    # 后端接口
+    location /api/kxx/ {
+        proxy_pass http://testkxx.xxx.xx/kxx/;
+    }
+
+    # 前端
+    location / {
+        root /home/q/system/fe/xxx-xxxx;
+        try_files $uri $uri.html $uri/ /index.html;
+    }
+    
+    #ssl  on;
+    ssl_session_cache  shared:SSL:50m;
+    ssl_session_timeout  300;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers  on;
+
+    ssl_certificate /usr/local/nginx/ssl/test.x.xxx.xx.crt;
+    ssl_certificate_key /usr/local/nginx/ssl/test.x.xxx.xx.key;
+
+}
+```
+
+# 刷新移动端页面报404
 
 问题本质分析：
 
@@ -68,7 +298,7 @@ server {
 ```
 server {
     listen 443 ssl;
-    server_name mkt.xxx.cn;
+    server_name xxx.xxx.cn;
   
     add_header Last-Modified $date_gmt;
     add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
@@ -92,8 +322,8 @@ server {
 * if_modified_since off;: 禁用If-Modified-Since请求头的处理。
 * expires off;: 禁用Expires头，以防止资源被缓存。
 * etag off;: 禁用ETag头，这也是用于缓存控制的一个HTTP头。
-* location / { ... }: 针对根路径（/）的请求，将它们反向代理到https://xx.xxx.xxx.cn/managepage/。即，所有对https://mkt.xxx.cn/的请求会被转发到https://xx.xxx.xxx.cn/managepage/。
-* location /managepage { ... }: 针对/managepage路径的请求，将它们反向代理到https://xx.xxx.xxx.cn/。即，所有对https://mkt.xxx.cn/managepage的请求会被转发到https://xx.xxx.xxx.cn/。
+* location / { ... }: 针对根路径（/）的请求，将它们反向代理到https://xx.xxx.xxx.cn/managepage/。即，所有对https://xxx.xxx.cn/的请求会被转发到https://xx.xxx.xxx.cn/managepage/。
+* location /managepage { ... }: 针对/managepage路径的请求，将它们反向代理到https://xx.xxx.xxx.cn/。即，所有对https://xxx.xxx.cn/managepage的请求会被转发到https://xx.xxx.xxx.cn/。
 
 # 使用自己的域名访问第三方网站
 

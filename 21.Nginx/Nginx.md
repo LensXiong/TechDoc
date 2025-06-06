@@ -1,8 +1,8 @@
 ﻿# Nginx 504 Gateway Time-out
 
 | 配置项                     | 默认值   | 作用说明                 |
-| ----------------------- | ----- | -------------------- |
-| `proxy_connect_timeout` | `60s` | 与后端服务器建立连接的超时时间      |
+| ----------------------- |-------| -------------------- |
+| `proxy_connect_timeout` | `10s` | 与后端服务器建立连接的超时时间      |
 | `proxy_send_timeout`    | `60s` | 向后端发送请求的超时时间         |
 | `proxy_read_timeout`    | `60s` | 等待后端响应的超时时间          |
 | `send_timeout`          | `60s` | 向客户端发送响应的超时时间（不活跃连接） |
@@ -174,6 +174,21 @@ nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
 如果请求体较大、网络慢，或者是 POST/PUT 等带有 body 的请求，Ingress 需要一定时间将请求数据发送给后端。
 
 proxy-send-timeout 就是限制这个“发送过程”的最长时间，如果超时，就会中断连接并返回错误。
+
+
+完整时序图：
+```
+【客户端】 → 【Ingress Nginx】
+               |
+               |--(1) proxy_connect_timeout → 等后端 Pod 接 TCP
+               |
+               |--(2) proxy_send_timeout    → 发请求内容（如 POST 数据）
+               |
+               |--(3) proxy_read_timeout    → 等待后端响应
+               |
+               |--(4) send_timeout          → 给客户端发送响应时的超时
+
+```
 
 
 

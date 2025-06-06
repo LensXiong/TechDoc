@@ -1,5 +1,6 @@
 ﻿# 系统请求流程时序图
-![img/img.png](img/img.png)
+
+![img.png](img/img.png)
 
 时序图：
 

@@ -1,4 +1,43 @@
-﻿# Nginx 504 Gateway Time-out
+﻿# 系统请求流程时序图
+![img.png](img.png)
+
+时序图：
+
+在线网址：https://mermaid.live
+
+```
+sequenceDiagram
+    participant User as 🧑 客户端
+    participant DNS as 🌍 DNS服务器
+    participant FrontNginx as 🌐 前端 Nginx
+    participant Ingress as 🚪 K8s Ingress Nginx
+    participant Backend as 🧠 后端服务（Go）
+    participant DB as 💾 数据库
+    participant 3rd as 🌐 第三方服务
+
+    User->>DNS: 请求域名解析
+    DNS-->>User: 返回IP地址
+
+    User->>FrontNginx: 发起 HTTPS 请求
+    FrontNginx->>Ingress: 转发请求到 K8s 集群入口
+
+    %% 合并为一行注释，避免换行错误
+    Note over User,Ingress: Ingress Nginx 超时参数：① proxy_connect_timeout 连接 Pod 的 TCP 超时；② proxy_send_timeout 发送请求体超时；③ proxy_read_timeout 等待响应超时；④ send_timeout 返回客户端超时
+
+    Ingress->>Backend: 请求路由到后端 Pod（Go 服务）
+    Backend->>DB: 查询数据库
+    DB-->>Backend: 返回数据库查询结果
+
+    Backend->>3rd: 请求第三方 API
+    3rd-->>Backend: 返回第三方响应
+
+    Backend-->>Ingress: 返回综合结果
+    Ingress-->>FrontNginx: 转发响应
+    FrontNginx-->>User: 客户端最终收到响应
+
+```
+
+# Nginx 504 Gateway Time-out
 
 | 配置项                     | 默认值   | 作用说明                 |
 | ----------------------- |-------| -------------------- |

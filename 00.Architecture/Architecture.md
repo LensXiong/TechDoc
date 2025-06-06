@@ -3,7 +3,8 @@
 
 
 # 完整 http 请求流程
-![./img/img.png](./img/img.png)
+
+![img.png](img/img.png)
 
 时序图：
 

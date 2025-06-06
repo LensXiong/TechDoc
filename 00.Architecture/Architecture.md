@@ -3,7 +3,7 @@
 
 
 # 完整 http 请求流程
-![img.png](img.png)
+![./img/img.png](./img/img.png)
 
 时序图：
 
@@ -40,7 +40,7 @@ sequenceDiagram
 ```
 
 ## 1.1 客户端请求发起全过程
-![img_2.png](img_2.png)
+![img_2.png](./img/img_2.png)
 
 完整时序图：
 
@@ -79,7 +79,7 @@ sequenceDiagram
 
 ## 1.2 DNS 域名解析流程
 
-![img_1.png](img_1.png)
+![img_1.png](./img/img_1.png)
 
 时序图：
 
@@ -114,7 +114,7 @@ sequenceDiagram
 
 ## 1.3 CDN 命中 + 回源 + 缓存更新流程
 
-![img_3.png](img_3.png)
+![img_3.png](./img/img_3.png)
 
 时序图：
 
@@ -147,7 +147,7 @@ sequenceDiagram
 
 ## 1.4 前端 Nginx 接收请求并转发
 
-![img_4.png](img_4.png)
+![img_4.png](./img/img_4.png)
 
 时序图：
 
@@ -169,7 +169,7 @@ sequenceDiagram
 
 ## 1.5 Ingress Controller 转发请求
 
-![img_5.png](img_5.png)
+![img_5.png](./img/img_5.png)
 
 时序图：
 
@@ -189,7 +189,7 @@ sequenceDiagram
 
 ## 1.6 高并发场景下的处理流程
 
-![img_6.png](img_6.png)
+![img_6.png](./img/img_6.png)
 
 时序图：
 
@@ -225,7 +225,7 @@ sequenceDiagram
 
 ## 1.7 访问 MySQL 的详细流程
 
-![img_7.png](img_7.png)
+![img_7.png](./img/img_7.png)
 
 时序图：
 
@@ -275,7 +275,7 @@ sequenceDiagram
 
 ## 1.8 第三方同步请求 + 异步调用 + 回调
 
-![img_8.png](img_8.png)
+![img_8.png](./img/img_8.png)
 
 时序图：
 

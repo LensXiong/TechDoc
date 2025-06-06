@@ -1,5 +1,5 @@
 ﻿# 系统请求流程时序图
-![./img/img.png](./img/img.png)
+![img.png](img%2Fimg.png)
 
 时序图：
 

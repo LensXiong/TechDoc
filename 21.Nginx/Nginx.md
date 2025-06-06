@@ -1,4 +1,183 @@
-﻿# Nginx 413 Request Entity Too Large
+﻿# Nginx 504 Gateway Time-out
+
+| 配置项                     | 默认值   | 作用说明                 |
+| ----------------------- | ----- | -------------------- |
+| `proxy_connect_timeout` | `60s` | 与后端服务器建立连接的超时时间      |
+| `proxy_send_timeout`    | `60s` | 向后端发送请求的超时时间         |
+| `proxy_read_timeout`    | `60s` | 等待后端响应的超时时间          |
+| `send_timeout`          | `60s` | 向客户端发送响应的超时时间（不活跃连接） |
+
+
+链路一、前端 Nginx 配置超时时间太短
+
+```
+   location /api/xxx/ {
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+        send_timeout 120s;
+        proxy_pass http://testxxx.xxx.xxx/kjj/;
+    }
+```
+链路二、ingress 配置
+
+如果你使用的是 Nginx Ingress Controller，可以直接在 Ingress 资源中添加如下 Annotation：
+
+```
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: mkt-test
+  namespace: xxx-mkt
+  creationTimestamp: null
+  labels:
+    app: mkt-test
+    stark-app: mkt
+    stark-ns: xxx-mkt
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 64m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '300'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
+spec:
+  ingressClassName: nginx
+  rules:
+```
+
+
+链路三、后端服务 如GO的配置
+
+`*.yaml`文件中的配置：
+
+```
+http:
+  addr: 0.0.0.0:8000
+  timeout: 300
+```
+
+```
+var Set = wire.NewSet(
+	NewServer,
+)
+
+func NewServer(
+	demo *demo.Service,
+	hotlist *hotlist.Service,
+	proxy *proxy.Service,
+	assistant *assistant.Service,
+) *http.Server {
+	opts := setOpt()
+	srv := http.NewServer(opts...)
+	engine := gin.New()
+	registerPprof(srv)
+	registerHealth(srv)
+	registerDoc(srv)
+	registerProxy(srv)
+	engine.Use(middlewares())
+
+	//服务注册
+	mktNoLogin := engine.Group("/xxxx")
+	mkt := engine.Group("/xxx")
+	mkt.Use(kgin.Middlewares(auth.Auth()))
+	demo.Register(mktNoLogin)
+	hotlist.Register(mkt, mktNoLogin)
+	proxy.Register(engine)
+	assistant.Register(engine.Group("/assistant"))
+
+	srv.HandlePrefix("/", engine)
+	return srv
+}
+
+func setOpt() []http.ServerOption {
+	var opts []http.ServerOption
+	if network := config.GetString("http.network"); network != "" {
+		opts = append(opts, http.Network(network))
+	}
+	if addr := config.GetString("http.addr"); addr != "" {
+		opts = append(opts, http.Address(addr))
+	}
+	if timeout := config.GetInt("http.timeout"); timeout > 0 {
+		opts = append(opts, http.Timeout(time.Duration(timeout)*time.Second))
+	}
+
+	opts = append(opts, http.ErrorEncoder(reply.ErrorEncoder))
+	opts = append(opts, http.ResponseEncoder(reply.ResponseEncoder))
+
+	return opts
+}
+```
+
+标准库中的超时，通过 http.Server 来设置超时时间：
+
+```
+srv := &http.Server{
+Addr:         ":8080",
+Handler:      myHandler, // 可以是 mux、Gin、Echo 等
+ReadTimeout:  120 * time.Second, // 读取请求头 + body 的最大时间
+WriteTimeout: 120 * time.Second, // 写响应给客户端的最大时间
+IdleTimeout:  120 * time.Second, // keep-alive连接最大空闲时间
+}
+
+log.Fatal(srv.ListenAndServe())
+```
+
+如果是调用下游（如外部 API）也要设置超时：
+
+如果服务是网关或中间层，还要设置 http.Client 的超时，例如：
+
+```
+client := &http.Client{
+    Timeout: 30 * time.Second, // 整体请求超时
+}
+resp, err := client.Get("http://example.com/api")
+```
+
+你没有自定义 http.Server，所以使用的是 Go 标准库的默认超时配置:
+
+| 配置项            | 默认值       |
+| -------------- | --------- |
+| `ReadTimeout`  | **0**（无限） |
+| `WriteTimeout` | **0**（无限） |
+| `IdleTimeout`  | **0**（无限） |
+
+
+链路四：后端服务崩溃或无响应
+
+* 服务没有监听端口，或已挂掉。
+
+* 有时数据库连接池已耗尽或 Redis 卡死。
+
+链路五：负载过高 / 网络不通
+
+* 服务器 CPU / 内存使用率过高，响应变慢。
+
+* 网络断开、DNS 配置错误等
+
+配置说明：
+
+```
+nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+```
+
+* 作用：指定 Nginx 等待后端服务器响应的最大时间（单位为秒）。
+
+* 对应 Nginx 配置项：proxy_read_timeout
+
+* 典型用途：处理一些耗时较长的接口，比如视频转码、AI 推理、慢查询等。
+
+```
+nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+```
+
+当客户端发起请求，Ingress 会将请求转发到后端服务（你的 Go 服务）。 
+
+如果请求体较大、网络慢，或者是 POST/PUT 等带有 body 的请求，Ingress 需要一定时间将请求数据发送给后端。
+
+proxy-send-timeout 就是限制这个“发送过程”的最长时间，如果超时，就会中断连接并返回错误。
+
+
+
+# Nginx 413 Request Entity Too Large
 
 前端nginx配置、Ingress配置、服务端代码配置 三者保持一致。
 
@@ -69,6 +248,12 @@ nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 
 在容器的ingress配置与编辑中，找到便签与注解，键 `nginx.ingress.kubernetes.io/proxy-body-size` 值 64m。
 
+| 参数                      | 控制阶段              | 默认值 | 典型用途             |
+| ----------------------- | ----------------- | --- | ---------------- |
+| `proxy_connect_timeout` | 连接到后端的最大时间（TCP握手） | 60s | 后端服务繁忙或启动缓慢时     |
+| `proxy_send_timeout`    | 向后端发送请求数据的超时      | 60s | 请求体较大时（POST/PUT） |
+| `proxy_read_timeout`    | 从后端读取响应数据的超时      | 60s | 后端处理慢或响应大时       |
+| `send_timeout`          | 向客户端发送响应的超时时间     | 60s | 客户端接收慢时          |
 
 
 

@@ -220,7 +220,7 @@ sequenceDiagram
 
 ## 1.1 客户端请求发起全过程
 
-![img_1.png](./img/img_2.png)
+![img_1.png](./img/img_1.png)
 
 完整时序图：
 

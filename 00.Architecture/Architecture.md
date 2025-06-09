@@ -41,7 +41,7 @@ sequenceDiagram
 ```
 
 ## 1.1 客户端请求发起全过程
-![img_2.png](./img/img_2.png)
+![img_1.png](./img/img_2.png)
 
 完整时序图：
 
@@ -80,38 +80,120 @@ sequenceDiagram
 
 ## 1.2 DNS 域名解析流程
 
-![img_1.png](img/img_1.png)
+![img_2.png](img/img_2.png)
 
 时序图：
 
 ```
 sequenceDiagram
-    participant Client as 🧑 客户端浏览器/系统
-    participant LocalDNS as 🧰 本地 DNS 缓存
-    participant DNSResolver as 📡 递归 DNS 服务器（ISP 或企业）
-    participant Root as 🌐 根 DNS 服务器
-    participant TLD as 🏛 顶级域名服务器（.com）
+    participant Client as 🧑 客户端（浏览器/系统）
+    participant Hosts as 📓 hosts 文件
+    participant LocalCache as 🧰 本地缓存（系统/浏览器）
+    participant DNSResolver as 📡 递归 DNS（ISP 或 DoH/DoT）
+    participant Root as 🌐 根 DNS
+    participant TLD as 🏛 顶级域名（.com）
     participant Authoritative as 🧭 权威 DNS（example.com）
+    participant CNAME as 🔗 CNAME 跳转域名
 
-    Client->>LocalDNS: 查询 www.example.com
-    alt 缓存命中
-        LocalDNS-->>Client: 返回 IP 地址（缓存结果）
-    else 缓存未命中
-        LocalDNS->>DNSResolver: 转发 DNS 查询请求
+    Client->>Hosts: 查询 www.example.com 是否配置
+    alt hosts 命中
+        Hosts-->>Client: 返回 IP 地址（优先返回）
+    else hosts 未命中
+        Client->>LocalCache: 查询本地 DNS 缓存
+        alt 本地缓存命中
+            LocalCache-->>Client: 返回 IP 地址
+        else 缓存未命中
+            Client->>DNSResolver: 发起 DNS 查询请求（UDP 53，可能转 TCP）
 
-        DNSResolver->>Root: 请求 www.example.com
-        Root-->>DNSResolver: 返回 .com TLD 服务器地址
+            alt DNSResolver 缓存命中
+                DNSResolver-->>Client: 返回缓存 IP
+            else 递归查询过程
+                DNSResolver->>Root: 请求 www.example.com
+                Root-->>DNSResolver: 返回 .com TLD 地址
 
-        DNSResolver->>TLD: 请求 www.example.com
-        TLD-->>DNSResolver: 返回 example.com 权威服务器地址
+                DNSResolver->>TLD: 请求 www.example.com
+                TLD-->>DNSResolver: 返回 example.com 权威 DNS 地址
 
-        DNSResolver->>Authoritative: 请求 www.example.com
-        Authoritative-->>DNSResolver: 返回 www.example.com 的 IP
+                DNSResolver->>Authoritative: 请求 www.example.com
+                alt 返回 CNAME
+                    Authoritative-->>DNSResolver: 返回 CNAME = www.cdn.com
+                    DNSResolver->>CNAME: 继续请求 www.cdn.com
+                    CNAME-->>DNSResolver: 返回 www.cdn.com 的 IP
+                else 直接返回 A/AAAA 记录
+                    Authoritative-->>DNSResolver: 返回 IP 地址
+                end
 
-        DNSResolver-->>LocalDNS: 返回查询结果（并缓存）
-        LocalDNS-->>Client: 返回 IP 地址
+                DNSResolver-->>Client: 返回 IP（并缓存）
+
+            end
+        end
     end
 ```
+
+讲解：
+```
+为什么要进行 DNS 查询？
+
+当你在浏览器输入 www.example.com 时，计算机并不直接理解这个“域名”。
+
+它需要把这个域名翻译成对应的 IP 地址（比如 93.184.216.34）才能进行网络通信。
+
+这个翻译工作就是 DNS（域名系统） 的职责。
+
+整个 DNS 查询的过程：
+
+1. 通过浏览器输入 www.example.com，浏览器会先检查本地的 hosts 文件，看看是否配置了 www.example.com 的 IP 地址。
+
+如果 www.example.com 在 hosts 里有配置，那么系统会直接返回对应 IP，完全不会发起 DNS 查询。
+
+2. 如果 hosts 文件没有配置对应域名的 IP，则会查询本地 DNS 缓存，本地查询的过程包含多个缓存层级，分别包含应用层缓存（如浏览器）：Chrome、火狐 等浏览器本身就会缓存解析过的域名。
+
+，还有就是操作系统缓存：系统（如 Windows/macOS）维护一个 DNS 缓存，常通过 ipconfig /displaydns 查看。
+
+3. 当 hosts 文件 和  本地 DNS 缓存 都未命中时，则会发起 DNS 查询。但递归 DNS 服务器（如 运营商的 DNS） 也有 本地缓存机制。
+
+如果递归服务器之前查过 www.example.com，就可以直接从它的缓存返回结果，这会省去 Root/TLD/权威服务器 的所有步骤。
+
+4. 如果递归服务器未命中，则会从根服务器开始查询，跟服务器是互联网 DNS 系统的起点，相当于一个超大的导航员。
+
+如果根服务器没有找到，则会从 TLD 顶级域名服务器（Top-Level Domain）开始查询，如果不存在，TLD又会去找权威 DNS 服务器，权威 DNS（Authoritative）它是真正掌管 example.com 的 DNS 服务，比如由网站运营者或云服务商提供。
+
+这里需要注意的是，不同类型的查询可能走不同路径，如果实际 DNS 查询中涉及 CNAME 别名，会先查出真实域名，再继续解析，A 记录 是常见查询的 IPv4 地址，AAAA 记录则是查询 IPv6 地址。
+
+
+5. 经过一系列查询操作，递归服务器把 IP 拿到手，先缓存一份以备下次查询，再返回给本地 DNS 缓存（系统），最终客户端程序（浏览器），浏览器就可以用这个 IP 去连接网站啦。
+
+
+为了更好的理解递归 DNS (Recursive Resolver)、根 DNS (Root Server)、顶级域名服务器(TLD Server)	、权威 DNS (Authoritative Server)，
+
+可以做一个通俗易懂+类比讲解：
+
+当你上网输入一个网址时（比如 www.example.com），为了找到它对应的 IP 地址，
+
+DNS 系统会从“能帮你打听的中介（递归 DNS）”，一路问到“真正掌管这个网址的人（权威 DNS）”，
+
+而中间还要经过“国家级地址簿（根 DNS）”和“后缀专管局（顶级域名服务器）”。
+
+
+总结一句话：
+
+浏览器不认识域名，得靠 DNS 把 www.example.com 转换成 IP 地址。
+
+这个过程像打电话找人，先问自己有没有号码，没有就一路问：根 → 顶级域名 .com → 权威DNS example.com → 最终拿到 IP！
+
+```
+
+四类 DNS 角色对比讲解
+
+| 名称                                   | 定义                                       | 类比                      | 举例                                        |
+| ------------------------------------ | ---------------------------------------- | ----------------------- | ----------------------------------------- |
+| **递归 DNS**<br>(Recursive Resolver)   | 你电脑请求的第一站，会帮你一路打听、递归查询直到拿到结果             | 🔍 贴心“中介”或“外卖骑手”        | 你家宽带运营商的 DNS，或 Cloudflare 的 `1.1.1.1`     |
+| **根 DNS**<br>(Root Server)           | DNS 系统的顶级入口点，告诉你“去哪个后缀管辖区查”              | 🌐 国家总档案馆               | 全球有 13 组，常返回 `.com` `.org` 等负责单位          |
+| **顶级域名服务器**<br>(TLD Server)          | 每个域名后缀的“管辖局”，告诉你 `example.com` 属于哪个权威服务器 | 🏛 ".com 管理局"、".cn 管理局" | `.com`、`.cn`、`.org` 对应的 TLD 服务器           |
+| **权威 DNS**<br>(Authoritative Server) | 实际掌管某个域名记录的服务器，**它说了算**                  | 🧭 “房主本人”               | example.com 设置的 DNS，如阿里云 DNS、Cloudflare 等 |
+
+
+
 
 ## 1.3 CDN 命中 + 回源 + 缓存更新流程
 

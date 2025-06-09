@@ -1,5 +1,185 @@
 ﻿时序图在线网址：https://mermaid.live
 
+
+# TCP 三次握手 四次挥手
+
+![tcp.png](img/tcp.png)
+
+时序图：
+
+```
+sequenceDiagram
+    participant Client as 🧑 Client（主动方）
+    participant Server as 🖥️ Server（被动方）
+
+    %% === 建立连接：三次握手 ===
+    Note over Client,Server: 🔐 TCP 三次握手 - 建立连接
+
+    Client->>Server: SYN (seq=x)
+    Note right of Client: SYN_SENT 状态
+
+    Server->>Client: SYN+ACK (seq=y, ack=x+1)
+    Note right of Server: SYN_RECEIVED 状态
+
+    Client->>Server: ACK (ack=y+1)
+    Note right of Client: ESTABLISHED 状态
+    Note right of Server: ESTABLISHED 状态
+
+    %% === 连接释放：四次挥手 ===
+    Note over Client,Server: 🔚 TCP 四次挥手 - 断开连接
+
+    Client->>Server: FIN (seq=u)
+    Note right of Client: FIN_WAIT_1 状态
+
+    Server->>Client: ACK (ack=u+1)
+    Note right of Server: CLOSE_WAIT 状态
+    Note right of Client: FIN_WAIT_2 状态
+
+    Server-->>Server: 应用层处理完业务，准备关闭连接...
+
+    Server->>Client: FIN (seq=v)
+    Note right of Server: LAST_ACK 状态
+
+    Client->>Server: ACK (ack=v+1)
+    Note right of Client: TIME_WAIT 状态（等待 2MSL）
+
+    Note right of Client: 最终进入 CLOSED 状态
+    Note right of Server: CLOSED 状态
+```
+
+
+讲解：
+
+```
+TCP 三次握手和四次挥手，是 TCP 协议中的重要步骤，是建立可靠连接和断开连接的必要步骤。
+
+TCP 三次握手，目的是在客户端与服务端之间建立可靠连接，确保双方都具备收发能力。
+
+TCP 四次挥手，目的是在双方都确认数据传输完成之后，优雅地释放连接。
+
+对于三次握手的每步解析：
+
+1、客户端发送 SYN：客户端发送 SYN 报文，seq=x，状态变为 SYN_SENT。
+
+2、服务端响应 SYN+ACK：服务端收到客户端 SYN，返回 SYN+ACK，seq=y，ack=x+1，状态变为 SYN_RECEIVED。
+
+3、客户端确认 ACK：客户端收到服务端 SYN+ACK，发送 ACK 报文，ack=y+1，状态变为 ESTABLISHED。
+
+三次握手确保了客户端和服务端都能“发”和“收”数据，防止“已失效连接的错误建立”。
+
+为什么三次握手而不是两次或者四次？
+
+假设是两次握手，服务端无法确认客户端是否已收到数据，从而无法确认连接是否正常。
+
+问题1：无法确认客户端能否接收数据
+
+服务端发了 SYN+ACK，以为连接建立好了，就开始发送数据。但客户端如果此时宕机了，或者网络异常，
+
+根本收不到 SYN+ACK 的数据，连接就会半开（服务端以为连接建立，客户端并不知道）。
+
+
+问题2：可能出现“伪连接”或“死连接”
+
+1、客户端发送了 SYN，但由于网络延迟或缓存，这个包在网络中“滞留”了；
+
+2、客户端后来超时没有响应，关闭了这次连接；
+
+3、这时候滞留的 SYN 到达了服务端；
+
+4、服务端发送 SYN+ACK 并进入 SYN_RECEIVED 状态，等待客户端 ACK；
+
+5、客户端此时并不打算建立连接，但服务端仍然认为连接正在建立中，占用了资源。
+
+三次握手中的最后一个 ACK 就是为了确认这个连接是“新的、真实的”连接，而不是“旧的、过期的 SYN 包”引发的伪连接。
+
+类比理解：三次握手就像打电话前的确认
+
+1、你打电话（拨号） → 第一次
+
+2、对方接起电话并说“喂？” → 第二次
+
+3、你说“喂，我能听见你” → 第三次
+
+如果你不说第三次，对方不知道你是否能听见，可能白说了一堆话（就像服务端发了数据却没人接收）。
+
+为什么不是四次？
+
+是因为三次刚好能确保双向通信（我能发、你能收，我也能收、你也能发），确认连接的请求是有效的、最新的。
+
+如果用四次，其实只会多一次确认，意义不大，反而浪费资源。
+
+
+对于四次挥手的每步解析：
+
+1、客户端发送 FIN：客户端发送 FIN 报文，seq=u，状态变为 FIN_WAIT_1，表示无数据要发了，请求关闭，
+
+2、服务端确认 ACK：服务端收到客户端 FIN，发送 ACK，ack=u+1，服务端状态变为 CLOSE_WAIT。
+
+3、服务端发送 FIN：应用层确认业务完成，准备关闭连接，发送 FIN 报文，seq=v，状态变为 LAST_ACK。
+
+4、客户端确认 ACK：客户端收到服务端 FIN，发送 ACK，ack=v+1，客户端状态变为 TIME_WAIT（等待 2 倍 MSL，防止丢包），最终变为 CLOSED。
+
+为什么需要四次挥手？
+
+因为 TCP 是全双工通信协议，关闭连接必须确保客户端和服务端都完成数据传输和确认。因此每一端都需单独发送 FIN 和 ACK。
+
+TIME_WAIT 状态的作用是什么？
+
+确保最后的 ACK 能被服务端接收（防止 ACK 丢失导致对方重发 FIN）；
+
+防止“旧连接残留数据”污染后续连接；持续时间为 2×MSL（Maximum Segment Lifetime，报文最大生存时间）。
+
+```
+
+术语：
+
+* SYN:  Synchronize Sequence，表示“开始建立连接”，用于初始化连接。
+
+* SYS_SENT（主动关闭方）：表示客户端已经发送了 SYN 请求，等待服务器确认（SYN+ACK）。
+
+* SYN_RECEIVED（被动关闭方）：表示服务端已经收到客户端的 SYN 请求，等待客户端确认（ACK）。
+
+* FIN：Finish，表示“我已经没有数据要发了”，请求断开连接。
+
+* ACK：Acknowledgment，表示“我已收到数据”，用于确认数据传输。
+
+* FIN_WAIT_1（主动关闭方）：表示客户端已经发送了 FIN 请求，等待服务器确认（ACK）这个请求。
+
+* FIN_WAIT_2（被动关闭方）：表示客户端已经收到了服务端的 ACK，但还在等待服务端也发送 FIN，即对方业务未完全关闭。
+
+* LAST_ACK（被动关闭方）：表示服务端已经发出了自己的 FIN，但还在等待客户端的 ACK。
+
+* TIME_WAIT（主动关闭方）：表示客户端已经发出 ACK，但要等待一段时间（通常 2×MSL）后，才能完全关闭连接。
+
+
+三次握手：
+
+| 第几次          | 作用             | 解决什么问题             |
+| ------------ | -------------- | ------------------ |
+| 第一次（SYN）     | 客户端请求建立连接      | 告诉服务端我准备好了         |
+| 第二次（SYN+ACK） | 服务端响应并表明也准备好了  | 告诉客户端“我能收你数据并能发”   |
+| 第三次（ACK）     | 客户端确认收到了服务端的响应 | 确认服务端能“收发”数据、连接没过期 |
+
+
+四次挥手状态：
+
+| 状态           | 常见问题         | 应对方案                |
+| ------------ | ------------ | ------------------- |
+| `TIME_WAIT`  | 高并发下端口被占满    | 短连接、端口复用、优化内核参数（慎用） |
+| `FIN_WAIT_2` | 卡住连接未释放      | 检查服务端是否未正常发送 FIN    |
+| `LAST_ACK`   | 持续不释放        | 确认服务端是否正确关闭连接       |
+| `CLOSE_WAIT` | 服务端未调用 close | 检查应用逻辑是否“忘记”释放资源    |
+
+
+三次握手四次挥手的对比：
+
+| 阶段   | 步数 | 报文类型                  | 状态变化                 | 目的     |
+| ---- | -- | --------------------- | -------------------- | ------ |
+| 三次握手 | 3  | SYN → SYN+ACK → ACK   | CLOSED → ESTABLISHED | 建立可靠连接 |
+| 四次挥手 | 4  | FIN → ACK → FIN → ACK | ESTABLISHED → CLOSED | 优雅断开连接 |
+
+
+
 # 完整 http 请求流程
 
 ![img.png](img/img.png)
@@ -244,6 +424,16 @@ TLD 会告诉递归服务器：`example.com` 的权威 DNS 服务器地址。
 浏览器不认识域名，必须借助 DNS 查询系统，从本地查起，一路打听到底，最终获取 IP 地址。
 这个过程就像是从“自己→中介→国家导航→专管局→房东本人”，层层追踪，直到找到目标网站的“家门号”。
 ```
+补充知识点：
+
+| 阶段                   | 说明                                 |
+| -------------------- | ---------------------------------- |
+| **本地 DNS 缓存**        | 操作系统或浏览器缓存，若命中可快速返回                |
+| **递归 DNS（Resolver）** | 通常由 ISP、公司或你设置的公共 DNS（如 8.8.8.8）提供 |
+| **根 DNS**            | 顶级 DNS 根服务器，共 13 个镜像服务器组           |
+| **TLD 服务器**          | 负责 `.com`、`.net`、`.cn` 等顶级域名       |
+| **权威 DNS**           | 最终由域名拥有者（如 example.com）设定 IP 记录    |
+
 
 ## 1.3 CDN 命中 + 回源 + 缓存更新流程
 

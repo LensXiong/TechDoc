@@ -518,29 +518,49 @@ sequenceDiagram
 sequenceDiagram
     participant Client as 🧑 客户端
     participant Ingress as 🚪 Ingress Nginx
+    participant Auth as 🔐 鉴权服务
     participant Service as 🧠 后端服务（Pod）
     participant Redis as ⚡ Redis 缓存
-    participant DB as 💾 MySQL 数据库
+    participant DBRead as 📘 MySQL 只读库
+    participant DBWrite as ✏️ MySQL 主写库
     participant MQ as 📬 消息队列（Kafka）
+    participant Consumer as 🛠️ 异步任务消费者
+    participant Logger as 📑 日志/链路追踪系统
 
-    Client->>Ingress: 发送请求
+    Client->>Ingress: 发起请求（带 Token）
+    Ingress->>Auth: 鉴权验证 Token
+    Auth-->>Ingress: 返回用户信息 / 权限
     Ingress->>Service: 转发请求
+
+    Note over Service: QPS 高，优先读缓存
+
     Service->>Redis: 查询缓存
-    alt 缓存命中
-        Redis-->>Service: 返回数据
+    alt 命中
+        Redis-->>Service: 返回缓存数据
+        Service->>Logger: 写入请求链路信息
         Service-->>Ingress: 响应结果
         Ingress-->>Client: 返回数据
-    else 缓存未命中
-        Service->>DB: 查询数据库
-        DB-->>Service: 返回结果
-        Service->>Redis: 缓存写入（设置过期）
+    else 未命中
+        Service->>DBRead: 查询只读库
+        DBRead-->>Service: 返回查询结果
+        Service->>Redis: 写入缓存（设置过期时间，防止雪崩）
+        Service->>Logger: 写入请求链路信息
         Service-->>Ingress: 返回数据
         Ingress-->>Client: 返回数据
     end
 
-    Note over Service, MQ: 如果为写操作或耗时任务
-    Service->>MQ: 投递异步消息
+    Note over Service: 如果是写操作（例如：提交订单、注册账号等）
 
+    Service->>DBWrite: 更新主库数据（同步写）
+    Service->>Redis: 删除或更新缓存（避免脏读）
+    Service->>MQ: 异步投递任务（如：发送短信、发邮件、埋点日志）
+    Service->>Logger: 记录写操作链路
+
+    Note over MQ, Consumer: 消息队列削峰 + 解耦
+
+    MQ-->>Consumer: 消费任务
+    Consumer->>Logger: 写入任务执行日志
+    Consumer->>外部服务: 调用（如：短信、第三方接口）
 ```
 
 ## 1.7 访问 MySQL 的详细流程

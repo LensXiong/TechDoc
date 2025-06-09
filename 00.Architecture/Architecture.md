@@ -1,6 +1,6 @@
 ﻿时序图在线网址：https://mermaid.live
 
-# 负载均衡SLB L4层转发和L7层转发
+# 负载均衡SLB L4和L7
 
 ![slb.png](img/slb.png)
 

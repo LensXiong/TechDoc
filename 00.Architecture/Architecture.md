@@ -1,5 +1,69 @@
 ﻿时序图在线网址：https://mermaid.live
 
+# 健康检查的三种方式
+
+![health_check.png](img/health_check.png)
+
+
+三者对比：
+
+| 检查方式       | 层级  | 检查内容             | 适用场景                   |
+| ---------- | --- | ---------------- | ---------------------- |
+| HTTP\_GET  | 应用层 | HTTP 状态码、响应内容    | Web 服务、微服务、HTTP API    |
+| TCP\_CHECK | 传输层 | 端口是否监听、是否能连接     | 数据库、RPC、MQ、非 HTTP 服务   |
+| SSL\_GET   | 应用层 | HTTPS 状态码、SSL 握手 | HTTPS 服务、带证书验证的 Web 服务 |
+
+最佳实践：
+
+| 场景                        | 推荐方式       | 原因说明                |
+| ------------------------- | ---------- | ------------------- |
+| 微服务 API                   | HTTP\_GET  | 可自定义返回业务状态（如内存是否正常） |
+| Redis/MQ/MySQL 等非 HTTP 服务 | TCP\_CHECK | 只需判断端口通不通，无需业务响应    |
+| HTTPS 服务                  | SSL\_GET   | 保证 SSL 握手成功，避免证书问题  |
+
+配置建议参考：
+
+Nginx 每 5 秒向每台服务器发送 GET `http://10.0.0.x:8080/health`
+
+若某台连续 3 次失败（如返回 500，超时），Nginx 会将其从 upstream 移除 ，当该节点连续 2 次成功（返回 200），才会恢复转发流量。
+
+```
+upstream backend {
+    server 10.0.0.1:8080;
+    server 10.0.0.2:8080;
+    keepalive 16;
+}
+
+server {
+    location / {
+        proxy_pass http://backend;
+        health_check interval=5 fails=3 passes=2 uri=/health;
+    }
+}
+```
+使用 stream 模块配置 TCP 健康检查：
+
+```
+stream {
+    upstream tcp_backend {
+        server 10.0.0.1:3306;  # 假设是 MySQL
+        server 10.0.0.2:3306;
+
+        check interval=3000 rise=2 fall=3 timeout=1000 type=tcp;
+    }
+
+    server {
+        listen 3307;
+        proxy_pass tcp_backend;
+    }
+}
+```
+
+
+
+
+
+
 # 负载均衡SLB L4和L7
 
 ![slb.png](img/slb.png)
@@ -459,6 +523,7 @@ TLD 会告诉递归服务器：`example.com` 的权威 DNS 服务器地址。
 浏览器不认识域名，必须借助 DNS 查询系统，从本地查起，一路打听到底，最终获取 IP 地址。
 这个过程就像是从“自己→中介→国家导航→专管局→房东本人”，层层追踪，直到找到目标网站的“家门号”。
 ```
+
 补充知识点：
 
 | 阶段                   | 说明                                 |

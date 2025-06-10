@@ -1,9 +1,36 @@
 ﻿时序图在线网址：https://mermaid.live
 
+
 # 健康检查的三种方式
 
 ![health_check.png](img/health_check.png)
 
+健康检查时序图：
+
+```
+sequenceDiagram
+    autonumber
+    participant SLB as Load Balancer（SLB）
+    participant WebServer as Backend Service
+
+    %% HTTP_GET 健康检查
+    Note over SLB, WebServer: HTTP_GET 健康检查：检查路径 /health 返回 HTTP 200
+    SLB->>WebServer: GET /health HTTP/1.1
+    WebServer-->>SLB: 200 OK（表示服务健康）
+
+    %% TCP_CHECK 健康检查
+    Note over SLB, WebServer: TCP_CHECK 健康检查：仅检查 TCP 端口是否能连接
+    SLB->>WebServer: TCP SYN（尝试连接端口）
+    WebServer-->>SLB: TCP SYN-ACK（端口可达）
+    SLB-->>WebServer: TCP ACK（连接成功后断开）
+
+    %% SSL_GET 健康检查
+    Note over SLB, WebServer: SSL_GET 健康检查：进行 SSL 握手并发送 GET 请求
+    SLB->>WebServer: SSL 握手请求（ClientHello）
+    WebServer-->>SLB: SSL 握手响应（ServerHello + Cert）
+    SLB->>WebServer: GET /health HTTPS
+    WebServer-->>SLB: 200 OK（证书有效且服务正常）
+```
 
 三者对比：
 
@@ -60,11 +87,77 @@ stream {
 ```
 
 
+# 负载均衡
 
+## 静态负载均衡
 
+静态负载均衡是指在系统部署之初就预先设定好负载的分发规则，不会随着后端节点运行状态的变化而动态调整。常见的静态策略包括：
 
+* 轮询（Round Robin）：请求按照顺序逐个分发到服务器列表中的节点上，适用于节点性能相对均衡的场景。
 
-# 负载均衡SLB L4和L7
+* 加权轮询（Weighted Round Robin）：在轮询基础上，根据不同服务器的性能设置权重，高性能节点接收更多请求。
+
+* 源地址哈希（Source IP Hash）：基于客户端 IP 计算哈希值后映射到具体服务器，用于实现会话粘性（Session Stickiness）。
+
+* 最小连接数（Least Connections）：将新请求分发给当前活跃连接数最少的服务器，适用于请求处理时长不均的系统。
+
+静态策略的优点在于简单、易于实现和维护，但缺乏自适应能力，面对服务性能波动、节点异常时处理能力有限。
+
+![slb_static.png](img/slb_static.png)
+
+时序图：
+
+```
+sequenceDiagram
+    autonumber
+    participant Client as Client
+    participant LB as Load Balancer (Nginx/SLB)
+    participant S1 as Server 1
+    participant S2 as Server 2
+    participant S3 as Server 3
+
+    Note over LB: 轮询（Round Robin）<br>按顺序轮流分发请求
+
+    Client->>LB: Request A
+    LB-->>S1: Forward to Server 1
+
+    Client->>LB: Request B
+    LB-->>S2: Forward to Server 2
+
+    Client->>LB: Request C
+    LB-->>S3: Forward to Server 3
+
+    Note over LB: 加权轮询（Weighted Round Robin）<br>根据权重比例分发请求（如 S1:2, S2:1）
+
+    Client->>LB: Request D
+    LB-->>S1: Forward to Server 1 (Weight 2)
+
+    Client->>LB: Request E
+    LB-->>S1: Forward to Server 1 (Weight 2)
+
+    Client->>LB: Request F
+    LB-->>S2: Forward to Server 2 (Weight 1)
+
+    Note over LB: 源地址哈希（Source IP Hash）<br>将客户端 IP Hash 映射到固定服务器
+
+    Client->>LB: Request from IP 192.168.1.10
+    LB-->>S2: Forward to Server 2 (hash(192.168.1.10))
+
+    Client->>LB: Request from IP 192.168.1.10
+    LB-->>S2: Still to Server 2
+
+    Note over LB: 最小连接数（Least Connections）<br>请求转发给当前连接数最少的服务器
+
+    S1-->LB: Active Connections = 10
+    S2-->LB: Active Connections = 3
+    S3-->LB: Active Connections = 6
+
+    Client->>LB: Request G
+    LB-->>S2: Forward to Server 2 (Least Conn)
+
+```
+
+## 负载均衡SLB L4和L7
 
 ![slb.png](img/slb.png)
 

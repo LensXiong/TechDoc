@@ -157,6 +157,46 @@ sequenceDiagram
 
 ```
 
+四种方式的对比：
+
+| 策略                   | 原理                    | 优点           | 适用场景           |
+| -------------------- | --------------------- | ------------ | -------------- |
+| Round Robin          | 依次轮流转发请求              | 简单高效         | 后端性能一致         |
+| Weighted Round Robin | 根据每个服务器权重转发请求         | 支持不同性能节点     | 服务器性能不均        |
+| IP Hash              | 根据客户端 IP 计算哈希分发到固定服务器 | 同一客户端保持会话一致性 | 登录会话、状态存储等需要粘性 |
+| Least Connections    | 转发到当前连接最少的服务器         | 自动趋于负载均衡     | 长连接/高负载波动应用    |
+
+
+使用方式配置（Nginx配置）:
+
+```
+# Round Robin（默认）
+upstream backend {
+    server 10.0.0.1;
+    server 10.0.0.2;
+}
+
+# Weighted Round Robin
+upstream backend {
+    server 10.0.0.1 weight=3;
+    server 10.0.0.2 weight=1;
+}
+
+# IP Hash
+upstream backend {
+    ip_hash;
+    server 10.0.0.1;
+    server 10.0.0.2;
+}
+
+# Least Connections（需要第三方模块）
+upstream backend {
+    least_conn;
+    server 10.0.0.1;
+    server 10.0.0.2;
+}
+```
+
 ## 负载均衡SLB L4和L7
 
 ![slb.png](img/slb.png)

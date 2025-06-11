@@ -26,6 +26,31 @@ docker load --input xxx_1.1.0.tar
 docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/xxxx/xxx:/opt/xxx/xxx/xxx xxx:1.1.0 /usr/sbin/init
 ```
 
+
+# qemu: uncaught target signal 11 (Segmentation fault) - core dumped
+
+![img.png](img/img.png)
+
+这个选项的作用:
+
+这是 Docker 针对 Apple Silicon（M1/M2/M3 芯片）用户提供的选项，用来通过 Rosetta 2 加速 x86_64 / amd64 架构镜像的运行。
+
+默认情况下，Apple Silicon 是 arm64 架构的，但很多 Docker 镜像（尤其是旧的、社区构建的）还是基于 x86_64 架构的。如果你运行这些镜像，会用到 QEMU 进行模拟，非常慢，甚至容易崩溃（如你遇到的 qemu: segmentation fault）。
+
+开启这个选项后，Docker 会使用 macOS 的 Rosetta 2 框架来模拟 amd64，性能更高，兼容性更强，也更稳定。
+
+
+开启这个选项后的好处:
+
+| 项目  | 效果                                |
+| --- | --------------------------------- |
+| 兼容性 | 更好地运行老旧的 amd64 镜像                 |
+| 性能  | 比 QEMU 快得多（接近原生）                  |
+| 稳定性 | 避免 `qemu: segmentation fault` 等问题 |
+| 自动  | Docker Desktop 会自动识别并启用 Rosetta   |
+
+
+
 # Apple M 系列（M1/M2/M3 芯片） 的 macOS 上遇到 Docker 无法启动
 
 Docker Desktop 卡在 "Starting..." 或打不开界面:

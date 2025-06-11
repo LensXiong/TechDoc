@@ -29,6 +29,7 @@ docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/
 
 # qemu: uncaught target signal 11 (Segmentation fault) - core dumped
 
+
 ![img.png](img/img.png)
 
 这个选项的作用:

@@ -36,7 +36,9 @@ docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/
 
 这是 Docker 针对 Apple Silicon（M1/M2/M3 芯片）用户提供的选项，用来通过 Rosetta 2 加速 x86_64 / amd64 架构镜像的运行。
 
-默认情况下，Apple Silicon 是 arm64 架构的，但很多 Docker 镜像（尤其是旧的、社区构建的）还是基于 x86_64 架构的。如果你运行这些镜像，会用到 QEMU 进行模拟，非常慢，甚至容易崩溃（如你遇到的 qemu: segmentation fault）。
+默认情况下，Apple Silicon 是 arm64 架构的，但很多 Docker 镜像（尤其是旧的、社区构建的）还是基于 x86_64 架构的。
+
+如果你运行这些镜像，会用到 QEMU 进行模拟，非常慢，甚至容易崩溃（如你遇到的 qemu: segmentation fault）。
 
 开启这个选项后，Docker 会使用 macOS 的 Rosetta 2 框架来模拟 amd64，性能更高，兼容性更强，也更稳定。
 
@@ -49,6 +51,10 @@ docker run --name xxx_xxx_1.1.0 --privileged=true -itd --restart=always -v /opt/
 | 性能  | 比 QEMU 快得多（接近原生）                  |
 | 稳定性 | 避免 `qemu: segmentation fault` 等问题 |
 | 自动  | Docker Desktop 会自动识别并启用 Rosetta   |
+
+![rosetta.png](img/rosetta.png)
+
+注意：Rosetta 在 macOs14.1 及更高版本上默认启用。相关以下版本中可能在配置中无法显示。
 
 
 

@@ -562,3 +562,145 @@ hotlist_names本身就是keyword类型，它天生支持term和terms，可以直
 * keyword	存储标签、分类、榜单名等，用来做过滤
 * text	存储长文本，用于全文搜索
 * text+keyword	既能全文搜索，又能精确过滤，两者兼得
+
+
+# 最佳实践
+
+功能：
+
+将一组 Doc 类型的数据（比如抖音作品）分批写入 Elasticsearch 中指定的 index。 
+
+每批1000条，提高性能并避免请求过大。
+
+```
+
+type DouyinWorks struct {
+	Client *elasticsearch.Client
+}
+
+
+func (d *DouyinWorks) Insert(ctx context.Context, index string, docs []Doc) error {
+	insertImpl := func(batch []string) error {
+		body := strings.Join(batch, "\n") + "\n"
+		resp, err := d.Client.Bulk(strings.NewReader(body),
+			d.Client.Bulk.WithFilterPath("took", "errors", "items.*.error"))
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.IsError() {
+			return fmt.Errorf("bulk request failed: %s", resp.String())
+		}
+
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		var res map[string]interface{}
+		if err := json.Unmarshal(content, &res); err != nil {
+			return fmt.Errorf("unmarshal bulk response failed: %w", err)
+		}
+		if errorsFlag, ok := res["errors"].(bool); ok && errorsFlag {
+			return fmt.Errorf("bulk response has errors: %s", content)
+		}
+		return nil
+	}
+
+	batch := make([]string, 0, 2000)
+	for _, doc := range docs {
+		meta, _ := json.Marshal(map[string]interface{}{
+			"index": map[string]interface{}{
+				"_index": index,
+				"_id":    doc.ArtworkId,
+			},
+		})
+		data, _ := json.Marshal(doc)
+
+		batch = append(batch, string(meta))
+		batch = append(batch, string(data))
+
+		// 每 1000 个文档提交一次
+		if len(batch) >= 2000 {
+			if err := insertImpl(batch); err != nil {
+				return err
+			}
+			batch = batch[:0]
+		}
+	}
+
+	// 提交剩余文档
+	if len(batch) > 0 {
+		if err := insertImpl(batch); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+```
+
+重点理解：
+
+* 定义内部函数 insertImpl 匿名函数，用来处理一次 Elasticsearch Bulk 批量插入请求。
+* batch 是一个字符串切片，里面交替存储，元信息（如 _index, _id），实际文档数据。
+* 每对（meta + doc）构成一个 Elasticsearch 的 Bulk 插入指令。
+* `+` "\n" 是必须的，Elasticsearch 要求每行一个 JSON 对象，并且最后要多一个换行。
+* 使用 Elasticsearch Go SDK 的 Bulk API 执行插入，加了 `FilterPath`，表示只返回关键信息，`took:` 执行耗时 `errors:` 是否有错误 `items.*.error:` 每个 item 是否有错误信息.
+
+
+构造的的数据：
+
+* 第一行是元数据，告诉 ES 要将后面的文档插入哪个索引、用哪个 _id。
+* 第二行是真正的数据，即 Doc 对象序列化后的 JSON 内容。
+
+```
+{"index": {"_index": "douyin_works", "_id": "7511608807064161555"}}
+{"artwork_id": "7511608807064161555", "video_url": "...", "title": "...", "cover_url": "...", "ctime": "...", "utime": "...", "operator": "..."}
+```
+
+Elasticsearch 索引数据：
+```
+{
+    "took": 0,
+    "timed_out": false,
+    "_shards": {
+        "total": 1,
+        "successful": 1,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 835,
+            "relation": "eq"
+        },
+        "max_score": 1.0,
+        "hits": [
+            {
+                "_index": "douyin_works",
+                "_id": "7511608807064161555",
+                "_score": 1.0,
+                "_source": {
+                    "artwork_id": "7511608807064161555",
+                    "video_url": "https://www.douyin.com/video/7511608807064161555",
+                    "title": "80斤重妙龄土猪去大骨再腌制",
+                    "cover_url": "xxx/61bdb8c898c3d150725b4ece4c9d0fb5.jpg",
+                    "ctime": "2025-06-27 18:44:52",
+                    "utime": "2025-06-27 18:44:52",
+                    "operator": "system"
+                }
+            }
+        ]
+    }
+}
+```
+
+
+
+
+
+
+

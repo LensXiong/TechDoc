@@ -108,3 +108,29 @@ func nestedIntField(m map[string]interface{}, keys ...string) int64 {
 	}
 	return 0
 }
+
+
+// 使用 GJSON 替代 nestedStrField
+
+```
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/tidwall/gjson"
+)
+
+func GetFieldByGJSON(m map[string]interface{}, path string) string {
+	jsonBytes, _ := json.Marshal(m)
+	return gjson.GetBytes(jsonBytes, path).String()
+}
+
+func main() {
+	// 输出: 小明
+	fmt.Println(GetFieldByGJSON(data, "user.profile.name"))
+	// 输出: 10
+	fmt.Println(GetFieldByGJSON(data, "user.profile.age"))
+	// 输出: true
+	fmt.Println(GetFieldByGJSON(data, "user.profile.vip"))
+}
+```

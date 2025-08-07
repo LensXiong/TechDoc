@@ -51,6 +51,38 @@ sequenceDiagram
 
 ![grpc_02.png](grpc/grpc_02.png)
 
+```mermaid
+sequenceDiagram
+    participant Client as 客户端（浏览器/curl/前端）
+    participant Gateway as grpc-gateway（HTTP 反向代理）
+    participant JSONParser as JSON 解析器
+    participant ProtoBinder as Protobuf 构造器
+    participant GRPCStub as gRPC 客户端 Stub
+    participant ServerStub as gRPC 服务端 Stub
+    participant Business as 业务逻辑实现（Go/Java/...）
+
+    Client->>Gateway: 发起 HTTP 请求（POST /v1/account）
+    Gateway->>JSONParser: 解析 JSON Body
+    JSONParser-->>Gateway: 得到结构化数据（map[string]interface{}）
+
+    Gateway->>ProtoBinder: 将 JSON 映射到 Protobuf 消息结构
+    ProtoBinder->>ProtoBinder: 字段名校验 + 类型转换
+    ProtoBinder->>ProtoBinder: 检查 required/optional/oneof
+    ProtoBinder-->>Gateway: 得到 Protobuf 请求对象（如 *GetAccountRequest）
+
+    Gateway->>GRPCStub: 调用 gRPC 方法（stub 发送请求）
+    GRPCStub->>ServerStub: 使用 HTTP/2 发送 Protobuf 数据
+    ServerStub->>Business: 反序列化请求，调用 GetAccount(ctx, req)
+    Business-->>ServerStub: 返回业务处理结果
+    ServerStub-->>GRPCStub: 序列化 Protobuf 响应
+    GRPCStub-->>Gateway: 返回 gRPC 响应
+    Gateway->>Gateway: Protobuf 响应 转换为 JSON
+    Gateway-->>Client: 返回 HTTP JSON 响应
+```
+
+
+![grpc_gateway_01.png](grpc/grpc_gateway_01.png)
+
 说明：
 * grpc-gateway 充当“HTTP → gRPC 的中间层”
 * 前端无需了解 gRPC，只通过 RESTful API 调用

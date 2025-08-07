@@ -1,7 +1,9 @@
 ﻿
 # gRPC 调用流程图
 > 从客户端请求到服务端处理再到响应返回的完整过程。
-## 普通 gRPC	调用流程
+
+
+## 方式一：普通 gRPC	调用流程
 
 ```mermaid
 sequenceDiagram
@@ -24,7 +26,7 @@ sequenceDiagram
 ![grpc_01.png](grpc/grpc_01.png)
 
 
-## grpc-gateway	
+## 方式二：grpc-gateway	调用
 
 ```mermaid
 sequenceDiagram
@@ -55,7 +57,7 @@ sequenceDiagram
 * 适用于服务既提供给 Web App，也用于微服务间高效通信的场景
 
 
-## 双向流
+## 方式三：双向流
 
 ```mermaid
 sequenceDiagram
@@ -98,6 +100,150 @@ sequenceDiagram
 | 普通 gRPC      | 单请求单响应       | 单请求单响应      | 类似 REST 但用 Protobuf 和 HTTP/2 |
 | grpc-gateway | HTTP JSON 请求 | 自动转 gRPC 调用 | 前端友好，可双协议共存                  |
 | 双向流          | 多请求多响应       | 持续收发数据流     | 实时、复杂交互                      |
+
+
+## 方式四：Lua grpcaller 动态调用
+
+```mermaid
+sequenceDiagram
+    participant Go调用者
+    participant LVM
+    participant Lua执行器
+    participant grpcaller模块
+    participant gRPC客户端
+    participant gRPC服务端
+
+    Go调用者->>LVM: Call(ctx, "scripts/grpc/grpc.lua", "call", params)
+    LVM->>Lua执行器: 执行grpc.lua中的 call 函数
+    Lua执行器->>grpcaller模块: require("grpcaller")
+    Note right of grpcaller模块: 加载 Lua C 扩展 / 动态库
+
+    Lua执行器->>grpcaller模块: grpcaller.open(params.addr)
+    grpcaller模块->>gRPC客户端: 创建 gRPC channel（连接池、负载均衡）
+    grpcaller模块-->>Lua执行器: 返回 client 实例
+
+    Lua执行器->>gRPC客户端: client.call(method, metadata, params, timeout)
+    gRPC客户端->>gRPC服务端: 发起 gRPC 请求（携带 metadata 和参数）
+    gRPC服务端-->>gRPC客户端: 返回响应数据
+    gRPC客户端-->>Lua执行器: 返回 rep 数据
+
+    Lua执行器-->>LVM: rep
+    LVM-->>Go调用者: 返回结果
+```
+
+```mermaid
+sequenceDiagram
+    participant Lua执行器
+    participant grpcaller接口
+    participant Method解析器
+    participant ProtoDesc加载器
+    participant 参数编码器
+    participant Metadata构造器
+    participant gRPC Stub
+    participant gRPC网络IO
+    participant gRPC服务端
+
+    Lua执行器->>grpcaller接口: client.call(method, metadata, params, timeout)
+
+    grpcaller接口->>Method解析器: 拆解 "Service/Method" 名称
+    Method解析器-->>grpcaller接口: 返回 service_name, method_name
+
+    grpcaller接口->>ProtoDesc加载器: 加载 proto 描述（本地 JSON or 反射）
+    alt 使用预编译 Proto JSON
+        ProtoDesc加载器-->>grpcaller接口: 从本地缓存加载 proto desc
+    else 服务端支持反射
+        ProtoDesc加载器->>gRPC服务端: 使用 grpc reflection 获取 method schema
+        gRPC服务端-->>ProtoDesc加载器: 返回 method descriptor
+    end
+
+    grpcaller接口->>参数编码器: 使用 method descriptor，将 Lua table 编码为 protobuf
+    参数编码器-->>grpcaller接口: 返回请求二进制数据
+
+    grpcaller接口->>Metadata构造器: 转换 metadata 到 gRPC headers
+    Metadata构造器-->>grpcaller接口: 返回 headers
+
+    grpcaller接口->>gRPC Stub: 发起请求 (headers + request + timeout)
+
+    gRPC Stub->>gRPC网络IO: 发送数据 (HTTP/2)
+    gRPC网络IO->>gRPC服务端: 请求 protobuf
+    gRPC服务端-->>gRPC网络IO: 返回响应
+    gRPC网络IO-->>gRPC Stub: 响应数据帧
+    gRPC Stub-->>grpcaller接口: 返回 protobuf 响应数据
+
+    grpcaller接口->>ProtoDesc加载器: 获取响应 message 描述
+    grpcaller接口->>参数编码器: 解码 protobuf 响应为 Lua table
+    参数编码器-->>grpcaller接口: 返回 Lua 格式响应
+
+    grpcaller接口-->>Lua执行器: 返回 rep, nil
+```
+
+调用代码：
+```go
+func (this *Lvm) GrpcCall(ctx context.Context, addr string, method string, params map[string]interface{}, timeout int) (interface{}, error) {
+	m := map[string]interface{}{
+		"addr":   addr,
+		"method": method,
+		"metadata": map[string]interface{}{
+			"trace_id":   global.GetTraceId(ctx),
+			"user_id":    xxxx,
+			"User-Agent": "mkt-xxx",
+		},
+		"params":  params,
+		"timeout": timeout,
+	}
+	reply, err := this.Call(ctx, "scripts/grpc/grpc.lua", "call", m)
+	if err != nil {
+		return nil, err
+	}
+	if reply.Code != 0 {
+		return nil, fmt.Errorf("[%d][%s]%s", reply.Code, reply.Msg, reply.Reason)
+	}
+	return reply.Data, nil
+}
+````
+
+```lua
+local grpcaller = require("grpcaller")
+
+function call(params)
+    local client,err = grpcaller.open(params.addr)
+    if(err~=nil) then
+        return nil,err
+    end
+    local rep,err = client.call(params.method,params.metadata,params.params,params.timeout)
+    if(err~=nil) then
+        return nil,err
+    end
+    return rep,nil
+end
+```
+
+Go 通过 Lua 执行器调用 gRPC:
+
+![grpc_lua_01.png](grpc/grpc_lua_01.png)
+
+Lua 执行器通过 grpcaller 调用 gPRC:
+
+![grpc_lua_02.png](grpc/grpc_lua_02.png)
+
+概览对比表：四种调用方式的核心区别
+
+| 特性 / 模式             | Lua 脚本动态调用       | Go 强类型调用            | gRPC-Gateway（REST 转 gRPC） | gRPC 双向流            |
+| ------------------- | ---------------- | ------------------- | ------------------------- | ------------------- |
+| **语言支持**            | Lua（通过 grpcaller 封装） | Go（静态语言）            | 前端 HTTP（任意语言）             | 主要 Go、Java、Python 等 |
+| **类型安全**            | ❌ 弱类型（动态传 map）   | ✅ 强类型（编译时检查）        | ❌ 弱类型（JSON → Protobuf）    | ✅ 强类型               |
+| **是否依赖 proto 编译**   | ⚠️ 可选，用反射或 ProtoDesc | ✅ 必须预编译 .proto      | ✅ 必须预编译 .proto + 注解       | ✅ 必须预编译             |
+| **是否用 Protobuf 协议** | ✅ 是              | ✅ 是                 | ✅ 后端是                     | ✅ 是                 |
+| **使用协议**            | HTTP/2 + Protobuf | HTTP/2 + Protobuf   | HTTP/1.1 or HTTP/2 + JSON | HTTP/2 + Protobuf   |
+| **接口调用方式**          | 反射式、方法名 + 参数 map 调用 | Stub 接口直接调用         | REST API（POST/GET）        | 数据流持续读写             |
+| **接入方便性**           | ✅ 灵活嵌入脚本、动态性强    | ⚠️ 需要 proto 编译、静态绑定 | ✅ 对前端极友好                  | ❌ 不适合浏览器            |
+| **适用场景**            | 动态中转、脚本调度、热更     | 内部服务强约束通信           | 对外提供 REST API             | 流式传输，如聊天/实时日志       |
+| **性能**              | 中等               | 高性能                 | 中等（JSON 序列化开销）            | 高（流式可复用连接）          |
+| **错误处理能力**          | 手动处理错误码、反射结果     | gRPC Code + Typed Error | HTTP Code + JSON 错误信息     | gRPC Code，错误流通知     |
+| **连接复用/连接池支持**      | 视 `grpcaller` 实现而定 | ✅ 支持连接复用            | 网关内部转发连接                  | ✅ 支持长连接             |
+
+
+
 
 # gRPC 使用
 

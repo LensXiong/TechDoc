@@ -23,9 +23,6 @@ sequenceDiagram
     Stub-->>Client: 反序列化为 response 结构体
 ```
 
-![grpc_01.png](grpc/grpc_01.png)
-
-
 ## 方式二：grpc-gateway	调用
 
 ```mermaid
@@ -48,8 +45,6 @@ sequenceDiagram
     ClientStub-->>Gateway: 反序列化为 JSON
     Gateway-->>RESTClient: 返回 HTTP JSON 响应
 ```
-
-![grpc_02.png](grpc/grpc_02.png)
 
 ```mermaid
 sequenceDiagram
@@ -80,8 +75,6 @@ sequenceDiagram
     Gateway-->>Client: 返回 HTTP JSON 响应
 ```
 
-
-![grpc_gateway_01.png](grpc/grpc_gateway_01.png)
 
 说明：
 * grpc-gateway 充当“HTTP → gRPC 的中间层”
@@ -118,8 +111,6 @@ sequenceDiagram
     Network-->>ServerStub: 通知流关闭
 ```
 
-![grpc_03.png](grpc/grpc_03.png)
-
 应用场景：
 * 聊天系统
 * 实时语音识别（客户端不断上传音频，服务端实时返回文本）
@@ -135,6 +126,7 @@ sequenceDiagram
 
 
 ## 方式四：Lua grpcaller 动态调用
+Go 通过 Lua 执行器调用 gRPC:
 
 ```mermaid
 sequenceDiagram
@@ -162,6 +154,8 @@ sequenceDiagram
     Lua执行器-->>LVM: rep
     LVM-->>Go调用者: 返回结果
 ```
+
+Lua 执行器通过 grpcaller 调用 gPRC:
 
 ```mermaid
 sequenceDiagram
@@ -249,14 +243,6 @@ function call(params)
     return rep,nil
 end
 ```
-
-Go 通过 Lua 执行器调用 gRPC:
-
-![grpc_lua_01.png](grpc/grpc_lua_01.png)
-
-Lua 执行器通过 grpcaller 调用 gPRC:
-
-![grpc_lua_02.png](grpc/grpc_lua_02.png)
 
 概览对比表：四种调用方式的核心区别
 

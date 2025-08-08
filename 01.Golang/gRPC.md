@@ -289,3 +289,59 @@ init:
   --grpc-gateway_out . --grpc-gateway_opt paths=source_relative \
   ./api/fund/fund.proto
 ```
+
+
+# Go 是如何让 Lua 支持 grpcaller 模块的？
+
+```mermaid
+sequenceDiagram
+    %% Participants
+    participant GoApp as 🟦 Go 应用
+    participant Embed as 📦 go:embed (lvm_fe.wasm)
+    participant Wazero as 🧠 Wazero Runtime
+    participant WasmMod as 🧩 Lua VM 模块
+    participant LuaScript as 📜 Lua 脚本逻辑
+    participant HostGrpcCall as 🔌 Go: grpcaller.call()
+    participant GRPCNet as 📡 gRPC 网络通信
+    participant GRPCServer as 🟨 gRPC 远端服务
+
+    %% Embed & Setup
+    GoApp->>Embed: 加载 lvm_fe.wasm ([]byte)
+    GoApp->>Wazero: 创建 Runtime（NewRuntime）
+    GoApp->>Wazero: 注册 Host 模块 "net"\n暴露函数 grpcaller.call()
+    Wazero->>Wazero: 注册函数到调用表
+
+    %% Register WASI
+    GoApp->>Wazero: 加载 wasi_snapshot_preview1
+
+    %% Instantiate Multiple Workers
+    loop for each worker (parallelism N)
+        GoApp->>Wazero: 实例化 Wasm 模块 (InstantiateWithConfig)
+        Wazero->>WasmMod: 初始化 Wasm（_initialize）
+        GoApp->>GoApp: 保存到 worker 池（channel）
+    end
+
+    %% 执行一个 Lua 脚本逻辑
+    GoApp->>WasmMod: 调用导出函数 call(ptr, len)
+    GoApp->>WasmMod: malloc 分配内存，写入 JSON 请求
+    WasmMod->>LuaScript: 执行 call(content)
+
+    %% Lua 中调用 grpcaller 模块
+    Note right of LuaScript: Lua 执行<br>`grpcaller.call(method, metadata, params)`
+    LuaScript->>HostGrpcCall: 调用 host function grpcaller.call()
+    HostGrpcCall->>GRPCNet: 建立连接，发送 gRPC 请求
+    GRPCNet->>GRPCServer: 调用实际服务端（如 GetUser）
+    GRPCServer-->>GRPCNet: 返回响应
+    GRPCNet-->>HostGrpcCall: 响应解码为 JSON
+    HostGrpcCall-->>LuaScript: 返回响应结果
+
+    %% Lua 脚本处理完
+    LuaScript-->>WasmMod: 将响应写入内存
+    WasmMod-->>GoApp: 返回响应位置（ptr, len）
+    GoApp->>WasmMod: 读取内存并反序列化 JSON
+    GoApp-->>User: 返回最终结果（Lua 调用结果）
+
+```
+
+
+

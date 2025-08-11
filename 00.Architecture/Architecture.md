@@ -1,5 +1,74 @@
 ﻿时序图在线网址：https://mermaid.live
 
+# HTTP请求全链路时序图
+```mermaid
+sequenceDiagram
+    autonumber
+
+    participant Client as 浏览器/客户端
+    participant DNS as DNS解析
+    participant Gateway as 负载均衡 / 反向代理
+    participant GoApp as Go应用(main进程)
+    participant Router as 路由/中间件
+    participant Service as Service层
+    participant Biz as 业务逻辑层
+    participant LuaWASM as Lua/WASM脚本执行模块
+    participant Data as 数据层
+    participant Cache as 缓存(Redis)
+    participant DB as 关系型数据库(MySQL/Postgres)
+    participant Mongo as MongoDB
+    participant ES as Elasticsearch
+    participant GRPC as gRPC服务
+    participant Third as 第三方服务
+
+    Client->>DNS: 域名解析
+    DNS-->>Client: 返回IP
+    Client->>Gateway: 发起HTTP请求
+    Gateway->>GoApp: 转发请求
+
+    GoApp->>Router: 路由匹配
+    Router->>Service: 调用接口实现
+    Service->>Biz:执行业务逻辑
+
+    %% Lua/WASM 脚本调用
+    Biz->>LuaWASM: 调用Lua脚本执行模块
+    LuaWASM-->>Biz: 返回脚本执行结果
+
+    Biz->>Data: 访问数据层
+    Data->>Cache: 查询缓存
+    alt 缓存命中
+        Cache-->>Data: 返回缓存
+    else
+        Data->>DB: 查询数据库
+        DB-->>Data: 返回结果
+        Data->>Cache: 写缓存
+    end
+
+    opt 搜索
+        Data->>ES: 查询搜索引擎
+        ES-->>Data: 返回结果
+    end
+
+    opt gRPC调用
+        Biz->>GRPC: 调用微服务
+        GRPC-->>Biz: 返回结果
+    end
+
+    opt 第三方服务
+        Biz->>Third: 调用第三方API
+        Third-->>Biz: 返回结果
+    end
+
+    Data-->>Biz: 返回数据
+    Biz-->>Service: 返回业务结果
+    Service-->>Router: 返回响应
+    Router-->>GoApp: 序列化响应
+    GoApp-->>Gateway: 返回HTTP响应
+    Gateway-->>Client: 返回数据
+    Note over Client: 页面渲染/数据展示
+```
+
+
 # Go 应用的启动与注册(Kratos+Google Wire)
 
 * 基于 Kratos 微服务框架，结合 Google Wire 实现强类型依赖注入，采用 Clean Architecture

@@ -68,6 +68,14 @@ sequenceDiagram
     Note over Client: 页面渲染/数据展示
 ```
 
+架构说明：
+* 微服务架构的请求调用链路，涵盖客户端访问、网络层安全、后端服务处理、缓存优化、数据库访问、动态脚本扩展、微服务通信及第三方服务调用。
+* 设计清晰分层，职责明确，便于扩展与维护。
+* LuaWASM模块让业务逻辑更加灵活，方便快速变更规则而不重启服务。
+* 缓存和多数据库设计提升访问效率和数据结构灵活度。
+* gRPC和第三方API集成支持复杂分布式业务场景。
+* LuaWASM模块：业务逻辑中某些复杂的计算、动态规则或可扩展脚本，调用内嵌的 Lua脚本执行模块（通过WASM绑定，运行Lua代码）。 LuaWASM模块执行脚本并返回结果给业务层，支持动态灵活的业务调整。 这样设计让核心业务逻辑既能用Go高效实现，也能用Lua快速灵活配置。
+
 
 # Go 应用的启动与注册(Kratos+Google Wire)
 
@@ -149,6 +157,71 @@ Clean Architecture 分层说明：
         │ internal/data: 封装 DB/Redis/ES 等资源与 DAO 层调用 │
         └──────────────────────────────────────────────────────┘
 ```
+
+```meraid
+sequenceDiagram
+    autonumber
+    participant Client as 客户端
+    participant Server as cmd/service (入口)
+    participant Middleware as 中间件 (Auth/Access/Recovery)
+    participant Service as internal/service (接口层)
+    participant Business as internal/business (业务层)
+    participant LuaWASM as Lua脚本执行模块
+    participant Data as internal/data (数据层)
+    participant DB as MySQL/Redis/ES
+    participant ThirdAPI as 外部API(gRPC/HTTP)
+
+    %% 公共入口
+    Client->>Server: HTTP/gRPC 请求
+    Server->>Middleware: 加载配置 & 启动中间件
+    Middleware->>Service: 请求路由到对应 Service 模块
+
+    %% hotlist 模块
+    alt Hotlist 接口
+        Service->>Business: 调用 hotlist 业务逻辑
+        Business->>LuaWASM: 调用 Lua 脚本执行模块 (辅助业务计算/规则)
+        LuaWASM-->>Business: 返回 Lua 脚本执行结果
+        Business->>Data: 读取热门榜单数据
+        Data->>DB: 查询 ES 热门榜单索引
+        DB-->>Data: 返回热门榜单结果
+        Data->>ThirdAPI: （可选）调用外部榜单服务
+        ThirdAPI-->>Data: 返回榜单附加信息
+        Data-->>Business: 返回组合数据
+        Business-->>Service: 返回热点榜单响应
+        Service-->>Client: JSON 数据
+    end
+
+    %% user 模块
+    alt User 接口
+        Service->>Business: 调用 user 业务逻辑
+        Business->>LuaWASM: 调用 Lua 脚本执行模块 (动态业务逻辑/校验)
+        LuaWASM-->>Business: 返回 Lua 脚本执行结果
+        Business->>Data: 查询用户信息
+        Data->>DB: MySQL 获取用户资料
+        DB-->>Data: 返回用户数据
+        Data->>ThirdAPI: 调用授权/会员状态接口
+        ThirdAPI-->>Data: 返回授权结果
+        Data-->>Business: 返回用户完整信息
+        Business-->>Service: 返回用户数据响应
+        Service-->>Client: JSON 数据
+    end
+
+    %% ranking 模块
+    alt Ranking 接口
+        Service->>Business: 调用 ranking 业务逻辑
+        Business->>LuaWASM: 调用 Lua 脚本执行模块 (辅助计算/业务规则)
+        LuaWASM-->>Business: 返回 Lua 脚本执行结果
+        Business->>Data: 查询排名数据
+        Data->>DB: MySQL/ES 获取排名信息
+        DB-->>Data: 返回排名数据
+        Data->>ThirdAPI: 调用外部排名计算服务
+        ThirdAPI-->>Data: 返回计算后的排名
+        Data-->>Business: 返回排名结果
+        Business-->>Service: 返回排名响应
+        Service-->>Client: JSON 数据
+    end
+```
+
 
 部分函数：
 

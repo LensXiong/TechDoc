@@ -162,72 +162,6 @@ Clean Architecture 分层说明：
 ```
 
 时序链路图：
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as 客户端
-    participant Server as cmd/service (入口)
-    participant Middleware as 中间件 (Auth/Access/Recovery)
-    participant Service as internal/service (接口层)
-    participant Business as internal/business (业务层)
-    participant LuaWASM as Lua脚本执行模块
-    participant Data as internal/data (数据层)
-    participant DB as MySQL/Redis/ES
-    participant ThirdAPI as 外部API(gRPC/HTTP)
-
-    %% 公共入口
-    Client->>Server: HTTP/gRPC 请求
-    Server->>Middleware: 加载配置 & 启动中间件
-    Middleware->>Service: 请求路由到对应 Service 模块
-
-    %% hotlist 模块
-    alt Hotlist 接口
-        Service->>Business: 调用 hotlist 业务逻辑
-        Business->>LuaWASM: 调用 Lua 脚本执行模块 (辅助业务计算/规则)
-        LuaWASM-->>Business: 返回 Lua 脚本执行结果
-        Business->>Data: 读取热门榜单数据
-        Data->>DB: 查询 ES 热门榜单索引
-        DB-->>Data: 返回热门榜单结果
-        Data->>ThirdAPI: （可选）调用外部榜单服务
-        ThirdAPI-->>Data: 返回榜单附加信息
-        Data-->>Business: 返回组合数据
-        Business-->>Service: 返回热点榜单响应
-        Service-->>Client: JSON 数据
-    end
-
-    %% user 模块
-    alt User 接口
-        Service->>Business: 调用 user 业务逻辑
-        Business->>LuaWASM: 调用 Lua 脚本执行模块 (动态业务逻辑/校验)
-        LuaWASM-->>Business: 返回 Lua 脚本执行结果
-        Business->>Data: 查询用户信息
-        Data->>DB: MySQL 获取用户资料
-        DB-->>Data: 返回用户数据
-        Data->>ThirdAPI: 调用授权/会员状态接口
-        ThirdAPI-->>Data: 返回授权结果
-        Data-->>Business: 返回用户完整信息
-        Business-->>Service: 返回用户数据响应
-        Service-->>Client: JSON 数据
-    end
-
-    %% ranking 模块
-    alt Ranking 接口
-        Service->>Business: 调用 ranking 业务逻辑
-        Business->>LuaWASM: 调用 Lua 脚本执行模块 (辅助计算/业务规则)
-        LuaWASM-->>Business: 返回 Lua 脚本执行结果
-        Business->>Data: 查询排名数据
-        Data->>DB: MySQL/ES 获取排名信息
-        DB-->>Data: 返回排名数据
-        Data->>ThirdAPI: 调用外部排名计算服务
-        ThirdAPI-->>Data: 返回计算后的排名
-        Data-->>Business: 返回排名结果
-        Business-->>Service: 返回排名响应
-        Service-->>Client: JSON 数据
-    end
-```
-
-
-时序链路图：
 
 ```mermaid
 sequenceDiagram
@@ -292,7 +226,6 @@ sequenceDiagram
         Service-->>Client: JSON 数据
     end
 ```
-
 
 部分函数：
 

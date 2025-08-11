@@ -162,7 +162,7 @@ Clean Architecture 分层说明：
 ```
 
 时序链路图：
-```meraid
+```mermaid
 sequenceDiagram
     autonumber
     participant Client as 客户端
@@ -229,7 +229,7 @@ sequenceDiagram
 
 时序链路图：
 
-```meraid
+```mermaid
 sequenceDiagram
     autonumber
     participant Client as 客户端

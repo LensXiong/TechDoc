@@ -19,6 +19,169 @@ alias python='/opt/homebrew/bin/python3'
 ➜ source ~/.zshrc
 ```
 
+
+# 基础
+##  Python vs Go 基础语法代码示例对比
+### 变量定义
+
+Python:
+```
+
+```
+Go：
+```
+
+```
+
+Python:
+```
+x = 10
+name = "Alice"
+```
+Go：
+```
+var x int = 10
+name := "Alice" // 类型自动推断
+```
+
+### 函数定义
+Python:
+```
+def add(a, b):
+    return a + b
+```
+Go：
+```
+func add(a int, b int) int {
+    return a + b
+}
+```
+### 条件语句
+Python:
+```
+x = 5
+if x > 0:
+    print("positive")
+elif x == 0:
+    print("zero")
+else:
+    print("negative")
+```
+Go：
+```
+x := 5
+if x > 0 {
+    fmt.Println("positive")
+} else if x == 0 {
+    fmt.Println("zero")
+} else {
+    fmt.Println("negative")
+}
+```
+
+### 循环
+Python:
+```
+for i in range(5):
+    print(i)
+```
+Go：
+```
+for i := 0; i < 5; i++ {
+    fmt.Println(i)
+}
+```
+
+### 列表 / 数组
+Python:
+```
+arr = [1, 2, 3]
+print(arr[0])
+```
+Go：
+```
+arr := []int{1, 2, 3}
+fmt.Println(arr[0])
+```
+
+### 字典 / Map
+
+Python:
+```
+d = {"a": 1, "b": 2}
+print(d["a"])
+```
+Go：
+```
+m := map[string]int{"a": 1, "b": 2}
+fmt.Println(m["a"])
+```
+
+### 异常 / 错误处理
+Python:
+```
+try:
+    result = 10 / 0
+except ZeroDivisionError as e:
+    print("Error:", e)
+```
+Go：
+```
+result, err := divide(10, 0)
+if err != nil {
+    fmt.Println("Error:", err)
+}
+
+func divide(a, b int) (int, error) {
+    if b == 0 {
+        return 0, fmt.Errorf("division by zero")
+    }
+    return a / b, nil
+}
+```
+
+### 并发
+Python:
+```
+import threading
+
+def work():
+    print("working...")
+
+t = threading.Thread(target=work)
+t.start()
+t.join()
+```
+Go：
+```
+go func() {
+    fmt.Println("working...")
+}()
+```
+### 类 / 结构体
+
+Python:
+```
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+p = Person("Alice", 20)
+print(p.name)
+```
+Go：
+```
+type Person struct {
+    Name string
+    Age  int
+}
+
+p := Person{Name: "Alice", Age: 20}
+fmt.Println(p.Name)
+```
+
+
 # 避免 "externally-managed-environment" 错误
 
 使用虚拟环境（推荐）

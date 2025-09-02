@@ -2,6 +2,16 @@
 # AI 落地启示：ToB 产品交付的核心不是技术，而是业务穿透
 
 
+AI 产品上线第一仗：从内测到客户交付的那些坑：
+
+第一，AI 产品在从 0 到 1 阶段，最大的挑战是难以有效匹配客户业务场景，因此 AI 产品经理应当在一线围绕客户业务场景做产品，并根据客户需求快速迭代；
+
+第二，AI 产品成功的关键是以客户为中心理解客户业务，以及将行业 Know-how 融入产品；
+
+第三，AI Agent 最终会走向客户的自定义，未来客户化工作将可能较重；
+
+第四，在 AI 产品的打磨中，耐心非常重要，要确保产品成熟后再进行规模化销售。
+
 ```mermaid
 %% 1. 产品交付路径：内测到规模化
 flowchart LR
@@ -59,13 +69,15 @@ mindmap
 
 ```mermaid
 %% 4. 成功关键要素（金字塔）
+%%{init: {'securityLevel':'loose','flowchart':{'htmlLabels': true}} }%%
 graph TD
-    A[行业 Know-how<br>(专家经验, 提示词工程, 场景深度)] --> B[以客户为中心<br>(业务场景, 快速迭代)]
-    B --> C[大模型通用能力<br>(NLP, 理解能力)]
+    A["行业 Know-how<br/>(专家经验、提示词工程、场景深度)"] --> B["以客户为中心<br/>(业务场景、快速迭代)"]
+    B --> C["大模型通用能力<br/>(NLP、理解能力)"]
 
     style A fill:#ffcccc,stroke:#333,stroke-width:1px
     style B fill:#ccffcc,stroke:#333,stroke-width:1px
     style C fill:#ccccff,stroke:#333,stroke-width:1px
+
 ```
 
 

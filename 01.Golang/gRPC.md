@@ -343,5 +343,51 @@ sequenceDiagram
 
 ```
 
+# 实战业务请求链路
+```mermaid
+sequenceDiagram
+    participant Biz as 业务层 (Lvm.ActivateVip)
+    participant GCB as GrpcCallBindData / grpcaller
+    participant Net as 网络传输 (HTTP/2 + Protobuf)
+    participant Srv as gRPC 服务端 (Service)
+    participant Logic as 业务逻辑层 (logic.ActivateVip)
+
+    %% 业务层调用
+    Biz->>GCB: 调用 ActivateVip(pin, tid, ...)
+
+    %% 客户端动态调用/超时
+    GCB->>GCB: context.WithTimeout(10s)
+    GCB->>GCB: 如果是动态调用（无 .pb 文件）\n通过 Reflection 获取 MethodDescriptor
+    GCB->>Net: 建立 gRPC 连接 (grpc.Dial)
+    GCB->>Net: 动态序列化 params → protobuf message
+
+    %% 网络传输
+    Net->>Srv: 发送请求 (protobuf over HTTP/2)
+
+    %% 服务端处理
+    Srv->>Srv: 反序列化请求
+    Srv->>Logic: 调用 logic.ActivateVip(params)
+
+    %% 成功与业务错误分支
+    alt 业务成功
+        Logic-->>Srv: 返回 recordId
+        Srv->>Srv: 封装 pb.ActivateVipRep{ data.record_id }
+        Srv->>Net: 序列化响应
+        Net-->>GCB: 返回 pb.ActivateVipRep
+        GCB->>GCB: 反序列化 → obj.RecordId
+        GCB-->>Biz: 返回 recordId
+    else 业务错误
+        Logic-->>Srv: 返回业务错误 (code,msg,reason)
+        Srv->>Srv: 封装 pb.ActivateVipRep{ code,msg,reason }
+        Srv->>Net: 序列化响应
+        Net-->>GCB: 返回 pb.ActivateVipRep
+        GCB-->>Biz: 返回错误信息
+    end
+
+    %% 超时或网络错误
+    opt 超时/网络错误
+        GCB-->>Biz: 返回 gRPC error (DeadlineExceeded / Unavailable)
+    end
+```
 
 

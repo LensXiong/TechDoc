@@ -1,46 +1,79 @@
-﻿# vscode 常用快捷键
+﻿# GVM（Go Version Manager）概览
+## 什么是 GVM
+GVM 是一个 Go 语言版本管理工具，类似于 Python 的 pyenv 或 Node 的 nvm，主要用于：
 
-| 操作          | 快捷键                  | 说明                |
-| ----------- | -------------------- | ----------------- |
-| 快速打开文件      | `Cmd + P`            | 模糊文件名查找           |
-| 全局查找文本      | `Cmd + Shift + F`    | 搜索整个工作区的内容        |
-| 当前文件查找      | `Cmd + F`            | 搜索当前文件中的文本        |
-| 当前文件替换      | `Cmd + Option + F`   | 当前文件内替换           |
-| 全局替换        | `Cmd + Shift + H`    | 全局文本替换            |
-| 转到符号（函数/变量） | `Cmd + Shift + O`    | 当前文件内按函数名跳转       |
-| 转到行号        | `Cmd + P` → 输入 `:行号` | 例：`:42` 跳转到第 42 行 |
+* 在同一台机器上 安装和管理多个 Go 版本
+* 灵活切换当前使用的 Go 版本
+* 测试项目在不同 Go 版本下的兼容性
 
+官网文档：https://github.com/moovweb/gvm
 
+## 核心功能
 
-# 全局默认使用 UTF-8 编码
-全局设置 VSCode 默认编码为 UTF-8
+| 功能     | 说明                                           |
+| ------ | -------------------------------------------- |
+| 安装不同版本 | 支持安装稳定版或 RC 版 Go，例如 `gvm install go1.23.2`   |
+| 版本切换   | `gvm use go1.23.2` 可临时切换，`--default` 可设置默认版本 |
+| 沙箱隔离   | 每个 Go 版本独立管理 `GOROOT`，避免冲突                   |
+| 兼容旧项目  | 对旧版本依赖（如 Go 1.12、1.15）非常方便                   |
 
-1、打开 VSCode。
-
-2、使用快捷键：Cmd + ,（Mac） 或 Ctrl + ,（Windows） 打开 设置。
-
-3、搜索：encoding
-
-4、找到并设置以下选项：
-
-* Files: Encoding
-* 设置为：utf8（推荐，等价于 utf8 或 utf8bom，但不要选带 BOM 的除非明确需要）
-
-如果你喜欢手动编辑配置文件，可以这样做：
-
-打开设置文件（Command Palette -> 输入 Preferences: Open Settings (JSON)），添加：
-
+## 安装 GVM
+使用官方脚本（macOS / Linux）：
 ```
-{
-"files.encoding": "utf8",
-"files.autoGuessEncoding": true
-}
+bash < <(curl -sSL https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
 ```
 
-解释：
+安装完成后，按照提示执行：
 
+```
+source ~/.gvm/scripts/gvm
+```
 
-* "files.encoding": "utf8"：默认以 UTF-8 编码打开和保存文件。
+⚠️ 建议把 source ~/.gvm/scripts/gvm 添加到 ~/.zshrc 或 ~/.bashrc，保证每次终端打开自动加载 GVM。
 
-* "files.autoGuessEncoding": true：启用自动识别文件编码，比如 GBK、ISO-8859-1 等。
+## GVM 常用命令
 
+列出已安装版本:
+```
+gvm list
+```
+
+示例输出：
+```
+gvm gos (installed)
+   go1.20.14
+=> go1.20.14
+```
+=> 表示当前正在使用的版本。
+
+安装新版本:
+```
+gvm install go1.23.2
+```
+> GVM 会自动下载、编译并安装 Go 版本到 ~/.gvm/gos/go1.23.2。
+
+使用指定版本:
+临时切换：
+```
+gvm use go1.23.2
+```
+永久默认切换：
+```
+gvm use go1.23.2 --default
+```
+切换后，执行：
+```
+go version
+```
+即可看到当前版本。
+卸载某个版本:
+```
+gvm uninstall go1.20.14
+```
+
+## GVM 原理
+GVM 本质上是通过 修改 PATH 环境变量 来实现不同 Go 版本切换的：
+* 每个 Go 版本都有独立的 GOROOT（安装目录）
+* 当执行 gvm use 时，会把指定版本的 bin 目录放到 PATH 最前面
+* 这样终端里执行 go 命令时，就使用指定版本
+⚠️ 如果系统上存在其他 Go 版本（Homebrew 或官方安装），需要注意 PATH 优先级，否则可能还是调用旧版本。

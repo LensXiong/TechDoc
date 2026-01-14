@@ -24,5 +24,7 @@
 | 代码折叠 | 折叠全部 | Cmd + K Cmd + 0 | Ctrl + K Ctrl + 0 | 折叠整个文件 |
 | 代码折叠 | 展开全部 | Cmd + K Cmd + J | Ctrl + K Ctrl + J | 展开整个文件 |
 | 命令面板 | 打开命令面板 | Cmd + Shift + P | Ctrl + Shift + P | 所有功能入口 |
+| AI 助手 | 打开侧边 AI 聊天面板 | Cmd + U | Ctrl + U | 需要长对话、完整上下文、复杂需求 |
+| AI 助手 | 打开内联 AI 输入框 | Cmd + I | Ctrl + I | 快速解释／优化代码片段、即时上下文辅助 |
 
 

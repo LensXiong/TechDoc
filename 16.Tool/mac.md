@@ -6,6 +6,18 @@ sudo dscacheutil -flushcache
 sudo killall -HUP mDNSResponder
 ```
 
+macos电脑无法连接WiFi和热点：
+```
+sudo dscacheutil -flushcache && \
+sudo killall -HUP mDNSResponder && \
+networksetup -setwebproxystate Wi-Fi off && \
+networksetup -setsecurewebproxystate Wi-Fi off && \
+networksetup -setsocksfirewallproxystate Wi-Fi off && \
+sudo ifconfig en0 down && \
+sleep 3 && \
+sudo ifconfig en0 up
+```
+
 # 两台 Mac 开启通用控制的完整步骤
 
 原理：通过蓝牙、Wi-Fi 和 Handoff 技术，系统自动检测附近的设备，并同步鼠标键盘事件。
